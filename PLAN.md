@@ -22,8 +22,9 @@
   (2026-07-17 EDT)
   - Curiosity poke: can local input overrides remain ergonomic without leaking
     an impure adjacent checkout into CI?
-- [ ] Publish the public `pmarreck/vibesteroids-aedicule` repository and verify
-  its `yolo` CI gate.
+- [x] Publish the public `pmarreck/vibesteroids-aedicule` repository.
+  (2026-07-17 08:38 EDT: history-preserving `yolo` push and default branch
+  independently verified; CI observation remains part of the ship gate)
   - Curiosity poke: does a cold GitHub runner substitute the frontplane or spend
     most of its budget rebuilding the GPUI closure?
 - [ ] Replace the one-wake/one-tick native loop with Mecha Aedicule's injected
