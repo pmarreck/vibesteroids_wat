@@ -1,8 +1,8 @@
-# Vibesteroids Aedicule application specification
+# vibesteroids_wat application specification
 
 ## 1. Purpose
 
-Vibesteroids Aedicule is a native-window WAT conversion and extension of
+`vibesteroids_wat` is a native-window WAT conversion and extension of
 Peter Marreck's original browser Vibesteroids. It is also the first substantial
 downstream application for Mecha Aedicule.
 
@@ -196,7 +196,7 @@ default are distinct derivations and that the wrapper depends on both.
 
 ## 9. Packaging and development
 
-The flake pins `github:pmarreck/mecha-aedicule/yolo` to an immutable commit in
+The flake pins `github:pmarreck/aedicule/yolo` to an immutable commit in
 `flake.lock` and follows the same nixpkgs input.
 
 `packages.application` copies only `code.wat` into a data artifact.

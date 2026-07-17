@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+policy_files=(
+	"flake.nix"
+	"README.md"
+	"SPEC.md"
+	"PLAN.md"
+	"PROJECT_OVERVIEW.md"
+	"test"
+	"tests/run-wast"
+)
+legacy_identifiers=(
+	"vibesteroids-aedicule"
+	"mecha-aedicule"
+)
+required_identifiers=(
+	"vibesteroids_wat"
+	"vibesteroids-wat"
+	"github:pmarreck/aedicule/yolo"
+)
+failures=0
+
+for identifier in "${legacy_identifiers[@]}"; do
+	if rg --fixed-strings --quiet "$identifier" "${policy_files[@]/#/$root/}"; then
+		printf 'legacy project identifier remains: %s\n' "$identifier" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+for identifier in "${required_identifiers[@]}"; do
+	if ! rg --fixed-strings --quiet "$identifier" "${policy_files[@]/#/$root/}"; then
+		printf 'required project or command identifier is absent: %s\n' "$identifier" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+exit "$failures"

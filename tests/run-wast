@@ -3,7 +3,7 @@
 set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-suite=$(mktemp "$TMPDIR/vibesteroids-aedicule.XXXXXX.wast")
+suite=$(mktemp "$TMPDIR/vibesteroids_wat.XXXXXX.wast")
 trap 'rm -f "$suite"' EXIT
 
 awk '1' \

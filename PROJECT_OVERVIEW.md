@@ -1,6 +1,6 @@
-# Vibesteroids Aedicule
+# vibesteroids_wat
 
-Vibesteroids Aedicule is the WAT-authored native conversion and extension of
+`vibesteroids_wat` is the WAT-authored native conversion and extension of
 Peter Marreck's original browser Vibesteroids. It is a real downstream
 application of the separately versioned Mecha Aedicule GPUI frontplane.
 

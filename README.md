@@ -1,12 +1,12 @@
-# Vibesteroids Aedicule
+# vibesteroids_wat
 
 [![Proof of concept](https://img.shields.io/badge/status-playable_POC-f59e0b)](#status)
-[![CI](https://github.com/pmarreck/vibesteroids-aedicule/actions/workflows/ci.yml/badge.svg?branch=yolo)](https://github.com/pmarreck/vibesteroids-aedicule/actions/workflows/ci.yml)
+[![CI](https://github.com/pmarreck/vibesteroids_wat/actions/workflows/ci.yml/badge.svg?branch=yolo)](https://github.com/pmarreck/vibesteroids_wat/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A WAT-authored, native-window conversion and extension of Peter Marreck's
 original [Vibesteroids](https://github.com/pmarreck/vibesteroids), running on
-the [Mecha Aedicule](https://github.com/pmarreck/mecha-aedicule) GPUI
+the [Mecha Aedicule](https://github.com/pmarreck/aedicule) GPUI
 frontplane.
 
 The application brain is [code.wat](code.wat): simulation, fixed-point state,
@@ -35,7 +35,7 @@ Changing game code rebuilds and retests the small application artifact, not the
 native frontplane. For adjacent development, override the committed input:
 
 ```console
-nix build --override-input mecha-aedicule ../mecha-aedicule
+nix build --override-input aedicule ../aedicule
 ```
 
 CI remains reproducible because the ordinary build uses the locked Git commit.
@@ -56,9 +56,9 @@ With Nix flakes enabled:
 The built result contains one composed game package:
 
 ```console
-result/bin/vibesteroids-aedicule
-result/bin/vibesteroids-aedicule-render
-result/share/vibesteroids-aedicule/code.wat
+result/bin/vibesteroids-wat
+result/bin/vibesteroids-wat-render
+result/share/vibesteroids_wat/code.wat
 ```
 
 Controls:
@@ -84,13 +84,13 @@ window actions.
 Launch the source tree under observation:
 
 ```console
-nix run github:pmarreck/mecha-aedicule/yolo -- --watch "$PWD/code.wat"
+nix run github:pmarreck/aedicule/yolo -- --watch "$PWD/code.wat"
 ```
 
 Or use an adjacent frontplane checkout:
 
 ```console
-../mecha-aedicule/run --watch "$PWD/code.wat"
+../aedicule/run --watch "$PWD/code.wat"
 ```
 
 Mecha Aedicule compiles each saved candidate separately, validates and
@@ -157,7 +157,7 @@ The headless renderer produces an inspectable frame without a desktop:
 
 ```console
 ./build
-result/bin/vibesteroids-aedicule-render --ticks 300 -o frame.svg
+result/bin/vibesteroids-wat-render --ticks 300 -o frame.svg
 ```
 
 ## Repository map
@@ -175,4 +175,4 @@ result/bin/vibesteroids-aedicule-render --ticks 300 -o frame.svg
 
 ## License
 
-Vibesteroids Aedicule is available under the [MIT License](LICENSE).
+`vibesteroids_wat` is available under the [MIT License](LICENSE).

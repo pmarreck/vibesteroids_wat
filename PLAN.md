@@ -22,11 +22,18 @@
   (2026-07-17 EDT)
   - Curiosity poke: can local input overrides remain ergonomic without leaking
     an impure adjacent checkout into CI?
-- [x] Publish the public `pmarreck/vibesteroids-aedicule` repository.
+- [x] Publish the public game repository, now canonical at
+  `pmarreck/vibesteroids_wat`.
   (2026-07-17 08:38 EDT: history-preserving `yolo` push and default branch
   independently verified; CI observation remains part of the ship gate)
   - Curiosity poke: does a cold GitHub runner substitute the frontplane or spend
     most of its budget rebuilding the GPUI closure?
+- [x] Normalize the project/repository/path identifier to `vibesteroids_wat`,
+  retain hyphens for `vibesteroids-wat` commands, and enforce the distinction.
+  (2026-07-17 09:06 EDT: red/green set classifier, canonical GitHub rename,
+  locked `aedicule` input, complete suite/build, and packaged SVG smoke test)
+  - Curiosity poke: should the wrapper eventually provide its own product-level
+    `--about` text while delegating every other option to the generic host?
 - [ ] Replace the one-wake/one-tick native loop with Mecha Aedicule's injected
   monotonic accumulator, then prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.
