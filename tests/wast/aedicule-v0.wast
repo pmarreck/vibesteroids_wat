@@ -1,7 +1,7 @@
-;; Deterministic, instrumented implementation of the generic frontplane host
+;; Deterministic, instrumented implementation of the generic Aedicule host
 ;; imports. Production behavior is exercised without a Rust test runner, while
 ;; query exports let companion WAST modules assert guest-emitted effects.
-(module $host_v0
+(module $aedicule_v0
 	(global $title_ptr (mut i32) (i32.const 0))
 	(global $title_len (mut i32) (i32.const 0))
 	(global $menu_count (mut i32) (i32.const 0))
@@ -81,32 +81,32 @@
 	(func (export "test_star_circles") (result i32) global.get $star_circles)
 	(func (export "test_flame_min_x") (result f32) global.get $flame_min_x)
 
-	(func (export "title") (param $ptr i32) (param $len i32) (result i32)
+	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
 		local.get $ptr global.set $title_ptr
 		local.get $len global.set $title_len
 		i32.const 0)
-	(func (export "menu_item") (param $id i32) (param i32 i32 i32 i32) (result i32)
+	(func (export "AE_menu_item") (param $id i32) (param i32 i32 i32 i32) (result i32)
 		global.get $menu_count i32.const 1 i32.add global.set $menu_count
 		global.get $menu_mask i32.const 1 local.get $id i32.shl i32.or global.set $menu_mask
 		i32.const 0)
-	(func (export "frame_begin") (param f32 f32 f32 f32) (result i32)
+	(func (export "AE_frame_begin") (param f32 f32 f32 f32) (result i32)
 		global.get $frame_count i32.const 1 i32.add global.set $frame_count
 		i32.const 0)
-	(func (export "transform_push") (param f32 f32 f32 f32 f32 f32) (result i32) i32.const 0)
-	(func (export "transform_pop") (result i32) i32.const 0)
-	(func (export "path_begin") (param $key i32) (result i32)
+	(func (export "AE_transform_push") (param f32 f32 f32 f32 f32 f32) (result i32) i32.const 0)
+	(func (export "AE_transform_pop") (result i32) i32.const 0)
+	(func (export "AE_path_begin") (param $key i32) (result i32)
 		local.get $key global.set $current_path_key
 		i32.const 0 global.set $current_path_lines
 		local.get $key i32.const 4 i32.eq (if (then f32.const 0 global.set $flame_min_x))
 		i32.const 0)
-	(func (export "path_move") (param f32 f32) (result i32) i32.const 0)
-	(func (export "path_line") (param $x f32) (param f32) (result i32)
+	(func (export "AE_path_move") (param f32 f32) (result i32) i32.const 0)
+	(func (export "AE_path_line") (param $x f32) (param f32) (result i32)
 		global.get $current_path_lines i32.const 1 i32.add global.set $current_path_lines
 		global.get $current_path_key i32.const 4 i32.eq
 		(if (then local.get $x global.get $flame_min_x f32.lt (if (then local.get $x global.set $flame_min_x))))
 		i32.const 0)
-	(func (export "path_close") (result i32) i32.const 0)
-	(func (export "path_end") (param f32 i32 i32 i32) (result i32)
+	(func (export "AE_path_close") (result i32) i32.const 0)
+	(func (export "AE_path_end") (param f32 i32 i32 i32) (result i32)
 		global.get $current_path_key i32.const 200 i32.ge_u
 		global.get $current_path_key i32.const 232 i32.lt_u i32.and
 		(if (then
@@ -118,8 +118,8 @@
 		global.get $current_path_key i32.const 52 i32.lt_u i32.and
 		(if (then global.get $reserve_paths i32.const 1 i32.add global.set $reserve_paths))
 		i32.const 0)
-	(func (export "line") (param i32 f32 f32 f32 f32 f32 i32) (result i32) i32.const 0)
-	(func (export "circle") (param $key i32) (param f32 f32 f32 f32 i32 i32) (result i32)
+	(func (export "AE_line") (param i32 f32 f32 f32 f32 f32 i32) (result i32) i32.const 0)
+	(func (export "AE_circle") (param $key i32) (param f32 f32 f32 f32 i32 i32) (result i32)
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
 		(if (then global.get $bullet_circles i32.const 1 i32.add global.set $bullet_circles))
 		local.get $key i32.const 200 i32.ge_u local.get $key i32.const 232 i32.lt_u i32.and
@@ -127,14 +127,14 @@
 		local.get $key i32.const 800 i32.ge_u local.get $key i32.const 900 i32.lt_u i32.and
 		(if (then global.get $star_circles i32.const 1 i32.add global.set $star_circles))
 		i32.const 0)
-	(func (export "text") (param $key i32) (param i32 i32 f32 f32 f32 i32 i32) (result i32)
+	(func (export "AE_text") (param $key i32) (param i32 i32 f32 f32 f32 i32 i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask
 		i32.const 0)
-	(func (export "frame_end") (result i32) i32.const 0)
-	(func (export "audio") (param $id i32) (param f32 f32 i32) (result i32)
+	(func (export "AE_frame_end") (result i32) i32.const 0)
+	(func (export "AE_audio") (param $id i32) (param f32 f32 i32) (result i32)
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.or global.set $audio_mask
 		i32.const 0)
-	(func (export "synth_voice")
+	(func (export "AE_synth_voice")
 		(param $id i32) (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
 		(result i32)
 		local.get $id i32.const 1 i32.eq (if (then global.get $synth_1 i32.const 1 i32.add global.set $synth_1))
@@ -144,9 +144,9 @@
 		local.get $id i32.const 5 i32.eq (if (then global.get $synth_5 i32.const 1 i32.add global.set $synth_5))
 		local.get $id i32.const 6 i32.eq (if (then global.get $synth_6 i32.const 1 i32.add global.set $synth_6))
 		i32.const 0)
-	(func (export "effect") (param $id i32) (param i32 i32) (result i32)
+	(func (export "AE_effect") (param $id i32) (param i32 i32) (result i32)
 		global.get $effect_mask i32.const 1 local.get $id i32.shl i32.or global.set $effect_mask
 		i32.const 0)
 )
-(register "host.v0" $host_v0)
-(register "test.host" $host_v0)
+(register "aedicule.v0" $aedicule_v0)
+(register "test.host" $aedicule_v0)

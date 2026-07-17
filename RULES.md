@@ -12,7 +12,7 @@
    must not mutate simulation state.
 6. Fixed-capacity pools and bounded loops must stay within Mecha Aedicule's fuel
    and output limits at their maximum occupancy.
-7. Increment `fp_state_schema` whenever an equal-length state layout or meaning
+7. Increment `AE_state_schema` whenever an equal-length state layout or meaning
    becomes incompatible with a live snapshot.
 8. Dimensional quantities are authored in canonical per-second units; only
    named integration/duration helpers know the fixed tick rate.

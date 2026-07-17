@@ -2,14 +2,14 @@
 ;; before this companion script. All application-specific assertions live here.
 (module $vibesteroids_tests
 	(import "sut" "memory" (memory $state 1))
-	(import "sut" "fp_state_schema" (func $state_schema (result i32)))
-	(import "sut" "fp_state_len" (func $state_len (result i32)))
-	(import "sut" "fp_tick_hz" (func $tick_hz (result i32)))
-	(import "sut" "fp_configure" (func $configure (result i32)))
-	(import "sut" "fp_init" (func $init (param i32 i32 f32 f32) (result i32)))
-	(import "sut" "fp_event" (func $event (param i32 i32 f32 f32) (result i32)))
-	(import "sut" "fp_tick" (func $tick (param i32) (result i32)))
-	(import "sut" "fp_render" (func $render (result i32)))
+	(import "sut" "AE_state_schema" (func $state_schema (result i32)))
+	(import "sut" "AE_state_len" (func $state_len (result i32)))
+	(import "sut" "AE_tick_rate" (func $tick_rate (param i32 i32) (result i32 i32)))
+	(import "sut" "AE_configure" (func $configure (result i32)))
+	(import "sut" "AE_init" (func $init (param i32 i32 f32 f32) (result i32)))
+	(import "sut" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
+	(import "sut" "AE_tick" (func $tick (param i32) (result i32)))
+	(import "sut" "AE_render" (func $render (result i32)))
 	(import "test.host" "test_reset_config" (func $host_reset_config))
 	(import "test.host" "test_reset_frame" (func $host_reset_frame))
 	(import "test.host" "test_reset_effects" (func $host_reset_effects))
@@ -32,7 +32,8 @@
 
 	(func (export "schema") (result i32) call $state_schema)
 	(func (export "state_len") (result i32) call $state_len)
-	(func (export "tick_hz") (result i32) call $tick_hz)
+	(func (export "tick_rate") (param i32 i32) (result i32 i32)
+		local.get 0 local.get 1 call $tick_rate)
 	(func (export "reset") (result i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init)
@@ -318,7 +319,9 @@
 
 (assert_return (invoke $vibesteroids_tests "schema") (i32.const 4))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 16384))
-(assert_return (invoke $vibesteroids_tests "tick_hz") (i32.const 60))
+(assert_return
+	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
+	(i32.const 60) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 8)) (i64.const 1024000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 16)) (i64.const 768000000))

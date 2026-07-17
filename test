@@ -23,12 +23,14 @@ run_check() {
 run_check ./tests/cli/development_dependencies
 run_check ./tests/cli/repository_boundary
 run_check ./tests/cli/naming_conventions
+run_check ./tests/cli/abi_namespace
 run_check ./tests/cli/flake_composition
 run_check ./tests/run-wast
 run_check ./tests/lint-wat
 run_check shellcheck build run test tests/cli/development_dependencies \
 	tests/cli/repository_boundary tests/cli/naming_conventions \
-	tests/cli/flake_composition tests/run-wast tests/lint-wat
+	tests/cli/abi_namespace tests/cli/flake_composition tests/run-wast \
+	tests/lint-wat
 
 if (( failures > 255 )); then
 	exit 255

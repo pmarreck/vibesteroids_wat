@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+production="$root/code.wat"
+host_fixture="$root/tests/wast/aedicule-v0.wast"
+legacy_host_fixture="$root/tests/wast/host-v0.wast"
+documentation_files=(
+	"$root/README.md"
+	"$root/RULES.md"
+	"$root/SPEC.md"
+	"$root/VIBESTEROIDS_BEHAVIOR_SPEC.md"
+)
+legacy_tokens=(
+	'host.v0'
+	'fp_abi_major'
+	'fp_abi_minor'
+	'fp_configure'
+	'fp_init'
+	'fp_event'
+	'fp_tick'
+	'fp_tick_hz'
+	'fp_render'
+	'fp_state_ptr'
+	'fp_state_len'
+	'fp_state_schema'
+)
+host_imports=(
+	'title'
+	'menu_item'
+	'frame_begin'
+	'transform_push'
+	'transform_pop'
+	'path_begin'
+	'path_move'
+	'path_line'
+	'path_close'
+	'path_end'
+	'line'
+	'circle'
+	'text'
+	'frame_end'
+	'audio'
+	'synth_voice'
+	'effect'
+)
+guest_exports=(
+	'abi_major'
+	'abi_minor'
+	'configure'
+	'init'
+	'event'
+	'tick'
+	'tick_rate'
+	'render'
+	'state_ptr'
+	'state_len'
+	'state_schema'
+)
+failures=0
+
+if [[ ! -f "$host_fixture" ]]; then
+	printf 'required Aedicule WAST host fixture is absent: %s\n' "$host_fixture" >&2
+	failures=$((failures + 1))
+fi
+if [[ -e "$legacy_host_fixture" ]]; then
+	printf 'legacy WAST host fixture remains: %s\n' "$legacy_host_fixture" >&2
+	failures=$((failures + 1))
+fi
+
+abi_files=("$production")
+abi_files+=("${documentation_files[@]}")
+if [[ -f "$host_fixture" ]]; then
+	abi_files+=("$host_fixture")
+fi
+while IFS= read -r file; do
+	abi_files+=("$file")
+done < <(rg --files "$root/tests/wast" | rg '\.wast$')
+
+for token in "${legacy_tokens[@]}"; do
+	if rg --fixed-strings --quiet "$token" "${abi_files[@]}"; then
+		printf 'legacy ABI token remains: %s\n' "$token" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+for operation in "${host_imports[@]}"; do
+	if ! rg --fixed-strings --quiet "(import \"aedicule.v0\" \"AE_$operation\"" "$production"; then
+		printf 'required Aedicule host import is absent: AE_%s\n' "$operation" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+for operation in "${guest_exports[@]}"; do
+	if ! rg --fixed-strings --quiet "(export \"AE_$operation\")" "$production"; then
+		printf 'required Aedicule guest export is absent: AE_%s\n' "$operation" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+if [[ -f "$host_fixture" ]] &&
+	! rg --fixed-strings --quiet '(register "aedicule.v0"' "$host_fixture"; then
+	printf 'Aedicule WAST host fixture does not register aedicule.v0\n' >&2
+	failures=$((failures + 1))
+fi
+
+if (( failures > 255 )); then
+	exit 255
+fi
+exit "$failures"

@@ -1313,7 +1313,7 @@ remain as design history; the fidelity matrix is authoritative for completion.
 - Add authoritative `score`, `lives`, `level`, mode flags, timers, and
   next-extra-life threshold.
 - Write a small signed/unsigned integer-to-decimal formatter in WAT so score,
-  level, and lives can be passed to `host.v0.text`.
+  level, and lives can be passed to `aedicule.v0.AE_text`.
 - Render score and level at top-left and reserve-ship glyphs or small vector
   ships at top-right.
 - Initialize five asteroids, not three.

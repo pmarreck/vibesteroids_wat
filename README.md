@@ -149,7 +149,7 @@ for the Asteroids/Blasteroids engagement research and playtest proposals.
 - repository-boundary and Nix-composition classifiers; and
 - ShellCheck over every executable test/build script.
 
-Application behavior stays in WAST, not Rust. The instrumented `host.v0` WAST
+Application behavior stays in WAST, not Rust. The instrumented `aedicule.v0` WAST
 module records emitted scenes, audio, effects, and metadata without a custom
 test-only export in production code.
 

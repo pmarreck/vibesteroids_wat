@@ -6,11 +6,37 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 suite=$(mktemp "$TMPDIR/vibesteroids_wat.XXXXXX.wast")
 trap 'rm -f "$suite"' EXIT
 
-awk '1' \
-	"$root/tests/wast/host-v0.wast" \
-	"$root/code.wat" \
-	<(printf '%s\n' '(register "sut")') \
-	"$root/tests/wast/vibesteroids.wast" \
-	"$root/tests/wast/gameplay.wast" >"$suite"
+append_rate_variant() {
+	local label=$1
+	local numerator=$2
+	local denominator=$3
+
+	awk -v numerator="$numerator" -v denominator="$denominator" '
+		$0 == "\t(global $tick_numerator i64 (i64.const 60))" {
+			print "\t(global $tick_numerator i64 (i64.const " numerator "))"
+			next
+		}
+		$0 == "\t(global $tick_denominator i64 (i64.const 1))" {
+			print "\t(global $tick_denominator i64 (i64.const " denominator "))"
+			next
+		}
+		{ print }
+	' "$root/code.wat"
+	printf '(register "%s")\n' "$label"
+}
+
+{
+	awk '1' "$root/tests/wast/aedicule-v0.wast" "$root/code.wat"
+	printf '%s\n' '(register "sut")'
+	append_rate_variant sut_60 60 1
+	append_rate_variant sut_120 120 1
+	append_rate_variant sut_60000_1001 60000 1001
+	append_rate_variant sut_120000_1001 120000 1001
+	awk '1' \
+		"$root/tests/wast/vibesteroids.wast" \
+		"$root/tests/wast/gameplay.wast" \
+		"$root/tests/wast/rational-timing.wast" \
+		"$root/tests/wast/equal-time.wast"
+} >"$suite"
 
 wasmtime wast --async=false "$suite"

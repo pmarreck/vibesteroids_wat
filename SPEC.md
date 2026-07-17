@@ -41,20 +41,21 @@ Peter explicitly changing the experiment's premise.
 
 ## 3. Module and state contract
 
-The application implements `gpui-frontplane-v0` from Mecha Aedicule:
+The application implements the hard-cutover `aedicule.v0` contract from Mecha
+Aedicule:
 
 ~~~text
-fp_abi_major() -> 0
-fp_abi_minor() -> 0
-fp_configure()
-fp_init(seed_lo, seed_hi, viewport_w, viewport_h)
-fp_event(kind, code, a, b)
-fp_tick(ticks)
-fp_tick_hz() -> 60
-fp_render()
-fp_state_ptr()
-fp_state_len()
-fp_state_schema() -> 4
+AE_abi_major() -> 0
+AE_abi_minor() -> 0
+AE_configure()
+AE_init(seed_lo, seed_hi, viewport_w, viewport_h)
+AE_event(kind, code, a, b)
+AE_tick(ticks)
+AE_tick_rate(current_numerator, current_denominator) -> (60, 1)
+AE_render()
+AE_state_ptr()
+AE_state_len()
+AE_state_schema() -> 4
 ~~~
 
 Schema 4 is 8192 bytes. The behavior specification documents the address map.
@@ -72,6 +73,12 @@ scale 1,000,000. Positions are logical pixels, velocity is logical pixels per
 second, acceleration is logical pixels per second squared, and angles/angular
 velocity use canonical per-second units. Named helpers alone integrate by the
 declared tick rate or convert authored 60-Hz durations.
+
+Aedicule reports nominal display refresh with `AE_event` kind 9:
+`code = refresh_numerator_hz` and `a = refresh_denominator`. A guest may return
+`(0, 0)` from `AE_tick_rate` to follow that refresh, or an exact positive
+rational simulation rate. Vibesteroids presently returns the required 60/1
+simulation rate until its 60/120 proof and Peter's playtest permit a change.
 
 The only guest `f32` arithmetic is inside one mechanically marked adapter that:
 
@@ -180,7 +187,7 @@ each deterministic invocation without relaxing the per-call containment policy.
 The production WAT has no test-only exports. `tests/run-wast` creates a suite in
 RAM from:
 
-1. `tests/wast/host-v0.wast`, an instrumented generic host;
+1. `tests/wast/aedicule-v0.wast`, an instrumented generic host;
 2. the exact production `code.wat`;
 3. a registration directive; and
 4. application behavior and gameplay scenarios.

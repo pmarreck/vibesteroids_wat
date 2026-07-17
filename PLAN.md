@@ -34,8 +34,21 @@
   locked `aedicule` input, complete suite/build, and packaged SVG smoke test)
   - Curiosity poke: should the wrapper eventually provide its own product-level
     `--about` text while delegating every other option to the generic host?
-- [ ] Replace the one-wake/one-tick native loop with Mecha Aedicule's injected
-  monotonic accumulator, then prove equal elapsed-time behavior at 60 and 120
+- [x] Hard-cut the application and WAST harness to Aedicule's `aedicule.v0`
+  import module and `AE_*` host/import lifecycle namespace.
+  (2026-07-17 13:04 EDT: red/green set classifier, production WAT/WAST
+  migration, companion host rename, contract documentation, complete test, and
+  optimized package build)
+  - Curiosity poke: can a set-based classifier make accidental mixed old/new
+    ABI surfaces mechanically impossible during the cross-repository cutover?
+- [x] Specify rational display-refresh events and simulation-rate selection in
+  WAST, including 60, 120, 60000/1001, and 120000/1001 equal-time coverage.
+  (2026-07-17 13:04 EDT: red/green selector/follow fixtures and RAM-generated
+  production WAT matrix; actual `(0,0)` host adoption remains Aedicule-owned)
+  - Curiosity poke: do exact-boundary inputs and non-integral tick durations
+    preserve the same lifecycle thresholds without rounding drift?
+- [ ] After Aedicule wires its injected monotonic accumulator into the live
+  host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.
   - Curiosity poke: which collision differences are desirable reduced tunneling
     and which are unintended difficulty changes?

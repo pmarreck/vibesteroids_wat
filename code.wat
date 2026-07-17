@@ -17,7 +17,7 @@
 ;; 104 lifecycle-ticks 108 banner:i32       112 seed:i32
 ;; 120 blossom-rotation:i64
 ;;
-;; Pools, relative to fp_state_ptr:
+;; Pools, relative to AE_state_ptr:
 ;;   256: 64 bullets x 48 bytes
 ;;        active:i32, pad:i32, x/y/vx/vy/distance-traveled:i64
 ;;  3328: 32 asteroids x 80 bytes
@@ -29,26 +29,26 @@
 ;;        active/life:i32, x/y/vx/vy/dx/dy:i64, spin/piece:i32
 ;; 13408: 100 stars x 16 bytes, x/y:i64
 (module
-	(import "host.v0" "title" (func $title (param i32 i32) (result i32)))
-	(import "host.v0" "menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
-	(import "host.v0" "frame_begin" (func $frame_begin (param f32 f32 f32 f32) (result i32)))
-	(import "host.v0" "transform_push" (func $transform_push (param f32 f32 f32 f32 f32 f32) (result i32)))
-	(import "host.v0" "transform_pop" (func $transform_pop (result i32)))
-	(import "host.v0" "path_begin" (func $path_begin (param i32) (result i32)))
-	(import "host.v0" "path_move" (func $path_move (param f32 f32) (result i32)))
-	(import "host.v0" "path_line" (func $path_line (param f32 f32) (result i32)))
-	(import "host.v0" "path_close" (func $path_close (result i32)))
-	(import "host.v0" "path_end" (func $path_end (param f32 i32 i32 i32) (result i32)))
-	(import "host.v0" "line" (func $line (param i32 f32 f32 f32 f32 f32 i32) (result i32)))
-	(import "host.v0" "circle" (func $circle (param i32 f32 f32 f32 f32 i32 i32) (result i32)))
-	(import "host.v0" "text" (func $text (param i32 i32 i32 f32 f32 f32 i32 i32) (result i32)))
-	(import "host.v0" "frame_end" (func $frame_end (result i32)))
-	(import "host.v0" "audio" (func $audio (param i32 f32 f32 i32) (result i32)))
-	(import "host.v0" "synth_voice"
+	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_frame_begin" (func $frame_begin (param f32 f32 f32 f32) (result i32)))
+	(import "aedicule.v0" "AE_transform_push" (func $transform_push (param f32 f32 f32 f32 f32 f32) (result i32)))
+	(import "aedicule.v0" "AE_transform_pop" (func $transform_pop (result i32)))
+	(import "aedicule.v0" "AE_path_begin" (func $path_begin (param i32) (result i32)))
+	(import "aedicule.v0" "AE_path_move" (func $path_move (param f32 f32) (result i32)))
+	(import "aedicule.v0" "AE_path_line" (func $path_line (param f32 f32) (result i32)))
+	(import "aedicule.v0" "AE_path_close" (func $path_close (result i32)))
+	(import "aedicule.v0" "AE_path_end" (func $path_end (param f32 i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_line" (func $line (param i32 f32 f32 f32 f32 f32 i32) (result i32)))
+	(import "aedicule.v0" "AE_circle" (func $circle (param i32 f32 f32 f32 f32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_text" (func $text (param i32 i32 i32 f32 f32 f32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_frame_end" (func $frame_end (result i32)))
+	(import "aedicule.v0" "AE_audio" (func $audio (param i32 f32 f32 i32) (result i32)))
+	(import "aedicule.v0" "AE_synth_voice"
 		(func $synth_voice
 			(param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
 			(result i32)))
-	(import "host.v0" "effect" (func $effect (param i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_effect" (func $effect (param i32 i32 i32) (result i32)))
 
 	(memory (export "memory") 1 64)
 	(data (i32.const 0) "Vibesteroids \e2\80\94 WAT")
@@ -80,16 +80,19 @@
 	(data (i32.const 488) "\f0\9f\94\86")
 
 	(global $scale i64 (i64.const 1000000))
-	(global $tick_hz i64 (i64.const 60))
+	(global $tick_numerator i64 (i64.const 60))
+	(global $tick_denominator i64 (i64.const 1))
 
-	(func (export "fp_abi_major") (result i32) i32.const 0)
-	(func (export "fp_abi_minor") (result i32) i32.const 0)
-	(func (export "fp_state_ptr") (result i32) i32.const 1024)
-	(func (export "fp_state_len") (result i32) i32.const 16384)
-	(func (export "fp_state_schema") (result i32) i32.const 4)
-	(func (export "fp_tick_hz") (result i32) global.get $tick_hz i32.wrap_i64)
+	(func (export "AE_abi_major") (result i32) i32.const 0)
+	(func (export "AE_abi_minor") (result i32) i32.const 0)
+	(func (export "AE_state_ptr") (result i32) i32.const 1024)
+	(func (export "AE_state_len") (result i32) i32.const 16384)
+	(func (export "AE_state_schema") (result i32) i32.const 4)
+	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
+		global.get $tick_numerator i32.wrap_i64
+		global.get $tick_denominator i32.wrap_i64)
 
-	(func (export "fp_configure") (result i32)
+	(func (export "AE_configure") (result i32)
 		i32.const 0 i32.const 20 call $title drop
 		i32.const 1 i32.const 32 i32.const 8 i32.const 1 i32.const 0 call $menu_item drop
 		i32.const 0 i32.const 0 i32.const 0 i32.const 0 i32.const 1 call $menu_item drop
@@ -150,11 +153,12 @@
 		local.get $left local.get $right i64.mul global.get $scale i64.div_s)
 
 	(func $per_tick (param $per_second i64) (result i64)
-		local.get $per_second global.get $tick_hz i64.div_s)
+		local.get $per_second global.get $tick_denominator i64.mul
+		global.get $tick_numerator i64.div_s)
 
 	(func $ticks_from_sixty (param $ticks i32) (result i32)
-		local.get $ticks i64.extend_i32_u global.get $tick_hz i64.mul
-		i64.const 60 i64.div_u i32.wrap_i64)
+		local.get $ticks i64.extend_i32_u global.get $tick_numerator i64.mul
+		i64.const 60 global.get $tick_denominator i64.mul i64.div_u i32.wrap_i64)
 
 	(func $fixed_abs (param $value i64) (result i64)
 		local.get $value i64.const 0 i64.lt_s
@@ -182,7 +186,9 @@
 		;; Source uses elapsed_ms > delay, so the first integral fixed tick after
 		;; the delay is floor(delay * 60 / 1000) + 1.
 		i64.const 250000000 i64.const -125000000 call $difficulty_value
-		global.get $tick_hz i64.mul i64.const 1000000000 i64.div_s i32.wrap_i64 i32.const 1 i32.add)
+		global.get $tick_numerator i64.mul
+		i64.const 1000000000 global.get $tick_denominator i64.mul i64.div_s
+		i32.wrap_i64 i32.const 1 i32.add)
 
 	(func $small_sine (param $angle i64) (result i64)
 		(local $square i64)
@@ -389,7 +395,7 @@
 		call $regenerate_stars
 		call $spawn_wave)
 
-	(func (export "fp_init") (param $seed_low i32) (param $seed_high i32)
+	(func (export "AE_init") (param $seed_low i32) (param $seed_high i32)
 		(param $width f32) (param $height f32) (result i32)
 		local.get $seed_low local.get $seed_high i32.xor
 		local.get $width call $from_host local.get $height call $from_host call $reset
@@ -890,7 +896,7 @@
 		i32.const 1132 i32.load i32.const 0 i32.gt_s
 		(if (then i32.const 1132 i32.const 1132 i32.load i32.const 1 i32.sub i32.store)))
 
-	(func (export "fp_tick") (param $count i32) (result i32)
+	(func (export "AE_tick") (param $count i32) (result i32)
 		(local $index i32)
 		(block $done (loop $again
 			local.get $index local.get $count i32.ge_u br_if $done
@@ -942,7 +948,7 @@
 		i32.const 1032 local.get $new_width i64.store i32.const 1040 local.get $new_height i64.store
 		call $regenerate_stars)
 
-	(func (export "fp_event") (param $kind i32) (param $code i32)
+	(func (export "AE_event") (param $kind i32) (param $code i32)
 		(param $a f32) (param $b f32) (result i32)
 		(local $mask i32)
 		local.get $kind i32.const 1 i32.eq
@@ -1102,7 +1108,7 @@
 			f32.const 0.85 f32.const 0 i32.const 0x9bb8d199 i32.const 1 call $circle drop
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
-	(func (export "fp_render") (result i32)
+	(func (export "AE_render") (result i32)
 		(local $index i32) (local $address i32) (local $reserve_count i32) (local $alpha i32)
 		f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop
 		i32.const 1132 i32.load i32.const 0 i32.gt_s
