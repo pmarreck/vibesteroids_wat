@@ -1,71 +1,37 @@
-# Mecha Aedicule
+# Vibesteroids Aedicule
 
-Mecha Aedicule explores a generic, cross-platform GPUI “frontplane” that loads an
-application authored in WebAssembly Text Format (WAT). The frontplane owns
-platform integration; the plugin owns application state and behavior.
+Vibesteroids Aedicule is the WAT-authored native conversion and extension of
+Peter Marreck's original browser Vibesteroids. It is a real downstream
+application of the separately versioned Mecha Aedicule GPUI frontplane.
 
-The working tree, package, and binaries retain the provisional `gpui-wasm`
-identifier until the generic frontplane and its Vibesteroids application are
-split into adjacent repositories. Product naming must not obscure that
-technical extraction or silently break existing launch paths.
+This repository owns game state, simulation, controls, menus, rendering intent,
+audio programs, behavior specifications, fidelity decisions, gameplay research,
+and playtest work. It owns no Rust, GPUI adapter, Wasmtime host, or native audio
+implementation.
 
-The initial feasibility demonstration is an Asteroids-style game:
+The flake pins Mecha Aedicule, packages `code.wat` independently, and composes
+them only in a launch wrapper. This keeps WAT edits fast and prevents game/host
+concern blending.
 
-- one WAT module owns the ship, asteroids, bullets, score, lives, and seeded
-  deterministic placement;
-- a native Rust host embeds Wasmtime;
-- a GPUI/gpui-component view presents the window, menu, HUD, and canvas;
-- a headless adapter exports the same immutable command buffer as deterministic
-  SVG so visual frames remain inspectable without a live desktop;
-- the host passes input and fixed ticks into the plugin;
-- the plugin calls a small versioned host ABI to emit draw/audio/effect
-  commands; and
-- transactional live reloads preserve compatible snapshots while rejecting
-  broken candidates without interrupting the running application.
-
-The project is not intended to become a full game engine during the spike. It
-is intended to discover whether a clean GPUI-facing WASM application ABI is
-pleasant, deterministic, containable, and sufficiently expressive.
-
-**POC status:** successful. On 2026-07-16 Peter confirmed that the deployed
-Vibesteroids conversion is a playable game. Further work is refinement and
-productization rather than proof of basic feasibility. The same-day live-edit
-extension also proved that an external `code.wat` can be watched and replaced
-while a real GPUI window is running: compatible edits preserve game state,
-schema changes restart deliberately, and malformed edits leave the previous
-game playable.
+**Status:** playable enhanced proof of concept.
 
 **Main branch:** yolo
 
-**i18n phase:** prepare. English is the only populated locale during the
-feasibility spike; visible strings are centralized so translation can be
-evaluated later without changing the plugin ABI.
-
 ## Terms
 
-**Frontplane**
+**Aedicule** — the native host/frontplane supplied by Mecha Aedicule.
 
-The trusted native host: windowing, GPUI rendering, menus, input, audio,
-storage, resource limits, and plugin lifecycle.
+**Application** — this repository's WAT game and its application-owned data.
 
-**Plugin/application**
+**Behavior oracle** — the companion WAST scenarios specifying observable game
+rules without duplicating those rules in Rust.
 
-The untrusted WAT-authored module. It is called a plugin because the frontplane
-loads it generically, even though it may contain the entire application brain.
+**Decimal fixed point** — signed integers scaled by one million for all
+internal game quantities. Float conversion exists only at the host ABI edge.
 
-**Command buffer**
+**State schema** — the integer identifying the meaning of the opaque snapshot
+layout. It changes when an equal-length layout or semantics become incompatible
+with live restoration.
 
-A finite host-owned list of rendering, audio, and effect requests emitted by
-the plugin during a lifecycle call.
-
-**Fixed tick**
-
-One deterministic simulation step. Wall-clock sampling and frame pacing belong
-to the host; the plugin receives integer tick counts.
-
-**State schema**
-
-A plugin-owned integer compatibility declaration for its opaque snapshot
-bytes. The host also checks snapshot length, but only the plugin author can
-know whether an equal-length layout or semantic change requires incrementing
-the schema and starting fresh state.
+**Death Blossom** — the once-per-life semi-secret radial weapon activated with
+`B` when available.

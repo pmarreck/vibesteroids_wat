@@ -3,12 +3,12 @@
 set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
-suite=$(mktemp "$TMPDIR/gpui-wasm-vibesteroids.XXXXXX.wast")
+suite=$(mktemp "$TMPDIR/vibesteroids-aedicule.XXXXXX.wast")
 trap 'rm -f "$suite"' EXIT
 
 awk '1' \
 	"$root/tests/wast/host-v0.wast" \
-	"$root/plugins/vibesteroids.wat" \
+	"$root/code.wat" \
 	<(printf '%s\n' '(register "sut")') \
 	"$root/tests/wast/vibesteroids.wast" \
 	"$root/tests/wast/gameplay.wast" >"$suite"

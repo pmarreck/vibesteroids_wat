@@ -11,7 +11,7 @@ applicable.
 | Source behavior | GPUI/WAT decision | Reason |
 |---|---|---|
 | Browser URL parameters | Provide validated `--seed`; defer initial-level selection until the generic ABI has application configuration | A generic frontplane must not grow a Vibesteroids-specific `--level` switch. |
-| Browser test-mode URL and in-page test UI | Keep standard WAST behavior scripts plus independent generic Rust frontplane controls | WAST keeps application tests in the same ecosystem as the WAT while Rust remains outside the game boundary. |
+| Browser test-mode URL and in-page test UI | Keep standard WAST behavior scripts here; Mecha Aedicule independently tests generic host controls | WAST keeps application tests in the same ecosystem as the WAT while Rust remains outside this repository and outside the game boundary. |
 | Eruda mobile console and HTTPS development server | Not applicable | These exist solely to support a browser/mobile runtime. |
 | Device-motion permission and shake activation | Defer until a host motion capability exists | A desktop keyboard action remains available; the generic ABI must not pretend to have sensors. |
 | Browser touch controls | Implement pointer/touch semantics only after the generic pointer ABI is bounded and tested | GPUI can eventually supply pointer input, but this is separate from fixed-decimal and desktop parity. |
@@ -28,7 +28,7 @@ applicable.
 | Integer-only simulation | **Implemented** | A structural classifier rejects floating-point arithmetic, loads, and stores outside explicitly marked host-scalar conversion adapters. |
 | Safe fixed-point multiplication and distance tests | **Implemented** | Collision deltas rescale to milli-fixed before squaring; exact `0.995`, negative values, collision equality, and 8K bounds are covered. |
 | One-way host conversion | **Implemented** | Host viewport scalars convert once on ingress and completed draw scalars once on egress; no converted value re-enters gameplay state. |
-| Explicit incompatible schema transition | **Implemented** | `fp_state_schema` changed from 2 to 3 once; transactional reload restarts rather than restoring schema-2 bytes. |
+| Explicit incompatible schema transitions | **Implemented** | Schema 2→3 introduced decimal-fixed state and 3→4 introduced canonical per-second units; transactional reload restarts rather than restoring bytes with different meaning. |
 
 ## Gameplay and state
 

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+frontplane_paths=(
+	"Cargo.toml"
+	"Cargo.lock"
+	"src"
+	"third_party"
+	"tests/audio.rs"
+	"tests/composition.rs"
+	"tests/containment.rs"
+	"tests/fixtures"
+	"tests/gui_cli.rs"
+	"tests/hot_reload.rs"
+	"tests/launch.rs"
+	"tests/render_cli.rs"
+	"tests/snapshot.rs"
+	"tests/svg_export.rs"
+	"tests/synth.rs"
+	"tests/timing.rs"
+)
+failures=0
+
+for relative in "${frontplane_paths[@]}"; do
+	if [[ -e "$root/$relative" ]]; then
+		printf 'frontplane-owned path remains in application repository: %s\n' "$relative" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+exit "$failures"

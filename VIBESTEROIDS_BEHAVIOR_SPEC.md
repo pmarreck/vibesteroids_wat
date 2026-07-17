@@ -4,7 +4,7 @@
 
 This document specifies the algorithms and observable behavior of Peter
 Marreck's original Vibesteroids implementation so that its personality and
-gameplay can be carried into the `gpui-wasm` WAT demonstrator.
+gameplay can be carried into the Vibesteroids Aedicule WAT application.
 
 This is explicitly **not** a clean-room specification. Original symbol names,
 data layouts, algorithms, constants, implementation details, and quirks are
@@ -388,7 +388,7 @@ frame while paused.
 
 The browser version has no blur/visibility handler. Held controls can remain
 latched if a key-up is lost while changing focus. This differs from
-`gpui-wasm`, whose generic focus-loss event clears held controls.
+Mecha Aedicule, whose generic focus-loss event clears held controls.
 
 ## 8. Mobile controls, shake detection, and permission flow
 
@@ -1230,7 +1230,7 @@ not enter the WAT port accidentally.
 19. Initial `level` and `seed` URL values are not validated.
 20. There is no browser focus-loss handling for stuck keys.
 
-## 25. Porting policy for `gpui-wasm`
+## 25. Porting policy for Vibesteroids Aedicule
 
 The port should distinguish three categories:
 
@@ -1286,12 +1286,13 @@ The following are observable and merit a named choice:
 - finite bullet/entity capacities required by the host; and
 - whether restart repeats the same seed or obtains a new host-provided seed.
 
-## Appendix A. Recommended implementation increments for the WAT demo
+## Appendix A. Historical implementation increments for the WAT application
 
-The current `plugins/vibesteroids.wat` proves the architecture but has only
-three circular asteroids, one bullet slot, no visible numeric HUD, no splitting,
-no particles, and immediate life reset. The following increments turn it into
-an impressive Vibesteroids demo without adding application-specific Rust.
+When this appendix was authored, the predecessor to the current `code.wat` had
+only three circular asteroids, one bullet slot, no visible numeric HUD, no
+splitting, no particles, and immediate life reset. The increments below were
+the implementation plan that produced the current playable application. They
+remain as design history; the fidelity matrix is authoritative for completion.
 
 ### Increment 1 — Expand deterministic state and show a real HUD
 
@@ -1440,8 +1441,8 @@ an impressive Vibesteroids demo without adding application-specific Rust.
 
 **Implementation**
 
-- Extend the generic frontplane key map with ordinary physical K, B, and F key
-  IDs; keep the Rust mapping generic rather than naming game actions.
+- Consume the generic frontplane's ordinary physical K, B, and F key IDs; keep
+  their game-action meaning entirely in WAT.
 - Kid Mode suppresses score/life loss and hides the ordinary HUD while retaining
   explosions and respawn flow.
 - Death Blossom consumes one availability per ship, rotates at 7.2 rad/s,

@@ -10,7 +10,8 @@ case "${1:-}" in
 		exec ./test
 		;;
 	--debug)
-		exec nix develop -c cargo build
+		printf '%s\n' 'WAT has no separate debug build; running the complete application checks.' >&2
+		exec ./test
 		;;
 	*)
 		printf 'usage: %s [--test|--debug]\n' "$0" >&2

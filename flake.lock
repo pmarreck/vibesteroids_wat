@@ -1,5 +1,26 @@
 {
   "nodes": {
+    "mecha-aedicule": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1784290635,
+        "narHash": "sha256-uZPpQx2hwf9z1ypu05qtfbC30ZsF+K+c7FEKuE1IBDQ=",
+        "owner": "pmarreck",
+        "repo": "mecha-aedicule",
+        "rev": "d68d9dc075616bb4930fd8fadc3c61f251d5bfc8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "pmarreck",
+        "ref": "yolo",
+        "repo": "mecha-aedicule",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1784007870,
@@ -18,6 +39,7 @@
     },
     "root": {
       "inputs": {
+        "mecha-aedicule": "mecha-aedicule",
         "nixpkgs": "nixpkgs"
       }
     }
