@@ -10,6 +10,7 @@ annotate=[
 	MEMORIES/Complete test suites should enter a pure flake environment = Durable lesson preventing global PATH tools from masking undeclared test dependencies.
 	MEMORIES/Decimal fixed point in WAT needs a sealed float adapter and rescaled collision squares = Project lesson on decimal millionths, one-way GPUI conversion, and overflow-safe collision tests
 	MEMORIES/Port per-second browser physics to fixed ticks by converting dimensions exactly once = Dimensional-analysis lesson for velocity, acceleration, rotation, and strict time thresholds in 60-Hz fixed simulation
+	MEMORIES/Rational display-following needs separate guest and host controls = Separates guest WAST selector assertions from independently controlled host rational-rate adoption tests
 	MEMORIES/WAT applications should keep behavior tests in companion WAST scripts = WAST application-test ownership, instrumented-host composition, independent Rust controls, and structural-lint boundary
 	MEMORIES/WAT subtraction negates a value only when zero is pushed before it = Records noncommutative WAT operand order and the local-space thruster regression.
 	PLAN.md = Current publication, naming, rate migration, gameplay playtest, and polish work plan
