@@ -55,16 +55,16 @@ AE_tick_rate(current_numerator, current_denominator) -> (60, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 4
+AE_state_schema() -> 5
 ~~~
 
-Schema 4 is 16,384 bytes. The behavior specification documents the address map.
+Schema 5 is 16,384 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
 Any layout or semantic change incompatible with the existing 16,384-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 4 so a live reload preserves the current game.
+tuning retains schema 5 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
@@ -158,6 +158,29 @@ position, velocity, and wraparound. Hits score by size. Larger rocks split into
 children whose directions and speeds become wilder with level while respecting
 the level-scaled maximum speed. Completing a wave advances level, raises the
 difficulty envelope, and spawns the next bounded wave.
+
+### 6.4 Enemy ship and laser package
+
+The game independently schedules one enemy saucer and one collectible package
+at uniformly selected intervals from 60 through 180 simulated seconds. A new
+interval begins after the corresponding object leaves play, so neither feature
+can overlap another instance of itself. All scheduling randomness is seeded and
+snapshotted.
+
+The disc-shaped saucer enters from either horizontal edge, crosses without
+wrapping, and fires bounded projectiles. A rock in its forward threat corridor
+takes priority; otherwise a seeded choice selects either a random bearing or a
+fixed-point iterative intercept of the moving player. Enemy shots may destroy
+rocks but never score. The saucer and player can each die from their mutual
+collision or from rocks; player bullets and lasers destroy the saucer for 2,000
+points.
+
+The package drifts across the viewport without wrapping. Player contact grants
+20 simulated seconds of laser fire in place of bullets. A laser is a finite
+segment from the muzzle to the first viewport boundary: it never wraps, tests
+all targets present when fired, and may destroy multiple rocks without
+recursively targeting children created by that same beam. A short cyan
+afterimage makes the otherwise instantaneous command visible.
 
 ### 6.4 Presentation and audio
 

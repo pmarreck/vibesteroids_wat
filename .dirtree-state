@@ -35,6 +35,7 @@ annotate=[
 	tests/run-wast = RAM-only stock Wasmtime composer for production WAT, ABI fixtures, and exact rate-specialized variants
 	tests/wast/aedicule-contract.wast = WAST proof of the mandatory Aedicule v0 guest lifecycle and fixed game tick rate.
 	tests/wast/aedicule-v0.wast = Instrumented aedicule.v0 AE_* WAST host used to assert production game outputs without Rust test hooks
+	tests/wast/enemy-and-powerup.wast = Deterministic WAST scenarios for UFO scheduling, combat, package pickup, and laser behavior.
 	tests/wast/equal-time.wast = RAM-generated production WAT rate matrix asserting controlled equal-elapsed-time integration at integer and rational rates
 	tests/wast/gameplay.wast = Source-derived WAST scenarios for firing, progression, difficulty, splitting, and lifecycle behavior
 	tests/wast/host-v0.wast = Deterministic instrumented WAST implementation of host.v0 for guest-emitted render, menu, synth, audio, and effect assertions

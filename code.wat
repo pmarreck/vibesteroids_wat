@@ -1,6 +1,6 @@
 ;; Vibesteroids behavioral conversion for the gpui-frontplane-v0 ABI.
 ;;
-;; Schema 4 stores every gameplay scalar as an integer. Spatial quantities use
+;; Schema 5 stores every gameplay scalar as an integer. Spatial quantities use
 ;; signed decimal fixed point with SCALE = 1,000,000. IEEE-754 values exist
 ;; only at the host ABI boundary: viewport scalars enter through $from_host,
 ;; and completed draw scalars leave through $to_host. They never feed back.
@@ -28,6 +28,12 @@
 ;; 13088: 4 debris pieces x 80 bytes
 ;;        active/life:i32, x/y/vx/vy/dx/dy:i64, spin/piece:i32
 ;; 13408: 100 stars x 16 bytes, x/y:i64
+;; 15008: enemy saucer: active/direction:i32, x/y/vx/radius:i64,
+;;        shot-countdown:i32
+;; 15056: 8 enemy shots x 48 bytes, same kinematic layout as player bullets
+;; 15440: powerup package: active/direction:i32, x/y/vx/vy/radius:i64
+;; 15488: ufo/package spawn countdowns:i32, laser/beam timers:i32,
+;;        beam start/end x/y:i64
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -87,7 +93,7 @@
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
 	(func (export "AE_state_ptr") (result i32) i32.const 1024)
 	(func (export "AE_state_len") (result i32) i32.const 16384)
-	(func (export "AE_state_schema") (result i32) i32.const 4)
+	(func (export "AE_state_schema") (result i32) i32.const 5)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
@@ -253,6 +259,12 @@
 	(func $rand_signed (result i64)
 		call $rand_unit i64.const 2 i64.mul global.get $scale i64.sub)
 
+	;; Selects an inclusive 60--180 second interval in canonical 60-Hz ticks,
+	;; then converts it exactly to the configured rational simulation rate.
+	(func $random_spawn_ticks (result i32)
+		call $rand_u32 i32.const 7201 i32.rem_u i32.const 3600 i32.add
+		call $ticks_from_sixty)
+
 	(func $ensure_component (param $value i64) (result i64)
 		(local $adjusted i64) (local $cap i64)
 		local.get $value local.set $adjusted
@@ -393,7 +405,9 @@
 		i32.const 1144 i64.const 0 i64.store
 		i32.const 1132 i32.const 240 call $ticks_from_sixty i32.store
 		call $regenerate_stars
-		call $spawn_wave)
+		call $spawn_wave
+		i32.const 16512 call $random_spawn_ticks i32.store
+		i32.const 16516 call $random_spawn_ticks i32.store)
 
 	(func (export "AE_init") (param $seed_low i32) (param $seed_high i32)
 		(param $width f32) (param $height f32) (result i32)
@@ -808,6 +822,47 @@
 				local.get $address i32.const 4 i32.add i32.load i32.const 0 i32.le_s (if (then local.get $address i32.const 0 i32.store))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
+	;; Creates one classic edge-to-edge saucer. Its next interval is not selected
+	;; until this instance leaves play, preventing overlapping UFOs.
+	(func $spawn_ufo
+		(local $direction i32) (local $height_range i64)
+		call $rand_u32 i32.const 1 i32.and
+		(if (result i32) (then i32.const 1) (else i32.const -1)) local.set $direction
+		i32.const 16032 i32.const 1 i32.store
+		i32.const 16036 local.get $direction i32.store
+		i32.const 16040
+		local.get $direction i32.const 1 i32.eq
+		(if (result i64)
+			(then i64.const -30000000)
+			(else i32.const 1032 i64.load i64.const 30000000 i64.add))
+		i64.store
+		i32.const 1040 i64.load i64.const 200000000 i64.sub local.set $height_range
+		local.get $height_range i64.const 0 i64.lt_s
+		(if (then i64.const 0 local.set $height_range))
+		i32.const 16048 call $rand_unit local.get $height_range call $fixed_mul
+		i64.const 100000000 i64.add i64.store
+		i32.const 16056 local.get $direction i64.extend_i32_s i64.const 140000000 i64.mul i64.store
+		i32.const 16064 i64.const 20000000 i64.store
+		i32.const 16072 call $rand_u32 i32.const 46 i32.rem_u i32.const 45 i32.add
+		call $ticks_from_sixty i32.store)
+
+	;; Advances the finite horizontal traversal and begins a fresh independent
+	;; schedule only after the saucer has cleared the opposite edge.
+	(func $update_ufo_schedule
+		i32.const 16032 i32.load
+		(if
+			(then
+				i32.const 16040 i32.const 16040 i64.load i32.const 16056 i64.load call $per_tick i64.add i64.store
+				i32.const 16040 i64.load i64.const -40000000 i64.lt_s
+				i32.const 16040 i64.load i32.const 1032 i64.load i64.const 40000000 i64.add i64.gt_s i32.or
+				(if (then
+					i32.const 16032 i32.const 0 i32.store
+					i32.const 16512 call $random_spawn_ticks i32.store)))
+			(else
+				i32.const 16512 i32.load i32.const 0 i32.gt_s
+				(if (then i32.const 16512 i32.const 16512 i32.load i32.const 1 i32.sub i32.store))
+				i32.const 16512 i32.load i32.eqz (if (then call $spawn_ufo)))))
+
 	(func $respawn_radius (result i64)
 		i32.const 1128 i32.load i32.const 300 call $ticks_from_sixty i32.ge_s
 		(if (result i64) (then i64.const 48000000) (else i64.const 96000000)))
@@ -891,6 +946,7 @@
 					call $update_bullets call $update_asteroids call $update_particles call $update_debris
 					call $check_bullet_collisions))))
 		call $advance_lifecycle
+		call $update_ufo_schedule
 		call $asteroid_count i32.eqz i32.const 1124 i32.load i32.const 3 i32.ne i32.and
 		(if (then i32.const 1104 i32.const 1104 i32.load i32.const 1 i32.add i32.store call $spawn_wave))
 		i32.const 1132 i32.load i32.const 0 i32.gt_s
@@ -1108,6 +1164,27 @@
 			f32.const 0.85 f32.const 0 i32.const 0x9bb8d199 i32.const 1 call $circle drop
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
+	;; Emits a low hull and raised dome so the enemy reads as a classic disc UFO
+	;; using only stable vector-command IDs from the generic Aedicule ABI.
+	(func $draw_ufo
+		(local $x i64) (local $y i64)
+		i32.const 16032 i32.load
+		(if (then
+			i32.const 16040 i64.load local.set $x i32.const 16048 i64.load local.set $y
+			i32.const 900 call $path_begin drop
+			local.get $x i64.const 24000000 i64.sub call $to_host local.get $y call $to_host call $path_move drop
+			local.get $x i64.const 12000000 i64.sub call $to_host local.get $y i64.const 8000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 12000000 i64.add call $to_host local.get $y i64.const 8000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 24000000 i64.add call $to_host local.get $y call $to_host call $path_line drop
+			local.get $x i64.const 12000000 i64.add call $to_host local.get $y i64.const 8000000 i64.add call $to_host call $path_line drop
+			local.get $x i64.const 12000000 i64.sub call $to_host local.get $y i64.const 8000000 i64.add call $to_host call $path_line drop
+			call $path_close drop f32.const 2 i32.const 0x182033ff i32.const 0xffcf5cff i32.const 0 call $path_end drop
+			i32.const 901 local.get $x call $to_host local.get $y i64.const 8000000 i64.sub call $to_host
+			f32.const 10 f32.const 2 i32.const 0x5ee7ffff i32.const 0 call $circle drop
+			i32.const 902 local.get $x i64.const 24000000 i64.sub call $to_host local.get $y call $to_host
+			local.get $x i64.const 24000000 i64.add call $to_host local.get $y call $to_host
+			f32.const 1 i32.const 0xffffffff call $line drop)))
+
 	(func (export "AE_render") (result i32)
 		(local $index i32) (local $address i32) (local $reserve_count i32) (local $alpha i32)
 		f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop
@@ -1131,6 +1208,7 @@
 			i32.const 1040 i64.load i64.const 333333 call $fixed_mul i64.const 58000000 i64.add call $to_host
 			f32.const 18 i32.const 0x58ff7200 local.get $alpha i32.or i32.const 1 call $text drop))
 		call $draw_stars
+		call $draw_ufo
 		i32.const 160 i32.const 1096 i32.load call $write_six_digits
 		i32.const 168 i32.const 1104 i32.load call $write_two_digits
 		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz

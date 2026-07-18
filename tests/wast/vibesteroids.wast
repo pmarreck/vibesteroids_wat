@@ -25,6 +25,7 @@
 	(import "test.host" "test_asteroid_circles" (func $host_asteroid_circles (result i32)))
 	(import "test.host" "test_reserve_paths" (func $host_reserve_paths (result i32)))
 	(import "test.host" "test_star_circles" (func $host_star_circles (result i32)))
+	(import "test.host" "test_ufo_paths" (func $host_ufo_paths (result i32)))
 	(import "test.host" "test_flame_min_x" (func $host_flame_min_x (result f32)))
 	(import "test.host" "test_audio_seen" (func $host_audio_seen (param i32) (result i32)))
 	(import "test.host" "test_effect_seen" (func $host_effect_seen (param i32) (result i32)))
@@ -78,6 +79,18 @@
 		i32.const 1024 local.get $offset i32.add local.get $value i64.store)
 	(func (export "state_set_i32") (param $offset i32) (param $value i32)
 		i32.const 1024 local.get $offset i32.add local.get $value i32.store)
+	(func (export "state_i32_between") (param $offset i32) (param $minimum i32)
+		(param $maximum i32) (result i32)
+		(local $value i32)
+		i32.const 1024 local.get $offset i32.add i32.load local.set $value
+		local.get $value local.get $minimum i32.ge_s
+		local.get $value local.get $maximum i32.le_s i32.and)
+	(func (export "state_i32_is_either") (param $offset i32) (param $first i32)
+		(param $second i32) (result i32)
+		(local $value i32)
+		i32.const 1024 local.get $offset i32.add i32.load local.set $value
+		local.get $value local.get $first i32.eq
+		local.get $value local.get $second i32.eq i32.or)
 	(func (export "active_count") (param $base i32) (param $stride i32) (param $capacity i32) (result i32)
 		(local $index i32) (local $count i32)
 		(block $done (loop $again
@@ -128,6 +141,7 @@
 	(func (export "host_asteroid_circles") (result i32) call $host_asteroid_circles)
 	(func (export "host_reserve_paths") (result i32) call $host_reserve_paths)
 	(func (export "host_star_circles") (result i32) call $host_star_circles)
+	(func (export "host_ufo_paths") (result i32) call $host_ufo_paths)
 	(func (export "host_flame_min_x") (result f32) call $host_flame_min_x)
 	(func (export "host_audio_seen") (param i32) (result i32) local.get 0 call $host_audio_seen)
 	(func (export "host_effect_seen") (param i32) (result i32) local.get 0 call $host_effect_seen)
@@ -317,7 +331,7 @@
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 4))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 5))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 16384))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
@@ -328,7 +342,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 4 stores canonical per-second velocities while integrating at 60 Hz.
+;; Schema 5 stores canonical per-second velocities while integrating at 60 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -4975000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383917084))

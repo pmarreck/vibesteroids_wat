@@ -53,6 +53,19 @@
   lifecycle WAST proof, and corrected 16,384-byte schema documentation)
   - Curiosity poke: can a self-contained application check catch ABI/document
     drift without coupling CI to an uncommitted sibling checkout?
+- [ ] Add a classic disc-shaped enemy ship with deterministic 60--180 second
+  scheduling, bidirectional traversal, predictive/random/defensive fire,
+  asteroid and player collisions, and a 2,000-point player kill award.
+  - Curiosity poke: can iterative fixed-point interception remain accurate
+    when source, target, and projectile all have different world velocities?
+- [ ] Add a drifting package on the same independent 60--180 second schedule
+  that grants 20 seconds of finite, non-wrapping, multi-target laser fire.
+  - Curiosity poke: should one beam resolve only the asteroids present when it
+    fired, preventing freshly split children from being recursively erased?
+- [ ] Playtest UFO pressure, package readability, laser power, and the
+  synthesized descending-sweep laser timbre with Peter.
+  - Curiosity poke: are the long randomized spawn windows fun in ordinary
+    sessions, or should a test/demo override be exposed later by Aedicule?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.

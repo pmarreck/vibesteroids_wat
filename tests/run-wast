@@ -4,7 +4,7 @@ set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 suite=$(mktemp "$TMPDIR/vibesteroids_wat.XXXXXX.wast")
-trap 'rm -f "$suite"' EXIT
+trap 'unlink "$suite"' EXIT
 
 append_rate_variant() {
 	local label=$1
@@ -36,6 +36,7 @@ append_rate_variant() {
 		"$root/tests/wast/aedicule-contract.wast" \
 		"$root/tests/wast/vibesteroids.wast" \
 		"$root/tests/wast/gameplay.wast" \
+		"$root/tests/wast/enemy-and-powerup.wast" \
 		"$root/tests/wast/rational-timing.wast" \
 		"$root/tests/wast/equal-time.wast"
 } >"$suite"
