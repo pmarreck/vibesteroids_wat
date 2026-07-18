@@ -47,6 +47,12 @@
   production WAT matrix; actual `(0,0)` host adoption remains Aedicule-owned)
   - Curiosity poke: do exact-boundary inputs and non-integral tick durations
     preserve the same lifecycle thresholds without rounding drift?
+- [x] Reconcile the game contract and WAST lifecycle proof with Aedicule's
+  generated WAT ABI reference.
+  (2026-07-18 01:32 EDT: self-contained ABI contract classifier, production
+  lifecycle WAST proof, and corrected 16,384-byte schema documentation)
+  - Curiosity poke: can a self-contained application check catch ABI/document
+    drift without coupling CI to an uncommitted sibling checkout?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.

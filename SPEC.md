@@ -58,11 +58,11 @@ AE_state_len()
 AE_state_schema() -> 4
 ~~~
 
-Schema 4 is 8192 bytes. The behavior specification documents the address map.
+Schema 4 is 16,384 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
-Any layout or semantic change incompatible with the existing 8192-byte snapshot
+Any layout or semantic change incompatible with the existing 16,384-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
 tuning retains schema 4 so a live reload preserves the current game.
 

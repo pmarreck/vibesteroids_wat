@@ -33,6 +33,7 @@ append_rate_variant() {
 	append_rate_variant sut_60000_1001 60000 1001
 	append_rate_variant sut_120000_1001 120000 1001
 	awk '1' \
+		"$root/tests/wast/aedicule-contract.wast" \
 		"$root/tests/wast/vibesteroids.wast" \
 		"$root/tests/wast/gameplay.wast" \
 		"$root/tests/wast/rational-timing.wast" \
