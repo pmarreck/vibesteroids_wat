@@ -12,6 +12,7 @@ annotate=[
 	MEMORIES/Keep application ABI checks self-contained when the host checkout is not pinned = Durable guidance for reproducible downstream ABI conformance checks.
 	MEMORIES/Port per-second browser physics to fixed ticks by converting dimensions exactly once = Dimensional-analysis lesson for velocity, acceleration, rotation, and strict time thresholds in 60-Hz fixed simulation
 	MEMORIES/Rational display-following needs separate guest and host controls = Separates guest WAST selector assertions from independently controlled host rational-rate adoption tests
+	MEMORIES/Snapshot mutable target pools before piercing attacks so spawned children survive the same beam = Why piercing laser collision snapshots active asteroid slots before split mutations
 	MEMORIES/WAT applications should keep behavior tests in companion WAST scripts = WAST application-test ownership, instrumented-host composition, independent Rust controls, and structural-lint boundary
 	MEMORIES/WAT subtraction negates a value only when zero is pushed before it = Records noncommutative WAT operand order and the local-space thruster regression.
 	PLAN.md = Current publication, naming, rate migration, gameplay playtest, and polish work plan

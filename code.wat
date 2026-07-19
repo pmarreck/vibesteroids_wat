@@ -146,6 +146,16 @@
 		i32.const 6 i32.const 2 i32.const 300 i32.const 400 i32.const 654063 i32.const 654063 i32.const 654063 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1962189 i32.const 1962189 i32.const 0 call $synth_voice drop
 		i32.const 6 i32.const 2 i32.const 450 i32.const 400 i32.const 784875 i32.const 784875 i32.const 784875 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 2354625 i32.const 2354625 i32.const 0 call $synth_voice drop
 		i32.const 6 i32.const 2 i32.const 600 i32.const 400 i32.const 1046500 i32.const 1046500 i32.const 1046500 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 3139500 i32.const 3139500 i32.const 0 call $synth_voice drop
+		;; Laser: sfxr-style descending saw/square sweep with a zero attack and
+		;; short envelope, layered behind a fast high-frequency transient.
+		i32.const 7 i32.const 2 i32.const 0 i32.const 180
+		i32.const 1400000 i32.const 650000 i32.const 120000
+		i32.const 0 i32.const 90000 i32.const 90000
+		i32.const 700 i32.const 1 i32.const 4000000 i32.const 500000 call $synth_voice drop
+		i32.const 7 i32.const 0 i32.const 0 i32.const 120
+		i32.const 900000 i32.const 450000 i32.const 160000
+		i32.const 0 i32.const 60000 i32.const 60000
+		i32.const 350 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN
@@ -479,26 +489,30 @@
 		i32.const 1024 i32.load i32.const 1112 i32.load i32.sub local.get $interval i32.ge_s i32.and
 		(if
 			(then
-				call $find_free_bullet local.tee $address
+				i32.const 16520 i32.load i32.const 0 i32.gt_s
 				(if
-					(then
-						i32.const 1108 i32.load i32.const 128 i32.and
-						(if (result i64)
-							(then i64.const 450000000)
-							(else call $bullet_speed_per_second))
-						local.set $speed
-						local.get $address i32.const 1 i32.store
-						local.get $address i32.const 8 i32.add
-						i32.const 1048 i64.load i32.const 1080 i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
-						local.get $address i32.const 16 i32.add
-						i32.const 1056 i64.load i32.const 1088 i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
-						local.get $address i32.const 24 i32.add
-						i32.const 1064 i64.load i32.const 1080 i64.load local.get $speed call $fixed_mul i64.add i64.store
-						local.get $address i32.const 32 i32.add
-						i32.const 1072 i64.load i32.const 1088 i64.load local.get $speed call $fixed_mul i64.add i64.store
-						local.get $address i32.const 40 i32.add i64.const 0 i64.store
-						i32.const 1112 i32.const 1024 i32.load i32.store
-						i32.const 1 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))
+					(then call $fire_laser)
+					(else
+						call $find_free_bullet local.tee $address
+						(if
+							(then
+								i32.const 1108 i32.load i32.const 128 i32.and
+								(if (result i64)
+									(then i64.const 450000000)
+									(else call $bullet_speed_per_second))
+								local.set $speed
+								local.get $address i32.const 1 i32.store
+								local.get $address i32.const 8 i32.add
+								i32.const 1048 i64.load i32.const 1080 i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
+								local.get $address i32.const 16 i32.add
+								i32.const 1056 i64.load i32.const 1088 i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
+								local.get $address i32.const 24 i32.add
+								i32.const 1064 i64.load i32.const 1080 i64.load local.get $speed call $fixed_mul i64.add i64.store
+								local.get $address i32.const 32 i32.add
+								i32.const 1072 i64.load i32.const 1088 i64.load local.get $speed call $fixed_mul i64.add i64.store
+								local.get $address i32.const 40 i32.add i64.const 0 i64.store
+								i32.const 1112 i32.const 1024 i32.load i32.store
+								i32.const 1 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))))
 
 	(func $spawn_particles (param $x i64) (param $y i64) (param $count i32)
 		(param $inherit_vx i64) (param $inherit_vy i64)
@@ -637,6 +651,102 @@
 				i32.const 80 local.set $points)
 			(else local.get $address i32.const 0 i32.store i32.const 120 local.set $points))
 		local.get $score_hit (if (then local.get $points call $add_score)))
+
+	;; Clips the ship's forward ray to the nearest viewport boundary. The result
+	;; is finite by construction, so laser fire can never wrap across an edge.
+	(func $compute_laser_end (result i64 i64)
+		(local $dx i64) (local $dy i64) (local $tx i64) (local $ty i64) (local $time i64)
+		i32.const 1080 i64.load local.set $dx i32.const 1088 i64.load local.set $dy
+		i64.const 9000000000000 local.set $tx i64.const 9000000000000 local.set $ty
+		local.get $dx i64.const 0 i64.gt_s
+		(if (then i32.const 1032 i64.load i32.const 1048 i64.load i64.sub global.get $scale i64.mul local.get $dx i64.div_s local.set $tx))
+		local.get $dx i64.const 0 i64.lt_s
+		(if (then i64.const 0 i32.const 1048 i64.load i64.sub global.get $scale i64.mul local.get $dx i64.div_s local.set $tx))
+		local.get $dy i64.const 0 i64.gt_s
+		(if (then i32.const 1040 i64.load i32.const 1056 i64.load i64.sub global.get $scale i64.mul local.get $dy i64.div_s local.set $ty))
+		local.get $dy i64.const 0 i64.lt_s
+		(if (then i64.const 0 i32.const 1056 i64.load i64.sub global.get $scale i64.mul local.get $dy i64.div_s local.set $ty))
+		local.get $tx local.get $ty i64.lt_s
+		(if (result i64) (then local.get $tx) (else local.get $ty)) local.set $time
+		i32.const 1048 i64.load local.get $dx local.get $time call $fixed_mul i64.add
+		i32.const 1056 i64.load local.get $dy local.get $time call $fixed_mul i64.add)
+
+	;; Tests a rock against the finite beam using whole-pixel projection; this
+	;; avoids fixed-point cross-product overflow while retaining ample precision.
+	(func $segment_circle_hit
+		(param $start_x i64) (param $start_y i64) (param $end_x i64) (param $end_y i64)
+		(param $center_x i64) (param $center_y i64) (param $radius i64) (result i32)
+		(local $sx i64) (local $sy i64) (local $cx i64) (local $cy i64)
+		(local $abx i64) (local $aby i64) (local $apx i64) (local $apy i64)
+		(local $dot i64) (local $length_squared i64) (local $nearest_x i64) (local $nearest_y i64)
+		(local $distance_x i64) (local $distance_y i64) (local $r i64)
+		local.get $start_x global.get $scale i64.div_s local.set $sx
+		local.get $start_y global.get $scale i64.div_s local.set $sy
+		local.get $end_x global.get $scale i64.div_s local.get $sx i64.sub local.set $abx
+		local.get $end_y global.get $scale i64.div_s local.get $sy i64.sub local.set $aby
+		local.get $center_x global.get $scale i64.div_s local.set $cx
+		local.get $center_y global.get $scale i64.div_s local.set $cy
+		local.get $cx local.get $sx i64.sub local.set $apx
+		local.get $cy local.get $sy i64.sub local.set $apy
+		local.get $abx local.get $abx i64.mul local.get $aby local.get $aby i64.mul i64.add local.set $length_squared
+		local.get $length_squared i64.eqz (if (then i32.const 0 return))
+		local.get $apx local.get $abx i64.mul local.get $apy local.get $aby i64.mul i64.add local.set $dot
+		local.get $dot i64.const 0 i64.le_s
+		(if
+			(then local.get $sx local.set $nearest_x local.get $sy local.set $nearest_y)
+			(else
+				local.get $dot local.get $length_squared i64.ge_s
+				(if
+					(then local.get $sx local.get $abx i64.add local.set $nearest_x local.get $sy local.get $aby i64.add local.set $nearest_y)
+					(else
+						local.get $sx local.get $abx local.get $dot i64.mul local.get $length_squared i64.div_s i64.add local.set $nearest_x
+						local.get $sy local.get $aby local.get $dot i64.mul local.get $length_squared i64.div_s i64.add local.set $nearest_y))))
+		local.get $cx local.get $nearest_x i64.sub local.set $distance_x
+		local.get $cy local.get $nearest_y i64.sub local.set $distance_y
+		local.get $radius global.get $scale i64.div_s i64.const 2 i64.add local.set $r
+		local.get $distance_x local.get $distance_x i64.mul
+		local.get $distance_y local.get $distance_y i64.mul i64.add
+		local.get $r local.get $r i64.mul i64.le_s)
+
+	;; Snapshots the 32 pre-fire asteroid slots, then lets one finite beam pierce
+	;; all members without recursively targeting children created by splitting.
+	(func $fire_laser
+		(local $index i32) (local $address i32) (local $snapshot i32)
+		(local $end_x i64) (local $end_y i64)
+		i32.const 16528 i32.const 1048 i64.load i64.store
+		i32.const 16536 i32.const 1056 i64.load i64.store
+		call $compute_laser_end local.set $end_y local.set $end_x
+		i32.const 16544 local.get $end_x i64.store i32.const 16552 local.get $end_y i64.store
+		i32.const 16524 i32.const 4 call $ticks_from_sixty i32.store
+		(block $snapshot_done (loop $snapshot_loop
+			local.get $index i32.const 32 i32.ge_u br_if $snapshot_done
+			local.get $index call $asteroid_address i32.load
+			(if (then local.get $snapshot i32.const 1 local.get $index i32.shl i32.or local.set $snapshot))
+			local.get $index i32.const 1 i32.add local.set $index br $snapshot_loop))
+		i32.const 0 local.set $index
+		(block $hits_done (loop $hits
+			local.get $index i32.const 32 i32.ge_u br_if $hits_done
+			local.get $snapshot i32.const 1 local.get $index i32.shl i32.and
+			(if (then
+				local.get $index call $asteroid_address local.set $address
+				local.get $address i32.load
+				(if (then
+					i32.const 16528 i64.load i32.const 16536 i64.load
+					local.get $end_x local.get $end_y
+					local.get $address i32.const 16 i32.add i64.load
+					local.get $address i32.const 24 i32.add i64.load
+					local.get $address i32.const 48 i32.add i64.load call $segment_circle_hit
+					(if (then local.get $address i64.const 0 i64.const 0 i32.const 1 call $hit_asteroid))))))
+			local.get $index i32.const 1 i32.add local.set $index br $hits))
+		i32.const 16032 i32.load
+		(if (then
+			i32.const 16528 i64.load i32.const 16536 i64.load
+			local.get $end_x local.get $end_y
+			i32.const 16040 i64.load i32.const 16048 i64.load i32.const 16064 i64.load
+			call $segment_circle_hit
+			(if (then i32.const 1 call $destroy_ufo))))
+		i32.const 1112 i32.const 1024 i32.load i32.store
+		i32.const 7 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
 
 	(func $check_bullet_collisions
 		(local $bullet_index i32) (local $asteroid_index i32)
@@ -977,6 +1087,77 @@
 			i32.const 16512 call $random_spawn_ticks i32.store
 			local.get $score_hit (if (then i32.const 2000 call $add_score)))))
 
+	;; Creates an independently scheduled package with slow horizontal travel and
+	;; a seeded vertical drift component, distinct from the faster hostile UFO.
+	(func $spawn_package
+		(local $direction i32) (local $height_range i64)
+		call $rand_u32 i32.const 1 i32.and
+		(if (result i32) (then i32.const 1) (else i32.const -1)) local.set $direction
+		i32.const 16464 i32.const 1 i32.store
+		i32.const 16468 local.get $direction i32.store
+		i32.const 16472
+		local.get $direction i32.const 1 i32.eq
+		(if (result i64)
+			(then i64.const -30000000)
+			(else i32.const 1032 i64.load i64.const 30000000 i64.add))
+		i64.store
+		i32.const 1040 i64.load i64.const 200000000 i64.sub local.set $height_range
+		local.get $height_range i64.const 0 i64.lt_s (if (then i64.const 0 local.set $height_range))
+		i32.const 16480 call $rand_unit local.get $height_range call $fixed_mul i64.const 100000000 i64.add i64.store
+		i32.const 16488 local.get $direction i64.extend_i32_s i64.const 80000000 i64.mul i64.store
+		i32.const 16496 call $rand_signed i64.const 35000000 call $fixed_mul i64.store
+		i32.const 16504 i64.const 14000000 i64.store)
+
+	;; Moves one finite package traversal, reflecting its small vertical drift at
+	;; safe margins while selecting the next interval only after it leaves.
+	(func $update_package_schedule
+		(local $y i64) (local $bottom i64)
+		i32.const 16464 i32.load
+		(if
+			(then
+				i32.const 16472 i32.const 16472 i64.load i32.const 16488 i64.load call $per_tick i64.add i64.store
+				i32.const 16480 i32.const 16480 i64.load i32.const 16496 i64.load call $per_tick i64.add local.tee $y i64.store
+				i32.const 1040 i64.load i64.const 40000000 i64.sub local.set $bottom
+				local.get $y i64.const 40000000 i64.lt_s
+				(if (then
+					i32.const 16480 i64.const 40000000 i64.store
+					i32.const 16496 i32.const 16496 i64.load call $fixed_abs i64.store))
+				local.get $y local.get $bottom i64.gt_s
+				(if (then
+					i32.const 16480 local.get $bottom i64.store
+					i32.const 16496 i64.const 0 i32.const 16496 i64.load call $fixed_abs i64.sub i64.store))
+				i32.const 16472 i64.load i64.const -40000000 i64.lt_s
+				i32.const 16472 i64.load i32.const 1032 i64.load i64.const 40000000 i64.add i64.gt_s i32.or
+				(if (then
+					i32.const 16464 i32.const 0 i32.store
+					i32.const 16516 call $random_spawn_ticks i32.store)))
+			(else
+				i32.const 16516 i32.load i32.const 0 i32.gt_s
+				(if (then i32.const 16516 i32.const 16516 i32.load i32.const 1 i32.sub i32.store))
+				i32.const 16516 i32.load i32.eqz (if (then call $spawn_package)))))
+
+	;; Collection atomically retires the package, grants 20 simulated seconds of
+	;; laser fire, and begins a fresh independent package schedule.
+	(func $check_package_collection
+		i32.const 16464 i32.load
+		i32.const 1124 i32.load i32.eqz i32.and
+		(if (then
+			i32.const 16472 i64.load i32.const 16480 i64.load
+			i32.const 1048 i64.load i32.const 1056 i64.load
+			i32.const 16504 i64.load i64.const 10000000 i64.add call $distance_lt
+			(if (then
+				i32.const 16464 i32.const 0 i32.store
+				i32.const 16516 call $random_spawn_ticks i32.store
+				i32.const 16520 i32.const 1200 call $ticks_from_sixty i32.store)))))
+
+	;; Advances temporary power and beam-afterimage durations solely from
+	;; simulation ticks, keeping pause and tests independent of wall-clock time.
+	(func $update_power_timers
+		i32.const 16520 i32.load i32.const 0 i32.gt_s
+		(if (then i32.const 16520 i32.const 16520 i32.load i32.const 1 i32.sub i32.store))
+		i32.const 16524 i32.load i32.const 0 i32.gt_s
+		(if (then i32.const 16524 i32.const 16524 i32.load i32.const 1 i32.sub i32.store)))
+
 	;; Creates one classic edge-to-edge saucer. Its next interval is not selected
 	;; until this instance leaves play, preventing overlapping UFOs.
 	(func $spawn_ufo
@@ -1182,6 +1363,7 @@
 		i32.const 1108 i32.load i32.const 528 i32.and (if (then return))
 		i32.const 1124 i32.load i32.const 3 i32.eq
 		(if (then i32.const 1108 i32.load i32.const 8 i32.and (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset)) return))
+		call $update_power_timers
 		i32.const 1124 i32.load i32.eqz
 		(if (then
 			call $update_ship call $update_bullets call $update_enemy_bullets call $update_asteroids call $update_particles call $update_debris
@@ -1196,9 +1378,11 @@
 					call $update_bullets call $update_enemy_bullets call $update_asteroids call $update_particles call $update_debris
 					call $check_bullet_collisions))))
 		call $update_ufo_schedule
+		call $update_package_schedule
 		call $check_player_bullet_ufo_collision
 		call $check_enemy_bullet_collisions
 		call $check_ufo_collisions
+		call $check_package_collection
 		call $advance_lifecycle
 		call $asteroid_count i32.eqz i32.const 1124 i32.load i32.const 3 i32.ne i32.and
 		(if (then i32.const 1104 i32.const 1104 i32.load i32.const 1 i32.add i32.store call $spawn_wave))
@@ -1233,6 +1417,14 @@
 		i32.const 16032 i32.load (if (then
 			i32.const 16040 i32.const 16040 i64.load local.get $dx i64.add i64.store
 			i32.const 16048 i32.const 16048 i64.load local.get $dy i64.add i64.store))
+		i32.const 16464 i32.load (if (then
+			i32.const 16472 i32.const 16472 i64.load local.get $dx i64.add i64.store
+			i32.const 16480 i32.const 16480 i64.load local.get $dy i64.add i64.store))
+		i32.const 16524 i32.load i32.const 0 i32.gt_s (if (then
+			i32.const 16528 i32.const 16528 i64.load local.get $dx i64.add i64.store
+			i32.const 16536 i32.const 16536 i64.load local.get $dy i64.add i64.store
+			i32.const 16544 i32.const 16544 i64.load local.get $dx i64.add i64.store
+			i32.const 16552 i32.const 16552 i64.load local.get $dy i64.add i64.store))
 		i32.const 0 local.set $index
 		(block $asteroids_done (loop $asteroids
 			local.get $index i32.const 32 i32.ge_u br_if $asteroids_done
@@ -1449,6 +1641,38 @@
 			local.get $x i64.const 24000000 i64.add call $to_host local.get $y call $to_host
 			f32.const 1 i32.const 0xffffffff call $line drop)))
 
+	;; Draws a locale-neutral wrapped parcel glyph with ribbon crossbars; keeping
+	;; it vector-only avoids introducing untranslated status text.
+	(func $draw_package
+		(local $x i64) (local $y i64)
+		i32.const 16464 i32.load
+		(if (then
+			i32.const 16472 i64.load local.set $x i32.const 16480 i64.load local.set $y
+			i32.const 910 call $path_begin drop
+			local.get $x i64.const 12000000 i64.sub call $to_host local.get $y i64.const 10000000 i64.sub call $to_host call $path_move drop
+			local.get $x i64.const 12000000 i64.add call $to_host local.get $y i64.const 10000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 12000000 i64.add call $to_host local.get $y i64.const 10000000 i64.add call $to_host call $path_line drop
+			local.get $x i64.const 12000000 i64.sub call $to_host local.get $y i64.const 10000000 i64.add call $to_host call $path_line drop
+			call $path_close drop f32.const 2 i32.const 0x182033ff i32.const 0xffcf5cff i32.const 0 call $path_end drop
+			i32.const 911 local.get $x call $to_host local.get $y i64.const 10000000 i64.sub call $to_host
+			local.get $x call $to_host local.get $y i64.const 10000000 i64.add call $to_host
+			f32.const 2 i32.const 0x5ee7ffff call $line drop
+			i32.const 912 local.get $x i64.const 12000000 i64.sub call $to_host local.get $y call $to_host
+			local.get $x i64.const 12000000 i64.add call $to_host local.get $y call $to_host
+			f32.const 2 i32.const 0x5ee7ffff call $line drop)))
+
+	;; Renders a brief cyan-white afterimage from the exact finite segment used
+	;; for collision resolution, making the no-wrap boundary visually explicit.
+	(func $draw_laser
+		i32.const 16524 i32.load i32.const 0 i32.gt_s
+		(if (then
+			i32.const 980 i32.const 16528 i64.load call $to_host i32.const 16536 i64.load call $to_host
+			i32.const 16544 i64.load call $to_host i32.const 16552 i64.load call $to_host
+			f32.const 7 i32.const 0x5ee7ff55 call $line drop
+			i32.const 981 i32.const 16528 i64.load call $to_host i32.const 16536 i64.load call $to_host
+			i32.const 16544 i64.load call $to_host i32.const 16552 i64.load call $to_host
+			f32.const 2 i32.const 0xd9fbffff call $line drop)))
+
 	(func (export "AE_render") (result i32)
 		(local $index i32) (local $address i32) (local $reserve_count i32) (local $alpha i32)
 		f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop
@@ -1473,6 +1697,8 @@
 			f32.const 18 i32.const 0x58ff7200 local.get $alpha i32.or i32.const 1 call $text drop))
 		call $draw_stars
 		call $draw_ufo
+		call $draw_package
+		call $draw_laser
 		i32.const 160 i32.const 1096 i32.load call $write_six_digits
 		i32.const 168 i32.const 1104 i32.load call $write_two_digits
 		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz

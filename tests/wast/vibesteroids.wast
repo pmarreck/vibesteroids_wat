@@ -27,6 +27,8 @@
 	(import "test.host" "test_star_circles" (func $host_star_circles (result i32)))
 	(import "test.host" "test_ufo_paths" (func $host_ufo_paths (result i32)))
 	(import "test.host" "test_enemy_bullet_circles" (func $host_enemy_bullet_circles (result i32)))
+	(import "test.host" "test_package_paths" (func $host_package_paths (result i32)))
+	(import "test.host" "test_laser_lines" (func $host_laser_lines (result i32)))
 	(import "test.host" "test_flame_min_x" (func $host_flame_min_x (result f32)))
 	(import "test.host" "test_audio_seen" (func $host_audio_seen (param i32) (result i32)))
 	(import "test.host" "test_effect_seen" (func $host_effect_seen (param i32) (result i32)))
@@ -154,6 +156,8 @@
 	(func (export "host_star_circles") (result i32) call $host_star_circles)
 	(func (export "host_ufo_paths") (result i32) call $host_ufo_paths)
 	(func (export "host_enemy_bullet_circles") (result i32) call $host_enemy_bullet_circles)
+	(func (export "host_package_paths") (result i32) call $host_package_paths)
+	(func (export "host_laser_lines") (result i32) call $host_laser_lines)
 	(func (export "host_flame_min_x") (result f32) call $host_flame_min_x)
 	(func (export "host_audio_seen") (param i32) (result i32) local.get 0 call $host_audio_seen)
 	(func (export "host_effect_seen") (param i32) (result i32) local.get 0 call $host_effect_seen)
@@ -380,6 +384,7 @@
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 4)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 5)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 6)) (i32.const 5))
+(assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 7)) (i32.const 2))
 
 ;; The initial frame is a real vector game scene, not the former circle demo.
 (assert_return (invoke $vibesteroids_tests "render_initial") (i32.const 0))

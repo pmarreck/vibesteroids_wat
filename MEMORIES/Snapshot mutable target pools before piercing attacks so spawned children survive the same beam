@@ -1,0 +1,11 @@
+The laser resolves against an asteroid pool where a hit can mutate the current
+record into one child and activate another formerly free slot. Iterating the
+live pool directly would therefore let a single beam recursively hit children
+that did not exist when it fired.
+
+Capture the 32-slot active set in an `i32` bit mask before collision resolution,
+then visit only those recorded indices. Still verify that each recorded slot is
+active before hitting it, because an earlier effect may legitimately retire it.
+The WAST control uses one large beam-aligned asteroid plus one unrelated active
+asteroid and requires three survivors after the split: both new children and the
+unrelated rock.

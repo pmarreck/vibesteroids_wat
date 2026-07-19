@@ -60,8 +60,11 @@
   finite hostile shots, collision/score lifecycle, rendering, full test/build)
   - Curiosity poke: can iterative fixed-point interception remain accurate
     when source, target, and projectile all have different world velocities?
-- [ ] Add a drifting package on the same independent 60--180 second schedule
+- [x] Add a drifting package on the same independent 60--180 second schedule
   that grants 20 seconds of finite, non-wrapping, multi-target laser fire.
+  (2026-07-18 20:19 EDT: drift/collection lifecycle, clipped piercing beam,
+  split-child snapshot, UFO bounty, vector presentation, descending synth,
+  full test/build)
   - Curiosity poke: should one beam resolve only the asteroids present when it
     fired, preventing freshly split children from being recursively erased?
 - [ ] Playtest UFO pressure, package readability, laser power, and the
