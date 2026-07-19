@@ -23,6 +23,7 @@
 	(global $bullet_circles (mut i32) (i32.const 0))
 	(global $star_circles (mut i32) (i32.const 0))
 	(global $ufo_paths (mut i32) (i32.const 0))
+	(global $enemy_bullet_circles (mut i32) (i32.const 0))
 	(global $current_path_key (mut i32) (i32.const -1))
 	(global $current_path_lines (mut i32) (i32.const 0))
 	(global $flame_min_x (mut f32) (f32.const 0))
@@ -48,6 +49,7 @@
 		i32.const 0 global.set $bullet_circles
 		i32.const 0 global.set $star_circles
 		i32.const 0 global.set $ufo_paths
+		i32.const 0 global.set $enemy_bullet_circles
 		i32.const -1 global.set $current_path_key
 		i32.const 0 global.set $current_path_lines
 		f32.const 0 global.set $flame_min_x)
@@ -82,6 +84,7 @@
 	(func (export "test_bullet_circles") (result i32) global.get $bullet_circles)
 	(func (export "test_star_circles") (result i32) global.get $star_circles)
 	(func (export "test_ufo_paths") (result i32) global.get $ufo_paths)
+	(func (export "test_enemy_bullet_circles") (result i32) global.get $enemy_bullet_circles)
 	(func (export "test_flame_min_x") (result f32) global.get $flame_min_x)
 
 	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
@@ -131,6 +134,8 @@
 		(if (then global.get $asteroid_circles i32.const 1 i32.add global.set $asteroid_circles))
 		local.get $key i32.const 800 i32.ge_u local.get $key i32.const 900 i32.lt_u i32.and
 		(if (then global.get $star_circles i32.const 1 i32.add global.set $star_circles))
+		local.get $key i32.const 960 i32.ge_u local.get $key i32.const 968 i32.lt_u i32.and
+		(if (then global.get $enemy_bullet_circles i32.const 1 i32.add global.set $enemy_bullet_circles))
 		i32.const 0)
 	(func (export "AE_text") (param $key i32) (param i32 i32 f32 f32 f32 i32 i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask

@@ -53,9 +53,11 @@
   lifecycle WAST proof, and corrected 16,384-byte schema documentation)
   - Curiosity poke: can a self-contained application check catch ABI/document
     drift without coupling CI to an uncommitted sibling checkout?
-- [ ] Add a classic disc-shaped enemy ship with deterministic 60--180 second
+- [x] Add a classic disc-shaped enemy ship with deterministic 60--180 second
   scheduling, bidirectional traversal, predictive/random/defensive fire,
   asteroid and player collisions, and a 2,000-point player kill award.
+  (2026-07-18 20:07 EDT: fixed-point interception, threat-priority targeting,
+  finite hostile shots, collision/score lifecycle, rendering, full test/build)
   - Curiosity poke: can iterative fixed-point interception remain accurate
     when source, target, and projectile all have different world velocities?
 - [ ] Add a drifting package on the same independent 60--180 second schedule

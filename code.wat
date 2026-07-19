@@ -229,8 +229,42 @@
 		local.get $milli_y local.get $milli_y i64.mul i64.add
 		call $integer_sqrt i64.const 1000 i64.mul)
 
+	;; Leads a moving target with two deterministic fixed-point time-of-flight
+	;; refinements, then adds the shooter's velocity to projectile world motion.
+	(func $aim_projectile_velocity
+		(param $source_x i64) (param $source_y i64)
+		(param $source_vx i64) (param $source_vy i64)
+		(param $target_x i64) (param $target_y i64)
+		(param $target_vx i64) (param $target_vy i64)
+		(param $speed i64) (result i64 i64)
+		(local $base_x i64) (local $base_y i64) (local $relative_vx i64) (local $relative_vy i64)
+		(local $lead_x i64) (local $lead_y i64) (local $length i64) (local $time i64)
+		local.get $target_x local.get $source_x i64.sub local.set $base_x
+		local.get $target_y local.get $source_y i64.sub local.set $base_y
+		local.get $target_vx local.get $source_vx i64.sub local.set $relative_vx
+		local.get $target_vy local.get $source_vy i64.sub local.set $relative_vy
+		local.get $base_x local.get $base_y call $fixed_hypot local.set $length
+		local.get $length i64.eqz
+		(if (then
+			local.get $source_vx local.get $speed i64.add local.get $source_vy return))
+		local.get $length global.get $scale i64.mul local.get $speed i64.div_s local.set $time
+		local.get $base_x local.get $relative_vx local.get $time call $fixed_mul i64.add local.set $lead_x
+		local.get $base_y local.get $relative_vy local.get $time call $fixed_mul i64.add local.set $lead_y
+		local.get $lead_x local.get $lead_y call $fixed_hypot local.set $length
+		local.get $length global.get $scale i64.mul local.get $speed i64.div_s local.set $time
+		local.get $base_x local.get $relative_vx local.get $time call $fixed_mul i64.add local.set $lead_x
+		local.get $base_y local.get $relative_vy local.get $time call $fixed_mul i64.add local.set $lead_y
+		local.get $lead_x local.get $lead_y call $fixed_hypot local.set $length
+		local.get $length i64.eqz
+		(if (then
+			local.get $source_vx local.get $speed i64.add local.get $source_vy return))
+		local.get $source_vx local.get $lead_x local.get $speed i64.mul local.get $length i64.div_s i64.add
+		local.get $source_vy local.get $lead_y local.get $speed i64.mul local.get $length i64.div_s i64.add)
+
 	(func $bullet_address (param $index i32) (result i32)
 		i32.const 1280 local.get $index i32.const 48 i32.mul i32.add)
+	(func $enemy_bullet_address (param $index i32) (result i32)
+		i32.const 16080 local.get $index i32.const 48 i32.mul i32.add)
 	(func $asteroid_address (param $index i32) (result i32)
 		i32.const 4352 local.get $index i32.const 80 i32.mul i32.add)
 	(func $particle_address (param $index i32) (result i32)
@@ -546,6 +580,19 @@
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		i32.const 0)
 
+	;; Centralizes score and extra-life accounting so non-asteroid targets obey
+	;; the same Kid Mode and 20,000-point reserve-ship rules.
+	(func $add_score (param $points i32)
+		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz
+		(if
+			(then
+				i32.const 1096 i32.const 1096 i32.load local.get $points i32.add i32.store
+				i32.const 1096 i32.load i32.const 1120 i32.load i32.ge_u
+				(if (then
+					i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.add i32.store
+					i32.const 1120 i32.const 1120 i32.load i32.const 20000 i32.add i32.store
+					i32.const 6 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))
+
 	(func $hit_asteroid (param $address i32) (param $impulse_x i64) (param $impulse_y i64)
 		(param $score_hit i32)
 		(local $x i64) (local $y i64) (local $vx i64) (local $vy i64)
@@ -589,15 +636,7 @@
 						local.get $free i32.const 72 i32.add call $rand_signed i64.const 2 i64.mul i32.wrap_i64 i32.store))
 				i32.const 80 local.set $points)
 			(else local.get $address i32.const 0 i32.store i32.const 120 local.set $points))
-		local.get $score_hit i32.const 1108 i32.load i32.const 64 i32.and i32.eqz i32.and
-		(if
-			(then
-				i32.const 1096 i32.const 1096 i32.load local.get $points i32.add i32.store
-				i32.const 1096 i32.load i32.const 1120 i32.load i32.ge_u
-				(if (then
-					i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.add i32.store
-					i32.const 1120 i32.const 1120 i32.load i32.const 20000 i32.add i32.store
-					i32.const 6 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))
+		local.get $score_hit (if (then local.get $points call $add_score)))
 
 	(func $check_bullet_collisions
 		(local $bullet_index i32) (local $asteroid_index i32)
@@ -648,17 +687,21 @@
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		i32.const 0)
 
-	(func $begin_ship_explosion (param $asteroid i32)
+	;; Starts the ship death lifecycle without assuming what caused the impact.
+	(func $begin_ship_destruction
 		i32.const 1048 i64.load i32.const 1056 i64.load i32.const 40
 		i32.const 1064 i64.load i32.const 1072 i64.load call $spawn_particles
 		i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1064 i64.load i32.const 1072 i64.load call $spawn_debris
-		local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
 		i32.const 3 f32.const 1 f32.const 1 i32.const 0 call $audio drop
 		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz
 		(if (then i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.sub i32.store))
 		i32.const 1124 i32.const 1 i32.store
 		i32.const 1128 i32.const 120 call $ticks_from_sixty i32.store
 		i32.const 1108 i32.const 1108 i32.load i32.const -129 i32.and i32.store)
+
+	(func $begin_ship_explosion (param $asteroid i32)
+		local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
+		call $begin_ship_destruction)
 
 	(func $rotate_ship
 		(local $dx i64) (local $dy i64) (local $next_dx i64) (local $next_dy i64)
@@ -822,6 +865,118 @@
 				local.get $address i32.const 4 i32.add i32.load i32.const 0 i32.le_s (if (then local.get $address i32.const 0 i32.store))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
+	(func $find_free_enemy_bullet (result i32)
+		(local $index i32) (local $address i32)
+		(block $none (loop $again
+			local.get $index i32.const 8 i32.ge_u br_if $none
+			local.get $index call $enemy_bullet_address local.set $address
+			local.get $address i32.load i32.eqz (if (then local.get $address return))
+			local.get $index i32.const 1 i32.add local.set $index br $again))
+		i32.const 0)
+
+	;; Selects the closest asteroid inside a 300-pixel forward safety corridor;
+	;; this defensive target takes precedence over opportunistic player fire.
+	(func $find_ufo_threat (result i32)
+		(local $index i32) (local $address i32) (local $best i32)
+		(local $dx i64) (local $abs_dx i64) (local $best_dx i64) (local $dy i64)
+		i64.const 301000000 local.set $best_dx
+		(block $done (loop $again
+			local.get $index i32.const 32 i32.ge_u br_if $done
+			local.get $index call $asteroid_address local.set $address
+			local.get $address i32.load
+			(if (then
+				local.get $address i32.const 16 i32.add i64.load i32.const 16040 i64.load i64.sub local.tee $dx
+				i64.const 0 i64.lt_s (if (result i64) (then i64.const 0 local.get $dx i64.sub) (else local.get $dx)) local.set $abs_dx
+				local.get $address i32.const 24 i32.add i64.load i32.const 16048 i64.load i64.sub local.tee $dy
+				i64.const 0 i64.lt_s (if (result i64) (then i64.const 0 local.get $dy i64.sub) (else local.get $dy)) local.set $dy
+				local.get $dx i32.const 16036 i32.load i64.extend_i32_s i64.mul i64.const 0 i64.gt_s
+				local.get $abs_dx i64.const 300000000 i64.le_s i32.and
+				local.get $dy local.get $address i32.const 48 i32.add i64.load i64.const 30000000 i64.add i64.le_s i32.and
+				local.get $abs_dx local.get $best_dx i64.lt_s i32.and
+				(if (then local.get $address local.set $best local.get $abs_dx local.set $best_dx))))
+			local.get $index i32.const 1 i32.add local.set $index br $again))
+		local.get $best)
+
+	;; Fires one finite enemy projectile, using predictive interception unless a
+	;; seeded random branch is chosen; a threatening asteroid always overrides it.
+	(func $fire_ufo
+		(local $bullet i32) (local $target i32) (local $vx i64) (local $vy i64)
+		(local $dx i64) (local $dy i64) (local $length i64)
+		call $find_free_enemy_bullet local.set $bullet
+		local.get $bullet
+		(if
+			(then
+				call $find_ufo_threat local.set $target
+				local.get $target
+				(if
+					(then
+						i32.const 16040 i64.load i32.const 16048 i64.load
+						i32.const 16056 i64.load i64.const 0
+						local.get $target i32.const 16 i32.add i64.load local.get $target i32.const 24 i32.add i64.load
+						local.get $target i32.const 32 i32.add i64.load local.get $target i32.const 40 i32.add i64.load
+						i64.const 280000000 call $aim_projectile_velocity
+						local.set $vy local.set $vx)
+					(else
+						call $rand_u32 i32.const 1 i32.and i32.eqz
+						(if
+							(then
+								i32.const 16040 i64.load i32.const 16048 i64.load
+								i32.const 16056 i64.load i64.const 0
+								i32.const 1048 i64.load i32.const 1056 i64.load
+								i32.const 1064 i64.load i32.const 1072 i64.load
+								i64.const 280000000 call $aim_projectile_velocity
+								local.set $vy local.set $vx)
+							(else
+								call $rand_signed local.set $dx call $rand_signed local.set $dy
+								local.get $dx local.get $dy call $fixed_hypot local.set $length
+								local.get $length i64.eqz
+								(if (then i64.const 1000000 local.set $dx i64.const 1000000 local.set $length))
+								i32.const 16056 i64.load local.get $dx i64.const 280000000 i64.mul local.get $length i64.div_s i64.add local.set $vx
+								local.get $dy i64.const 280000000 i64.mul local.get $length i64.div_s local.set $vy))))
+				local.get $bullet i32.const 1 i32.store
+				local.get $bullet i32.const 8 i32.add i32.const 16040 i64.load i64.store
+				local.get $bullet i32.const 16 i32.add i32.const 16048 i64.load i64.store
+				local.get $bullet i32.const 24 i32.add local.get $vx i64.store
+				local.get $bullet i32.const 32 i32.add local.get $vy i64.store
+				local.get $bullet i32.const 40 i32.add i64.const 0 i64.store
+				i32.const 1 f32.const 0.55 f32.const 0.72 i32.const 0 call $audio drop))
+		i32.const 16072 call $rand_u32 i32.const 46 i32.rem_u i32.const 45 i32.add
+		call $ticks_from_sixty i32.store)
+
+	;; Advances non-wrapping hostile projectiles and retires them once outside a
+	;; small viewport margin, keeping their lifetime naturally bounded.
+	(func $update_enemy_bullets
+		(local $index i32) (local $address i32) (local $x i64) (local $y i64)
+		(block $done (loop $again
+			local.get $index i32.const 8 i32.ge_u br_if $done
+			local.get $index call $enemy_bullet_address local.set $address
+			local.get $address i32.load
+			(if (then
+				local.get $address i32.const 8 i32.add
+				local.get $address i32.const 8 i32.add i64.load
+				local.get $address i32.const 24 i32.add i64.load call $per_tick i64.add local.tee $x i64.store
+				local.get $address i32.const 16 i32.add
+				local.get $address i32.const 16 i32.add i64.load
+				local.get $address i32.const 32 i32.add i64.load call $per_tick i64.add local.tee $y i64.store
+				local.get $x i64.const -25000000 i64.lt_s
+				local.get $x i32.const 1032 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+				local.get $y i64.const -25000000 i64.lt_s i32.or
+				local.get $y i32.const 1040 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+				(if (then local.get $address i32.const 0 i32.store))))
+			local.get $index i32.const 1 i32.add local.set $index br $again)))
+
+	;; Removes the saucer, starts its next independent appearance interval, and
+	;; optionally awards the fixed player-kill bounty.
+	(func $destroy_ufo (param $score_hit i32)
+		i32.const 16032 i32.load
+		(if (then
+			i32.const 16040 i64.load i32.const 16048 i64.load i32.const 20
+			i32.const 16056 i64.load i64.const 0 call $spawn_particles
+			i32.const 2 f32.const 1 f32.const 1.2 i32.const 0 call $audio drop
+			i32.const 16032 i32.const 0 i32.store
+			i32.const 16512 call $random_spawn_ticks i32.store
+			local.get $score_hit (if (then i32.const 2000 call $add_score)))))
+
 	;; Creates one classic edge-to-edge saucer. Its next interval is not selected
 	;; until this instance leaves play, preventing overlapping UFOs.
 	(func $spawn_ufo
@@ -853,6 +1008,9 @@
 		(if
 			(then
 				i32.const 16040 i32.const 16040 i64.load i32.const 16056 i64.load call $per_tick i64.add i64.store
+				i32.const 16072 i32.load i32.const 0 i32.gt_s
+				(if (then i32.const 16072 i32.const 16072 i32.load i32.const 1 i32.sub i32.store))
+				i32.const 16072 i32.load i32.eqz (if (then call $fire_ufo))
 				i32.const 16040 i64.load i64.const -40000000 i64.lt_s
 				i32.const 16040 i64.load i32.const 1032 i64.load i64.const 40000000 i64.add i64.gt_s i32.or
 				(if (then
@@ -862,6 +1020,98 @@
 				i32.const 16512 i32.load i32.const 0 i32.gt_s
 				(if (then i32.const 16512 i32.const 16512 i32.load i32.const 1 i32.sub i32.store))
 				i32.const 16512 i32.load i32.eqz (if (then call $spawn_ufo)))))
+
+	;; Gives player projectiles first claim on the saucer and awards exactly one
+	;; bounty by deactivating both participants before ending the scan.
+	(func $check_player_bullet_ufo_collision
+		(local $index i32) (local $bullet i32)
+		i32.const 16032 i32.load
+		(if (then
+			(block $done (loop $again
+				local.get $index i32.const 64 i32.ge_u br_if $done
+				local.get $index call $bullet_address local.set $bullet
+				local.get $bullet i32.load
+				(if (then
+					local.get $bullet i32.const 8 i32.add i64.load
+					local.get $bullet i32.const 16 i32.add i64.load
+					i32.const 16040 i64.load i32.const 16048 i64.load
+					i32.const 16064 i64.load i64.const 5000000 i64.add call $distance_lt
+					(if (then
+						local.get $bullet i32.const 0 i32.store
+						i32.const 1 call $destroy_ufo
+						br $done))))
+				local.get $index i32.const 1 i32.add local.set $index br $again)))))
+
+	;; Resolves hostile shots against asteroids before the ship; neither impact
+	;; path can award score, and each bullet is consumed by its first collision.
+	(func $check_enemy_bullet_collisions
+		(local $bullet_index i32) (local $asteroid_index i32)
+		(local $bullet i32) (local $asteroid i32)
+		(block $bullets_done (loop $next_bullet
+			local.get $bullet_index i32.const 8 i32.ge_u br_if $bullets_done
+			local.get $bullet_index call $enemy_bullet_address local.set $bullet
+			local.get $bullet i32.load
+			(if (then
+				i32.const 0 local.set $asteroid_index
+				(block $asteroids_done (loop $next_asteroid
+					local.get $asteroid_index i32.const 32 i32.ge_u br_if $asteroids_done
+					local.get $asteroid_index call $asteroid_address local.set $asteroid
+					local.get $asteroid i32.load
+					(if (then
+						local.get $bullet i32.const 8 i32.add i64.load
+						local.get $bullet i32.const 16 i32.add i64.load
+						local.get $asteroid i32.const 16 i32.add i64.load
+						local.get $asteroid i32.const 24 i32.add i64.load
+						local.get $asteroid i32.const 48 i32.add i64.load i64.const 4000000 i64.add
+						call $distance_lt
+						(if (then
+							local.get $bullet i32.const 0 i32.store
+							local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
+							br $asteroids_done))))
+					local.get $asteroid_index i32.const 1 i32.add local.set $asteroid_index br $next_asteroid))
+				local.get $bullet i32.load
+				i32.const 1124 i32.load i32.eqz i32.and
+				i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
+				(if (then
+					local.get $bullet i32.const 8 i32.add i64.load
+					local.get $bullet i32.const 16 i32.add i64.load
+					i32.const 1048 i64.load i32.const 1056 i64.load i64.const 14000000 call $distance_lt
+					(if (then
+						local.get $bullet i32.const 0 i32.store
+						call $begin_ship_destruction))))))
+			local.get $bullet_index i32.const 1 i32.add local.set $bullet_index br $next_bullet)))
+
+	;; Treats the saucer as a physical actor: asteroid contact destroys both, and
+	;; vulnerable player contact destroys both without granting a bounty.
+	(func $check_ufo_collisions
+		(local $index i32) (local $asteroid i32)
+		i32.const 16032 i32.load
+		(if (then
+			(block $asteroids_done (loop $asteroids
+				local.get $index i32.const 32 i32.ge_u br_if $asteroids_done
+				local.get $index call $asteroid_address local.set $asteroid
+				local.get $asteroid i32.load
+				(if (then
+					i32.const 16040 i64.load i32.const 16048 i64.load
+					local.get $asteroid i32.const 16 i32.add i64.load
+					local.get $asteroid i32.const 24 i32.add i64.load
+					i32.const 16064 i64.load local.get $asteroid i32.const 48 i32.add i64.load i64.add
+					call $distance_lt
+					(if (then
+						local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
+						i32.const 0 call $destroy_ufo
+						br $asteroids_done))))
+				local.get $index i32.const 1 i32.add local.set $index br $asteroids))
+			i32.const 16032 i32.load
+			i32.const 1124 i32.load i32.eqz i32.and
+			i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
+			(if (then
+				i32.const 16040 i64.load i32.const 16048 i64.load
+				i32.const 1048 i64.load i32.const 1056 i64.load
+				i32.const 16064 i64.load i64.const 10000000 i64.add call $distance_lt
+				(if (then
+					i32.const 0 call $destroy_ufo
+					call $begin_ship_destruction)))))))
 
 	(func $respawn_radius (result i64)
 		i32.const 1128 i32.load i32.const 300 call $ticks_from_sixty i32.ge_s
@@ -934,7 +1184,7 @@
 		(if (then i32.const 1108 i32.load i32.const 8 i32.and (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset)) return))
 		i32.const 1124 i32.load i32.eqz
 		(if (then
-			call $update_ship call $update_bullets call $update_asteroids call $update_particles call $update_debris
+			call $update_ship call $update_bullets call $update_enemy_bullets call $update_asteroids call $update_particles call $update_debris
 			call $check_bullet_collisions
 			i32.const 1116 i32.load i32.const 0 i32.gt_s
 			(if (then i32.const 1116 i32.const 1116 i32.load i32.const 1 i32.sub i32.store)
@@ -943,10 +1193,13 @@
 				i32.const 1124 i32.load i32.const 3 i32.ne
 				(if (then
 					i32.const 1124 i32.load i32.const 2 i32.eq (if (then call $rotate_ship))
-					call $update_bullets call $update_asteroids call $update_particles call $update_debris
+					call $update_bullets call $update_enemy_bullets call $update_asteroids call $update_particles call $update_debris
 					call $check_bullet_collisions))))
-		call $advance_lifecycle
 		call $update_ufo_schedule
+		call $check_player_bullet_ufo_collision
+		call $check_enemy_bullet_collisions
+		call $check_ufo_collisions
+		call $advance_lifecycle
 		call $asteroid_count i32.eqz i32.const 1124 i32.load i32.const 3 i32.ne i32.and
 		(if (then i32.const 1104 i32.const 1104 i32.load i32.const 1 i32.add i32.store call $spawn_wave))
 		i32.const 1132 i32.load i32.const 0 i32.gt_s
@@ -969,6 +1222,17 @@
 				local.get $address i32.const 8 i32.add local.get $address i32.const 8 i32.add i64.load local.get $dx i64.add i64.store
 				local.get $address i32.const 16 i32.add local.get $address i32.const 16 i32.add i64.load local.get $dy i64.add i64.store))
 			local.get $index i32.const 1 i32.add local.set $index br $bullets))
+		i32.const 0 local.set $index
+		(block $enemy_bullets_done (loop $enemy_bullets
+			local.get $index i32.const 8 i32.ge_u br_if $enemy_bullets_done
+			local.get $index call $enemy_bullet_address local.set $address
+			local.get $address i32.load (if (then
+				local.get $address i32.const 8 i32.add local.get $address i32.const 8 i32.add i64.load local.get $dx i64.add i64.store
+				local.get $address i32.const 16 i32.add local.get $address i32.const 16 i32.add i64.load local.get $dy i64.add i64.store))
+			local.get $index i32.const 1 i32.add local.set $index br $enemy_bullets))
+		i32.const 16032 i32.load (if (then
+			i32.const 16040 i32.const 16040 i64.load local.get $dx i64.add i64.store
+			i32.const 16048 i32.const 16048 i64.load local.get $dy i64.add i64.store))
 		i32.const 0 local.set $index
 		(block $asteroids_done (loop $asteroids
 			local.get $index i32.const 32 i32.ge_u br_if $asteroids_done
@@ -1244,6 +1508,16 @@
 				i32.const 100 local.get $index i32.add local.get $address i32.const 8 i32.add i64.load call $to_host local.get $address i32.const 16 i32.add i64.load call $to_host
 				f32.const 2 f32.const 0 i32.const 0x58ff72ff i32.const 1 call $circle drop))
 			local.get $index i32.const 1 i32.add local.set $index br $bullets))
+		i32.const 0 local.set $index
+		(block $enemy_bullets_done (loop $enemy_bullets
+			local.get $index i32.const 8 i32.ge_u br_if $enemy_bullets_done
+			local.get $index call $enemy_bullet_address local.set $address
+			local.get $address i32.load (if (then
+				i32.const 960 local.get $index i32.add
+				local.get $address i32.const 8 i32.add i64.load call $to_host
+				local.get $address i32.const 16 i32.add i64.load call $to_host
+				f32.const 3 f32.const 0 i32.const 0xff5c73ff i32.const 1 call $circle drop))
+			local.get $index i32.const 1 i32.add local.set $index br $enemy_bullets))
 		i32.const 0 local.set $index
 		(block $asteroids_done (loop $asteroids
 			local.get $index i32.const 32 i32.ge_u br_if $asteroids_done

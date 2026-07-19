@@ -26,6 +26,7 @@
 	(import "test.host" "test_reserve_paths" (func $host_reserve_paths (result i32)))
 	(import "test.host" "test_star_circles" (func $host_star_circles (result i32)))
 	(import "test.host" "test_ufo_paths" (func $host_ufo_paths (result i32)))
+	(import "test.host" "test_enemy_bullet_circles" (func $host_enemy_bullet_circles (result i32)))
 	(import "test.host" "test_flame_min_x" (func $host_flame_min_x (result f32)))
 	(import "test.host" "test_audio_seen" (func $host_audio_seen (param i32) (result i32)))
 	(import "test.host" "test_effect_seen" (func $host_effect_seen (param i32) (result i32)))
@@ -91,6 +92,16 @@
 		i32.const 1024 local.get $offset i32.add i32.load local.set $value
 		local.get $value local.get $first i32.eq
 		local.get $value local.get $second i32.eq i32.or)
+	(func (export "state_i64_positive") (param $offset i32) (result i32)
+		i32.const 1024 local.get $offset i32.add i64.load i64.const 0 i64.gt_s)
+	(func (export "state_i64_negative") (param $offset i32) (result i32)
+		i32.const 1024 local.get $offset i32.add i64.load i64.const 0 i64.lt_s)
+	(func (export "state_i64_between") (param $offset i32) (param $minimum i64)
+		(param $maximum i64) (result i32)
+		(local $value i64)
+		i32.const 1024 local.get $offset i32.add i64.load local.set $value
+		local.get $value local.get $minimum i64.ge_s
+		local.get $value local.get $maximum i64.le_s i32.and)
 	(func (export "active_count") (param $base i32) (param $stride i32) (param $capacity i32) (result i32)
 		(local $index i32) (local $count i32)
 		(block $done (loop $again
@@ -142,6 +153,7 @@
 	(func (export "host_reserve_paths") (result i32) call $host_reserve_paths)
 	(func (export "host_star_circles") (result i32) call $host_star_circles)
 	(func (export "host_ufo_paths") (result i32) call $host_ufo_paths)
+	(func (export "host_enemy_bullet_circles") (result i32) call $host_enemy_bullet_circles)
 	(func (export "host_flame_min_x") (result f32) call $host_flame_min_x)
 	(func (export "host_audio_seen") (param i32) (result i32) local.get 0 call $host_audio_seen)
 	(func (export "host_effect_seen") (param i32) (result i32) local.get 0 call $host_effect_seen)
