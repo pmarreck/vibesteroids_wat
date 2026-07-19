@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -u
+
+expected=(run "$EXPECTED_PROJECT_ROOT" -- --watch "$EXPECTED_PLUGIN")
+actual=("$@")
+failures=0
+
+if (( $# != ${#expected[@]} )); then
+	printf 'launcher passed %d arguments to nix; expected %d\n' "$#" "${#expected[@]}" >&2
+	failures=$((failures + 1))
+fi
+
+for ((index = 0; index < ${#expected[@]} && index < ${#actual[@]}; index++)); do
+	if [[ ${actual[index]} != "${expected[index]}" ]]; then
+		printf 'launcher argument %d was %q; expected %q\n' \
+			"$index" "${actual[index]}" "${expected[index]}" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+exit "$failures"

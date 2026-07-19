@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+plugin="$root/code.wat"
+
+(
+	cd "$TMPDIR" || exit 1
+	PATH="$root/tests/fixtures/run-bin:$PATH" \
+		EXPECTED_PROJECT_ROOT="$root" \
+		EXPECTED_PLUGIN="$plugin" \
+		"$root/run" --watch "$plugin"
+)

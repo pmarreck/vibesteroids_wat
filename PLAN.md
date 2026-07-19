@@ -71,6 +71,13 @@
   synthesized descending-sweep laser timbre with Peter.
   - Curiosity poke: are the long randomized spawn windows fun in ordinary
     sessions, or should a test/demo override be exposed later by Aedicule?
+- [x] Make the application launcher independent of the caller's working
+  directory and correct the adjacent-Aedicule development instructions.
+  (2026-07-19 11:44 EDT: foreign-cwd red/green CLI proof, root-qualified
+  application flake, Aedicule fix `0af1575`, direct sibling invocation
+  verification, complete suite/build)
+  - Curiosity poke: do every repository-level convenience script and its
+    documented sibling invocation resolve paths from the script itself?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.

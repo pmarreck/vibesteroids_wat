@@ -93,6 +93,13 @@ Or use an adjacent frontplane checkout:
 ../aedicule/run --watch "$PWD/code.wat"
 ```
 
+The application-owned launcher is independent of the caller's working
+directory and uses the pinned Aedicule revision:
+
+```console
+./run --watch "$PWD/code.wat"
+```
+
 Mecha Aedicule compiles each saved candidate separately, validates and
 initializes it, restores the opaque state only when schema and length match,
 requires a valid first frame, and then swaps it into the running window. Broken

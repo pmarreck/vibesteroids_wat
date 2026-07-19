@@ -2,4 +2,6 @@
 
 set -u
 
-exec nix run . -- "$@"
+root=$(cd "$(dirname "$0")" && pwd)
+
+exec nix run "$root" -- "$@"
