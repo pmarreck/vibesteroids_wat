@@ -130,8 +130,8 @@
   secondary-thrust event handling in WAT. (2026-07-20 12:33 EDT)
   - [x] Clear held-input edge bits after live state restoration so a reload
     between button-down and button-up cannot strand autofire. (2026-07-20 12:39 EDT)
-  - [x] Make primary-pointer fire a self-clearing one-shot pulse so an older
-    host that omits mouse-up cannot strand fire after a click. (2026-07-20 12:45 EDT)
+  - [x] Temporarily used a self-clearing primary-fire pulse with the old host;
+    superseded it after the corrected native release build. (2026-07-20 14:07 EDT)
   - [ ] After Aedicule's secondary button ID 2 work has a green Nix build and
     commit, pin that revision so right-click thrust reaches the live guest.
   - Curiosity poke: should keyboard rotation temporarily override pointer aim,
@@ -156,9 +156,9 @@
   (2026-07-20 14:04 EDT)
   - Curiosity poke: when one segment crosses several rocks, should the first
     geometric hit win rather than the first occupied pool slot?
-- [ ] Restore primary-button hold-to-fire after restarting the corrected
+- [x] Restore primary-button hold-to-fire for the corrected
   Aedicule release-edge host, and activate Death Blossom on any nonzero pointer
-  scroll event.
+  scroll event. (2026-07-20 14:07 EDT)
   - Curiosity poke: should horizontal-only wheel/trackpad motion activate too,
     or only vertical wheel movement?
 - [ ] Restore the visible Death Blossom-available symbol and state in help that

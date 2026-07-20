@@ -92,19 +92,19 @@
 	(invoke $vibesteroids_tests "pointer_event"
 		(i32.const 4) (i32.const 1) (f32.const 612) (f32.const 384))
 	(i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 8)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15572)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 8)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15572)) (i32.const 0))
-;; A host missing the release edge cannot turn one press into autofire.
+;; Holding primary fire repeats at the player's ordinary bounded cadence.
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 16)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 (assert_return
 	(invoke $vibesteroids_tests "pointer_event"
 		(i32.const 5) (i32.const 1) (f32.const 612) (f32.const 384))
 	(i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 8)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 16)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 (assert_return
 	(invoke $vibesteroids_tests "pointer_event"
 		(i32.const 4) (i32.const 2) (f32.const 612) (f32.const 384))
@@ -124,11 +124,9 @@
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 84) (i32.const 895)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15560) (i32.const 1)))
-(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15572) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "after_restore") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 84)) (i32.const 880))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15572)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
@@ -255,6 +253,17 @@
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 9)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 0))
+
+;; Any host-observable wheel roll spends the once-per-life Death Blossom charge.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 10) (i32.const 1) (f32.const 0) (f32.const -1))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 256)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 5)) (i32.const 1))
 
 ;; Kid Mode preserves lives and suppresses the ordinary score/lives HUD on collision.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
