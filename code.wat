@@ -205,6 +205,15 @@
 		i32.const 783991 i32.const 783991 i32.const 783991
 		i32.const 320000 global.get $filter_none i32.const 0 i32.const 0
 		call $declare_swept_voice
+		;; Package loss: layered descending tones make a compact negative buzzer.
+		i32.const 11 global.get $wave_saw i32.const 0 i32.const 360
+		i32.const 440000 i32.const 220000 i32.const 110000
+		i32.const 300000 global.get $filter_low_pass i32.const 1000000 i32.const 180000
+		call $declare_swept_voice
+		i32.const 11 global.get $wave_sine i32.const 80 i32.const 300
+		i32.const 311127 i32.const 207652 i32.const 155563
+		i32.const 220000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN
@@ -1158,6 +1167,15 @@
 		i32.const 16504 i64.const 14000000 i64.store
 		i32.const 9 f32.const 0.75 f32.const 1 i32.const 0 call $audio drop)
 
+	;; Centralizes every missed or destroyed package outcome so exactly one
+	;; negative cue and exactly one independent respawn interval are produced.
+	(func $lose_package
+		i32.const 16464 i32.load
+		(if (then
+			i32.const 16464 i32.const 0 i32.store
+			i32.const 16516 call $random_spawn_ticks i32.store
+			i32.const 11 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)))
+
 	;; Moves one finite package traversal, reflecting its small vertical drift at
 	;; safe margins while selecting the next interval only after it leaves.
 	(func $update_package_schedule
@@ -1178,9 +1196,7 @@
 					i32.const 16496 i64.const 0 i32.const 16496 i64.load call $fixed_abs i64.sub i64.store))
 				i32.const 16472 i64.load i64.const -40000000 i64.lt_s
 				i32.const 16472 i64.load i32.const 1032 i64.load i64.const 40000000 i64.add i64.gt_s i32.or
-				(if (then
-					i32.const 16464 i32.const 0 i32.store
-					i32.const 16516 call $random_spawn_ticks i32.store)))
+				(if (then call $lose_package)))
 			(else
 				i32.const 16516 i32.load i32.const 0 i32.gt_s
 				(if (then i32.const 16516 i32.const 16516 i32.load i32.const 1 i32.sub i32.store))

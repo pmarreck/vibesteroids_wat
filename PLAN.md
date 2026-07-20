@@ -94,7 +94,9 @@
   - [x] UFO arrival: two-pulse red-alert saw sweep. (2026-07-20 11:57 EDT)
   - [x] Package arrival: ascending two-note notification. (2026-07-20 12:00 EDT)
   - [x] Package collection: ascending major arpeggio. (2026-07-20 12:02 EDT)
-  - [ ] Package loss/destruction failure cue.
+  - [x] Unclaimed off-screen package: descending failure buzzer.
+    (2026-07-20 12:05 EDT)
+  - [ ] Route player and UFO projectile destruction through the same failure cue.
   - Curiosity poke: can each short synthesized cue remain recognizable without
     masking firing, thrust, or collision sounds already in progress?
 - [ ] Increase per-level asteroid count, player projectile speed, asteroid speed
