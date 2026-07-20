@@ -1073,8 +1073,8 @@
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		local.get $best)
 
-	;; Fires one finite enemy projectile, using predictive interception unless a
-	;; seeded random branch is chosen; a threatening asteroid always overrides it.
+	;; Fires one finite enemy projectile. Immediate asteroid defense wins first,
+	;; then an active package is predictively targeted before player/random aim.
 	(func $fire_ufo
 		(local $bullet i32) (local $target i32) (local $vx i64) (local $vy i64)
 		(local $dx i64) (local $dy i64) (local $length i64)
@@ -1093,22 +1093,32 @@
 						i64.const 280000000 call $aim_projectile_velocity
 						local.set $vy local.set $vx)
 					(else
-						call $rand_u32 i32.const 1 i32.and i32.eqz
+						i32.const 16464 i32.load
 						(if
 							(then
 								i32.const 16040 i64.load i32.const 16048 i64.load
 								i32.const 16056 i64.load i64.const 0
-								i32.const 1048 i64.load i32.const 1056 i64.load
-								i32.const 1064 i64.load i32.const 1072 i64.load
+								i32.const 16472 i64.load i32.const 16480 i64.load
+								i32.const 16488 i64.load i32.const 16496 i64.load
 								i64.const 280000000 call $aim_projectile_velocity
 								local.set $vy local.set $vx)
 							(else
-								call $rand_signed local.set $dx call $rand_signed local.set $dy
-								local.get $dx local.get $dy call $fixed_hypot local.set $length
-								local.get $length i64.eqz
-								(if (then i64.const 1000000 local.set $dx i64.const 1000000 local.set $length))
-								i32.const 16056 i64.load local.get $dx i64.const 280000000 i64.mul local.get $length i64.div_s i64.add local.set $vx
-								local.get $dy i64.const 280000000 i64.mul local.get $length i64.div_s local.set $vy))))
+								call $rand_u32 i32.const 1 i32.and i32.eqz
+								(if
+									(then
+										i32.const 16040 i64.load i32.const 16048 i64.load
+										i32.const 16056 i64.load i64.const 0
+										i32.const 1048 i64.load i32.const 1056 i64.load
+										i32.const 1064 i64.load i32.const 1072 i64.load
+										i64.const 280000000 call $aim_projectile_velocity
+										local.set $vy local.set $vx)
+									(else
+										call $rand_signed local.set $dx call $rand_signed local.set $dy
+										local.get $dx local.get $dy call $fixed_hypot local.set $length
+										local.get $length i64.eqz
+										(if (then i64.const 1000000 local.set $dx i64.const 1000000 local.set $length))
+										i32.const 16056 i64.load local.get $dx i64.const 280000000 i64.mul local.get $length i64.div_s i64.add local.set $vx
+										local.get $dy i64.const 280000000 i64.mul local.get $length i64.div_s local.set $vy))))))
 				local.get $bullet i32.const 1 i32.store
 				local.get $bullet i32.const 8 i32.add i32.const 16040 i64.load i64.store
 				local.get $bullet i32.const 16 i32.add i32.const 16048 i64.load i64.store

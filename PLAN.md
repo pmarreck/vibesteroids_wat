@@ -106,14 +106,16 @@
   - Curiosity poke: which capped pool or minimum cooldown becomes the first
     difficulty ceiling during a long session?
 - [ ] Preserve physical UFO/asteroid collisions while making packages intangible
-  to asteroids, destructible by either side's projectiles, and the UFO's highest
-  target priority whenever both actors coexist.
+  to asteroids, destructible by either side's projectiles, and the UFO's priority
+  over player/random aim after immediate asteroid defense.
   - [x] Player bullets destroy packages and trigger the failure cue.
     (2026-07-20 12:07 EDT)
   - [x] Player lasers destroy packages from their pre-fire target snapshot.
     (2026-07-20 12:10 EDT)
   - [x] UFO projectiles destroy packages. (2026-07-20 12:13 EDT)
-  - [ ] UFO targeting prioritizes an active package over defense/player/random.
+  - [x] UFO targeting prioritizes an active package over player/random after
+    immediate asteroid defense. (2026-07-20 12:16 EDT)
+  - [ ] Lock the existing package/asteroid intangibility into a regression proof.
   - Curiosity poke: should a laser resolve package membership from the same
     pre-fire snapshot that already protects newly split asteroid children?
 - [ ] Add precise pointer aim and primary-fire in WAT; after Aedicule documents

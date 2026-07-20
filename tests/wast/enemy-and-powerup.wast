@@ -100,6 +100,31 @@
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_enemy_bullet_circles") (i32.const 1))
 
+;; With no immediate rock threat, an active package outranks player/random aim.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15012) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15016) (i64.const 100000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15024) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15032) (i64.const 140000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15040) (i64.const 20000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15048) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 400000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15464) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15472) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15056)) (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "state_i64_between"
+		(i32.const 15080) (i64.const 419999000) (i64.const 420001000))
+	(i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15088)) (i64.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 1))
+
 ;; Enemy shots destroy terminal rocks without score and kill a vulnerable ship.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
