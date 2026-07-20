@@ -183,6 +183,15 @@
 		i32.const 900000 i32.const 560000 i32.const 900000
 		i32.const 350000 global.get $filter_low_pass i32.const 1800000 i32.const 1100000
 		call $declare_swept_voice
+		;; Package notification: a quick ascending two-note sine chime.
+		i32.const 9 global.get $wave_sine i32.const 0 i32.const 150
+		i32.const 659255 i32.const 659255 i32.const 659255
+		i32.const 250000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
+		i32.const 9 global.get $wave_sine i32.const 110 i32.const 180
+		i32.const 987767 i32.const 987767 i32.const 987767
+		i32.const 280000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN
@@ -1133,7 +1142,8 @@
 		i32.const 16480 call $rand_unit local.get $height_range call $fixed_mul i64.const 100000000 i64.add i64.store
 		i32.const 16488 local.get $direction i64.extend_i32_s i64.const 80000000 i64.mul i64.store
 		i32.const 16496 call $rand_signed i64.const 35000000 call $fixed_mul i64.store
-		i32.const 16504 i64.const 14000000 i64.store)
+		i32.const 16504 i64.const 14000000 i64.store
+		i32.const 9 f32.const 0.75 f32.const 1 i32.const 0 call $audio drop)
 
 	;; Moves one finite package traversal, reflecting its small vertical drift at
 	;; safe margins while selecting the next interval only after it leaves.

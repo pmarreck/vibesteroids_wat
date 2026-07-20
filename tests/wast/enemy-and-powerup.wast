@@ -123,8 +123,10 @@
 ;; drifts in two dimensions instead of behaving like another hostile ship.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15492) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 9)) (i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_is_either"
 		(i32.const 15444) (i32.const -1) (i32.const 1))

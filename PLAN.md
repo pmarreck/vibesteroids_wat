@@ -92,7 +92,7 @@
 - [ ] Add independently testable live-reload sounds for UFO arrival, package
   arrival, package collection, and package loss or projectile destruction.
   - [x] UFO arrival: two-pulse red-alert saw sweep. (2026-07-20 11:57 EDT)
-  - [ ] Package arrival notification.
+  - [x] Package arrival: ascending two-note notification. (2026-07-20 12:00 EDT)
   - [ ] Package collection success cue.
   - [ ] Package loss/destruction failure cue.
   - Curiosity poke: can each short synthesized cue remain recognizable without
