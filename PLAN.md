@@ -130,6 +130,8 @@
   secondary-thrust event handling in WAT. (2026-07-20 12:33 EDT)
   - [x] Clear held-input edge bits after live state restoration so a reload
     between button-down and button-up cannot strand autofire. (2026-07-20 12:39 EDT)
+  - [x] Make primary-pointer fire a self-clearing one-shot pulse so an older
+    host that omits mouse-up cannot strand fire after a click. (2026-07-20 12:45 EDT)
   - [ ] After Aedicule's secondary button ID 2 work has a green Nix build and
     commit, pin that revision so right-click thrust reaches the live guest.
   - Curiosity poke: should keyboard rotation temporarily override pointer aim,

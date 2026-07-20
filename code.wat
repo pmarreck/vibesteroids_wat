@@ -36,6 +36,7 @@
 ;;        beam start/end x/y:i64
 ;; 15536: completed UFO appearances:i32
 ;; 15544: pointer target x/y:i64, pointer-heading authority:i32
+;; 15572: pending primary-pointer fire pulse:i32
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -571,6 +572,7 @@
 	;; four edge-latched controls; persistent mode toggles remain snapshotted.
 	(func (export "AE_after_restore") (result i32)
 		i32.const 1108 i32.const 1108 i32.load i32.const -16 i32.and i32.store
+		i32.const 16596 i32.const 0 i32.store
 		i32.const 0)
 
 	(func $asteroid_count (result i32)
@@ -1054,7 +1056,9 @@
 					i32.const 1024 i32.load i32.const 3 i32.and i32.eqz
 					(if (then i32.const 4 f32.const 0.18 f32.const 1 i32.const 0 call $audio drop))))
 				local.get $flags i32.const 8 i32.and local.get $flags i32.const 32 i32.and i32.or
+				i32.const 16596 i32.load i32.or
 				(if (then call $fire))))
+		i32.const 16596 i32.const 0 i32.store
 		i32.const 1064 i32.const 1064 i64.load i64.const 995000 call $fixed_mul i64.store
 		i32.const 1072 i32.const 1072 i64.load i64.const 995000 call $fixed_mul i64.store
 		i32.const 1048
@@ -1723,14 +1727,15 @@
 			i32.const 16568 local.get $a call $from_host i64.store
 			i32.const 16576 local.get $b call $from_host i64.store
 			i32.const 16584 i32.const 1 i32.store))
-		;; Button 1 fires and button 2 thrusts. Both also refresh the target so
-		;; a click without prior motion still establishes pointer aim.
+		;; Button 1 queues one fire pulse that self-clears on the next ship step,
+		;; remaining safe even if an older host omits its release edge. Button 2
+		;; holds thrust; both refresh aim even without prior pointer motion.
 		local.get $kind i32.const 4 i32.eq
 		(if (then
 			i32.const 16568 local.get $a call $from_host i64.store
 			i32.const 16576 local.get $b call $from_host i64.store
 			i32.const 16584 i32.const 1 i32.store
-			local.get $code i32.const 1 i32.eq (if (then i32.const 8 local.set $mask))
+			local.get $code i32.const 1 i32.eq (if (then i32.const 16596 i32.const 1 i32.store))
 			local.get $code i32.const 2 i32.eq (if (then i32.const 4 local.set $mask))
 			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.or i32.store))
 		local.get $kind i32.const 5 i32.eq
@@ -1738,7 +1743,6 @@
 			i32.const 16568 local.get $a call $from_host i64.store
 			i32.const 16576 local.get $b call $from_host i64.store
 			i32.const 16584 i32.const 1 i32.store
-			local.get $code i32.const 1 i32.eq (if (then i32.const 8 local.set $mask))
 			local.get $code i32.const 2 i32.eq (if (then i32.const 4 local.set $mask))
 			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.const -1 i32.xor i32.and i32.store))
 		local.get $kind i32.const 6 i32.eq
