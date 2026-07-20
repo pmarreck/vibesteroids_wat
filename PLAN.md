@@ -103,6 +103,10 @@
 - [ ] Increase per-level asteroid count, player projectile speed, asteroid speed
   cap, and player fire rate by a linear 20%; escalate each successive UFO visit;
   and shorten independent UFO/package appearance windows to 45--120 seconds.
+  - [x] Shorten both independent schedules to 45--120 seconds and prove
+    simultaneous appearances. (2026-07-20 12:22 EDT)
+  - [ ] Scale wave count, player projectile speed/fire rate, and asteroid cap.
+  - [ ] Scale successive UFO radius, traversal, projectile speed, and fire rate.
   - Curiosity poke: which capped pool or minimum cooldown becomes the first
     difficulty ceiling during a long session?
 - [x] Preserve physical UFO/asteroid collisions while making packages intangible

@@ -45,6 +45,27 @@
 	(func (export "reset_seed") (param $seed i32) (result i32)
 		call $configure drop
 		local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init)
+	;; Classifies both independent spawn schedules over a deterministic seed set,
+	;; preventing one lucky fixture from vacuously satisfying a changed range.
+	(func (export "spawn_schedules_within")
+		(param $minimum i32) (param $maximum i32) (param $seed_count i32) (result i32)
+		(local $seed i32) (local $ufo i32) (local $package i32)
+		call $configure drop
+		(block $valid (loop $seeds
+			local.get $seed local.get $seed_count i32.ge_u
+			(if (then i32.const 1 return))
+			local.get $seed i32.const 1 i32.add i32.const 0
+			f32.const 1024 f32.const 768 call $init drop
+			i32.const 16512 i32.load local.set $ufo
+			i32.const 16516 i32.load local.set $package
+			local.get $ufo local.get $minimum i32.lt_s
+			local.get $ufo local.get $maximum i32.gt_s i32.or
+			local.get $package local.get $minimum i32.lt_s i32.or
+			local.get $package local.get $maximum i32.gt_s i32.or
+			(if (then i32.const 0 return))
+			local.get $seed i32.const 1 i32.add local.set $seed
+			br $seeds))
+		i32.const 1)
 	(func (export "thrust_once") (result i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop

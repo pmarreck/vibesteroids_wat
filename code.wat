@@ -361,10 +361,10 @@
 	(func $rand_signed (result i64)
 		call $rand_unit i64.const 2 i64.mul global.get $scale i64.sub)
 
-	;; Selects an inclusive 60--180 second interval in canonical 60-Hz ticks,
+	;; Selects an inclusive 45--120 second interval in canonical 60-Hz ticks,
 	;; then converts it exactly to the configured rational simulation rate.
 	(func $random_spawn_ticks (result i32)
-		call $rand_u32 i32.const 7201 i32.rem_u i32.const 3600 i32.add
+		call $rand_u32 i32.const 4501 i32.rem_u i32.const 2700 i32.add
 		call $ticks_from_sixty)
 
 	(func $ensure_component (param $value i64) (result i64)

@@ -1,14 +1,27 @@
-;; Enemy and package scheduling begins with independently seeded 60--180
+;; Enemy and package scheduling begins with independently seeded 45--120
 ;; simulated-second countdowns. Forced countdowns keep the proof fast.
+(assert_return
+	(invoke $vibesteroids_tests "spawn_schedules_within"
+		(i32.const 2700) (i32.const 7200) (i32.const 64))
+	(i32.const 1))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15488) (i32.const 3600) (i32.const 10800))
+		(i32.const 15488) (i32.const 2700) (i32.const 7200))
 	(i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15492) (i32.const 3600) (i32.const 10800))
+		(i32.const 15492) (i32.const 2700) (i32.const 7200))
 	(i32.const 1))
+
+;; Independent schedules may expire together; neither actor suppresses the other.
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15488) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15492) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15008)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 1))
+
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 
 ;; A due UFO enters from exactly one horizontal edge with a signed direction.
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15488) (i32.const 1)))
