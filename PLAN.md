@@ -126,8 +126,10 @@
     (2026-07-20 12:18 EDT)
   - Curiosity poke: should a laser resolve package membership from the same
     pre-fire snapshot that already protects newly split asteroid children?
-- [ ] Add precise pointer aim and primary-fire in WAT; after Aedicule documents
-  and emits secondary button ID 2, pin it and map secondary down/up to thrust.
+- [x] Add rate-limited pointer aim, exact final-step snapping, primary-fire, and
+  secondary-thrust event handling in WAT. (2026-07-20 12:33 EDT)
+  - [ ] After Aedicule's secondary button ID 2 work has a green Nix build and
+    commit, pin that revision so right-click thrust reaches the live guest.
   - Curiosity poke: should keyboard rotation temporarily override pointer aim,
     or should the most recent input modality own heading until the other moves?
 - [ ] Add a snapshot-based, player-dangerous UFO blast with score attribution,

@@ -35,6 +35,7 @@
 ;; 15488: ufo/package spawn countdowns:i32, laser/beam timers:i32,
 ;;        beam start/end x/y:i64
 ;; 15536: completed UFO appearances:i32
+;; 15544: pointer target x/y:i64, pointer-heading authority:i32
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -927,9 +928,64 @@
 		local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
 		call $begin_ship_destruction)
 
+	;; Rotates toward the latest pointer at the ordinary keyboard turn rate. A
+	;; cross-product sign chooses the shortest direction; a sign change after
+	;; one step detects overshoot and snaps to the exact normalized target.
+	(func $rotate_toward_pointer
+		(local $dx i64) (local $dy i64) (local $target_x i64) (local $target_y i64)
+		(local $target_dx i64) (local $target_dy i64) (local $length i64)
+		(local $angle i64) (local $sine i64) (local $cosine i64)
+		(local $cross i64) (local $dot i64) (local $next_cross i64)
+		(local $next_dx i64) (local $next_dy i64)
+		i32.const 1080 i64.load local.set $dx
+		i32.const 1088 i64.load local.set $dy
+		i32.const 16568 i64.load i32.const 1048 i64.load i64.sub local.set $target_x
+		i32.const 16576 i64.load i32.const 1056 i64.load i64.sub local.set $target_y
+		local.get $target_x local.get $target_y call $fixed_hypot local.tee $length i64.eqz
+		(if (then return))
+		local.get $target_x global.get $scale i64.mul local.get $length i64.div_s local.set $target_dx
+		local.get $target_y global.get $scale i64.mul local.get $length i64.div_s local.set $target_dy
+		local.get $dx local.get $target_dy i64.mul
+		local.get $dy local.get $target_dx i64.mul i64.sub local.set $cross
+		local.get $cross i64.eqz
+		(if (then
+			local.get $dx local.get $target_dx i64.mul
+			local.get $dy local.get $target_dy i64.mul i64.add local.set $dot
+			local.get $dot i64.const 0 i64.ge_s
+			(if (then
+				i32.const 1080 local.get $target_dx i64.store
+				i32.const 1088 local.get $target_dy i64.store
+				return))))
+		call $rotation_per_second call $per_tick local.tee $angle call $small_sine local.set $sine
+		local.get $angle call $small_cosine local.set $cosine
+		local.get $cross i64.const 0 i64.ge_s
+		(if
+			(then
+				local.get $dx local.get $cosine call $fixed_mul
+				local.get $dy local.get $sine call $fixed_mul i64.sub local.set $next_dx
+				local.get $dy local.get $cosine call $fixed_mul
+				local.get $dx local.get $sine call $fixed_mul i64.add local.set $next_dy
+				local.get $next_dx local.get $target_dy i64.mul
+				local.get $next_dy local.get $target_dx i64.mul i64.sub local.set $next_cross
+				local.get $next_cross i64.const 0 i64.le_s
+				(if (then local.get $target_dx local.set $next_dx local.get $target_dy local.set $next_dy)))
+			(else
+				local.get $dx local.get $cosine call $fixed_mul
+				local.get $dy local.get $sine call $fixed_mul i64.add local.set $next_dx
+				local.get $dy local.get $cosine call $fixed_mul
+				local.get $dx local.get $sine call $fixed_mul i64.sub local.set $next_dy
+				local.get $next_dx local.get $target_dy i64.mul
+				local.get $next_dy local.get $target_dx i64.mul i64.sub local.set $next_cross
+				local.get $next_cross i64.const 0 i64.ge_s
+				(if (then local.get $target_dx local.set $next_dx local.get $target_dy local.set $next_dy))))
+		i32.const 1080 local.get $next_dx i64.store
+		i32.const 1088 local.get $next_dy i64.store)
+
 	(func $rotate_ship
 		(local $dx i64) (local $dy i64) (local $next_dx i64) (local $next_dy i64)
 		(local $angle i64) (local $sine i64) (local $cosine i64)
+		i32.const 16584 i32.load
+		(if (then call $rotate_toward_pointer return))
 		i32.const 1080 i64.load local.set $dx i32.const 1088 i64.load local.set $dy
 		call $rotation_per_second call $per_tick local.tee $angle call $small_sine local.set $sine
 		local.get $angle call $small_cosine local.set $cosine
@@ -1632,8 +1688,8 @@
 		(if (then
 			local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
 			local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
-			local.get $code i32.const 1 i32.eq (if (then i32.const 1 local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then i32.const 2 local.set $mask))
+			local.get $code i32.const 1 i32.eq (if (then i32.const 16584 i32.const 0 i32.store i32.const 1 local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then i32.const 16584 i32.const 0 i32.store i32.const 2 local.set $mask))
 			local.get $code i32.const 3 i32.eq (if (then i32.const 4 local.set $mask))
 			local.get $code i32.const 4 i32.eq (if (then i32.const 8 local.set $mask))
 			local.get $mask i32.eqz
@@ -1653,6 +1709,30 @@
 			local.get $code i32.const 2 i32.eq (if (then i32.const 2 local.set $mask))
 			local.get $code i32.const 3 i32.eq (if (then i32.const 4 local.set $mask))
 			local.get $code i32.const 4 i32.eq (if (then i32.const 8 local.set $mask))
+			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.const -1 i32.xor i32.and i32.store))
+		;; Pointer motion owns heading until a keyboard turn key is pressed.
+		local.get $kind i32.const 3 i32.eq
+		(if (then
+			i32.const 16568 local.get $a call $from_host i64.store
+			i32.const 16576 local.get $b call $from_host i64.store
+			i32.const 16584 i32.const 1 i32.store))
+		;; Button 1 fires and button 2 thrusts. Both also refresh the target so
+		;; a click without prior motion still establishes pointer aim.
+		local.get $kind i32.const 4 i32.eq
+		(if (then
+			i32.const 16568 local.get $a call $from_host i64.store
+			i32.const 16576 local.get $b call $from_host i64.store
+			i32.const 16584 i32.const 1 i32.store
+			local.get $code i32.const 1 i32.eq (if (then i32.const 8 local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then i32.const 4 local.set $mask))
+			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.or i32.store))
+		local.get $kind i32.const 5 i32.eq
+		(if (then
+			i32.const 16568 local.get $a call $from_host i64.store
+			i32.const 16576 local.get $b call $from_host i64.store
+			i32.const 16584 i32.const 1 i32.store
+			local.get $code i32.const 1 i32.eq (if (then i32.const 8 local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then i32.const 4 local.set $mask))
 			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.const -1 i32.xor i32.and i32.store))
 		local.get $kind i32.const 6 i32.eq
 		(if (then local.get $a call $from_host local.get $b call $from_host call $resize))

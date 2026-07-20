@@ -69,6 +69,49 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 56)) (i64.const 83237))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 64)) (i64.const -996530))
+
+;; Pointer aim uses the same bounded rotation step, then snaps exactly rather
+;; than overshooting the target direction on the final tick.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 3) (i32.const 0) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 56)) (i64.const 83237))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 64)) (i64.const -996530))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 18)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 56)) (i64.const 1000000))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 64)) (i64.const 0))
+
+;; Primary click holds fire, secondary click holds thrust, and keyboard turning
+;; explicitly takes heading authority until the pointer next moves.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 4) (i32.const 1) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 8)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 5) (i32.const 1) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 8)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 4) (i32.const 2) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 5) (i32.const 2) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
