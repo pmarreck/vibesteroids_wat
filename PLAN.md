@@ -107,6 +107,11 @@
 - [ ] Preserve physical UFO/asteroid collisions while making packages intangible
   to asteroids, destructible by either side's projectiles, and the UFO's highest
   target priority whenever both actors coexist.
+  - [x] Player bullets destroy packages and trigger the failure cue.
+    (2026-07-20 12:07 EDT)
+  - [ ] Player lasers destroy packages from their pre-fire target snapshot.
+  - [ ] UFO projectiles destroy packages.
+  - [ ] UFO targeting prioritizes an active package over defense/player/random.
   - Curiosity poke: should a laser resolve package membership from the same
     pre-fire snapshot that already protects newly split asteroid children?
 - [ ] Add precise pointer aim and primary-fire in WAT; after Aedicule documents

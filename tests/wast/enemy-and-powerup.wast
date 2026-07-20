@@ -163,6 +163,21 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 11)) (i32.const 1))
 
+;; Auto-fire is risky: a player bullet destroys the package and is consumed.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 256) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 264) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 272) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 11)) (i32.const 1))
+
 ;; Contact collects the package and grants exactly 20 simulated seconds.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))

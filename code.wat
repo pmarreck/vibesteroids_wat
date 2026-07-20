@@ -1291,6 +1291,27 @@
 						br $done))))
 				local.get $index i32.const 1 i32.add local.set $index br $again)))))
 
+	;; Makes indiscriminate player fire costly: packages claim a colliding bullet
+	;; before other special targets and retire through the shared failure path.
+	(func $check_player_bullet_package_collision
+		(local $index i32) (local $bullet i32)
+		i32.const 16464 i32.load
+		(if (then
+			(block $done (loop $again
+				local.get $index i32.const 64 i32.ge_u br_if $done
+				local.get $index call $bullet_address local.set $bullet
+				local.get $bullet i32.load
+				(if (then
+					local.get $bullet i32.const 8 i32.add i64.load
+					local.get $bullet i32.const 16 i32.add i64.load
+					i32.const 16472 i64.load i32.const 16480 i64.load
+					i32.const 16504 i64.load i64.const 4000000 i64.add call $distance_lt
+					(if (then
+						local.get $bullet i32.const 0 i32.store
+						call $lose_package
+						br $done))))
+				local.get $index i32.const 1 i32.add local.set $index br $again)))))
+
 	;; Resolves hostile shots against asteroids before the ship; neither impact
 	;; path can award score, and each bullet is consumed by its first collision.
 	(func $check_enemy_bullet_collisions
@@ -1447,6 +1468,7 @@
 					call $check_bullet_collisions))))
 		call $update_ufo_schedule
 		call $update_package_schedule
+		call $check_player_bullet_package_collision
 		call $check_player_bullet_ufo_collision
 		call $check_enemy_bullet_collisions
 		call $check_ufo_collisions
