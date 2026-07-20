@@ -55,16 +55,16 @@ AE_tick_rate(current_numerator, current_denominator) -> (120, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 7
+AE_state_schema() -> 8
 ~~~
 
-Schema 7 is 32,768 bytes. The behavior specification documents the address map.
+Schema 8 is 32,768 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
 Any layout or semantic change incompatible with the existing 32,768-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 7 so a live reload preserves the current game.
+tuning retains schema 8 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
@@ -162,7 +162,7 @@ difficulty envelope, and spawns the next bounded wave.
 ### 6.4 Enemy ship and laser package
 
 The game independently schedules one enemy saucer and one collectible package
-at uniformly selected intervals from 60 through 180 simulated seconds. A new
+at uniformly selected intervals from 45 through 120 simulated seconds. A new
 interval begins after the corresponding object leaves play, so neither feature
 can overlap another instance of itself. All scheduling randomness is seeded and
 snapshotted.
@@ -173,7 +173,12 @@ takes priority; otherwise a seeded choice selects either a random bearing or a
 fixed-point iterative intercept of the moving player. Enemy shots may destroy
 rocks but never score. The saucer and player can each die from their mutual
 collision or from rocks; player bullets and lasers destroy the saucer for 2,000
-points.
+points. Every saucer destruction creates an immediate 120-pixel-radius
+snapshot blast that can destroy nearby rocks, plus a 130-pixel danger radius
+for the player. Rocks score only when the player caused the saucer destruction;
+contact-triggered blasts never manufacture points. The 1.2-second presentation
+expands and contracts through the same fixed clock as gameplay, while damage is
+resolved once at detonation so newly split children survive the parent blast.
 
 The package drifts across the viewport without wrapping. Player contact grants
 20 simulated seconds of laser fire in place of bullets. A laser is a finite
@@ -189,9 +194,11 @@ starfield and translates all world objects by `new_center - old_center`,
 preserving trajectories rather than stretching them.
 
 The HUD clearly exposes score, level, lives, mode/status, help, and game over.
-The WAT declares composable shot, thrust, explosion, extra-life, and Death
-Blossom synth programs. The host knows only generic program IDs and oscillator
-parameters.
+The WAT declares composable shot, thrust, explosion, extra-life, Death Blossom,
+notification, and hazardous-blast synth programs. The hazardous blast layers
+three maximum-volume 1.2--1.5-second voices beneath a flickering orange pulse
+and one high-contrast background frame. The host knows only generic program IDs
+and oscillator parameters.
 
 ## 7. Determinism and limits
 

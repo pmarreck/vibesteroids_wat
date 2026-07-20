@@ -8,7 +8,7 @@ contract_phrases=(
 	'aedicule.v0'
 	'AE_event(kind, code, a, b)'
 	'AE_tick_rate(current_numerator, current_denominator) -> (120, 1)'
-	'Schema 7 is 32,768 bytes.'
+	'Schema 8 is 32,768 bytes.'
 	'code = refresh_numerator_hz'
 )
 stale_snapshot_phrases=(

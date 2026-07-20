@@ -17,8 +17,11 @@
 	(global $synth_9 (mut i32) (i32.const 0))
 	(global $synth_10 (mut i32) (i32.const 0))
 	(global $synth_11 (mut i32) (i32.const 0))
+	(global $synth_12 (mut i32) (i32.const 0))
+	(global $short_boom_voices (mut i32) (i32.const 0))
 	(global $invalid_synth_voices (mut i32) (i32.const 0))
 	(global $frame_count (mut i32) (i32.const 0))
+	(global $flash_frames (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
 	(global $effect_mask (mut i32) (i32.const 0))
@@ -35,6 +38,8 @@
 	(global $laser_lines (mut i32) (i32.const 0))
 	(global $blossom_marks (mut i32) (i32.const 0))
 	(global $blossom_help_valid (mut i32) (i32.const 0))
+	(global $blast_circles (mut i32) (i32.const 0))
+	(global $blast_radius (mut f32) (f32.const 0))
 	(global $current_path_key (mut i32) (i32.const -1))
 	(global $current_path_lines (mut i32) (i32.const 0))
 	(global $flame_min_x (mut f32) (f32.const 0))
@@ -55,9 +60,12 @@
 		i32.const 0 global.set $synth_9
 		i32.const 0 global.set $synth_10
 		i32.const 0 global.set $synth_11
+		i32.const 0 global.set $synth_12
+		i32.const 0 global.set $short_boom_voices
 		i32.const 0 global.set $invalid_synth_voices)
 	(func (export "test_reset_frame")
 		i32.const 0 global.set $frame_count
+		i32.const 0 global.set $flash_frames
 		i64.const 0 global.set $text_mask
 		i32.const 0 global.set $asteroid_paths
 		i32.const 0 global.set $bad_asteroid_vertices
@@ -72,6 +80,8 @@
 		i32.const 0 global.set $laser_lines
 		i32.const 0 global.set $blossom_marks
 		i32.const 0 global.set $blossom_help_valid
+		i32.const 0 global.set $blast_circles
+		f32.const 0 global.set $blast_radius
 		i32.const -1 global.set $current_path_key
 		i32.const 0 global.set $current_path_lines
 		f32.const 0 global.set $flame_min_x)
@@ -96,9 +106,12 @@
 		local.get $id i32.const 9 i32.eq (if (then global.get $synth_9 return))
 		local.get $id i32.const 10 i32.eq (if (then global.get $synth_10 return))
 		local.get $id i32.const 11 i32.eq (if (then global.get $synth_11 return))
+		local.get $id i32.const 12 i32.eq (if (then global.get $synth_12 return))
 		i32.const 0)
 	(func (export "test_invalid_synth_voices") (result i32) global.get $invalid_synth_voices)
+	(func (export "test_short_boom_voices") (result i32) global.get $short_boom_voices)
 	(func (export "test_frame_count") (result i32) global.get $frame_count)
+	(func (export "test_flash_frames") (result i32) global.get $flash_frames)
 	(func (export "test_text_seen") (param $id i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
 	(func (export "test_audio_seen") (param $id i32) (result i32)
@@ -118,6 +131,8 @@
 	(func (export "test_laser_lines") (result i32) global.get $laser_lines)
 	(func (export "test_blossom_marks") (result i32) global.get $blossom_marks)
 	(func (export "test_blossom_help_valid") (result i32) global.get $blossom_help_valid)
+	(func (export "test_blast_circles") (result i32) global.get $blast_circles)
+	(func (export "test_blast_radius") (result f32) global.get $blast_radius)
 	(func (export "test_flame_min_x") (result f32) global.get $flame_min_x)
 
 	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
@@ -128,8 +143,10 @@
 		global.get $menu_count i32.const 1 i32.add global.set $menu_count
 		global.get $menu_mask i32.const 1 local.get $id i32.shl i32.or global.set $menu_mask
 		i32.const 0)
-	(func (export "AE_frame_begin") (param f32 f32 f32 f32) (result i32)
+	(func (export "AE_frame_begin") (param $red f32) (param f32 f32 f32) (result i32)
 		global.get $frame_count i32.const 1 i32.add global.set $frame_count
+		local.get $red f32.const 0.9 f32.gt
+		(if (then global.get $flash_frames i32.const 1 i32.add global.set $flash_frames))
 		i32.const 0)
 	(func (export "AE_transform_push") (param f32 f32 f32 f32 f32 f32) (result i32) i32.const 0)
 	(func (export "AE_transform_pop") (result i32) i32.const 0)
@@ -167,7 +184,7 @@
 		local.get $key i32.const 921 i32.ge_u local.get $key i32.const 929 i32.lt_u i32.and
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
 		i32.const 0)
-	(func (export "AE_circle") (param $key i32) (param f32 f32 f32 f32 i32 i32) (result i32)
+	(func (export "AE_circle") (param $key i32) (param f32 f32) (param $radius f32) (param f32 i32 i32) (result i32)
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
 		local.get $key i32.const 1100 i32.ge_u local.get $key i32.const 1292 i32.lt_u i32.and i32.or
 		(if (then global.get $bullet_circles i32.const 1 i32.add global.set $bullet_circles))
@@ -179,6 +196,10 @@
 		(if (then global.get $enemy_bullet_circles i32.const 1 i32.add global.set $enemy_bullet_circles))
 		local.get $key i32.const 920 i32.eq
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
+		local.get $key i32.const 930 i32.ge_u local.get $key i32.const 932 i32.lt_u i32.and
+		(if (then
+			global.get $blast_circles i32.const 1 i32.add global.set $blast_circles
+			local.get $key i32.const 930 i32.eq (if (then local.get $radius global.set $blast_radius))))
 		i32.const 0)
 	(func (export "AE_text") (param $key i32) (param $ptr i32) (param $len i32) (param f32 f32 f32 i32 i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask
@@ -221,6 +242,11 @@
 		local.get $id i32.const 9 i32.eq (if (then global.get $synth_9 i32.const 1 i32.add global.set $synth_9))
 		local.get $id i32.const 10 i32.eq (if (then global.get $synth_10 i32.const 1 i32.add global.set $synth_10))
 		local.get $id i32.const 11 i32.eq (if (then global.get $synth_11 i32.const 1 i32.add global.set $synth_11))
+		local.get $id i32.const 12 i32.eq
+		(if (then
+			global.get $synth_12 i32.const 1 i32.add global.set $synth_12
+			local.get $duration i32.const 1000 i32.lt_s
+			(if (then global.get $short_boom_voices i32.const 1 i32.add global.set $short_boom_voices))))
 		i32.const 0)
 	(func (export "AE_effect") (param $id i32) (param i32 i32) (result i32)
 		global.get $effect_mask i32.const 1 local.get $id i32.shl i32.or global.set $effect_mask

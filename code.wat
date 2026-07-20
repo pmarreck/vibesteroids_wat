@@ -1,6 +1,6 @@
 ;; Vibesteroids behavioral conversion for the gpui-frontplane-v0 ABI.
 ;;
-;; Schema 7 stores every gameplay scalar as an integer. Spatial quantities use
+;; Schema 8 stores every gameplay scalar as an integer. Spatial quantities use
 ;; signed decimal fixed point with SCALE = 1,000,000. IEEE-754 values exist
 ;; only at the host ABI boundary: viewport scalars enter through $from_host,
 ;; and completed draw scalars leave through $to_host. They never feed back.
@@ -38,6 +38,7 @@
 ;; 15544: pointer target x/y:i64, pointer-heading authority:i32
 ;; 15568: temporary power kind:i32 (0 laser, 1 doubled fire rate)
 ;; 16384: 192 overflow player bullets x 48 bytes, preserving legacy addresses
+;; 25600: hazardous blast active/attribution:i32, x/y:i64, elapsed ticks:i32
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -103,7 +104,7 @@
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
 	(func (export "AE_state_ptr") (result i32) i32.const 1024)
 	(func (export "AE_state_len") (result i32) i32.const 32768)
-	(func (export "AE_state_schema") (result i32) i32.const 7)
+	(func (export "AE_state_schema") (result i32) i32.const 8)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
@@ -219,6 +220,20 @@
 		i32.const 11 global.get $wave_sine i32.const 80 i32.const 300
 		i32.const 311127 i32.const 207652 i32.const 155563
 		i32.const 220000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
+		;; Hazardous blast: three full-length layers make a broad, loud BOOM whose
+		;; audible envelope cannot finish before one second has elapsed.
+		i32.const 12 i32.const 3 i32.const 0 i32.const 1500
+		i32.const 0 i32.const 0 i32.const 0
+		i32.const 1000000 global.get $filter_low_pass i32.const 3000000 i32.const 60000
+		call $declare_swept_voice
+		i32.const 12 i32.const 4 i32.const 0 i32.const 1400
+		i32.const 0 i32.const 0 i32.const 0
+		i32.const 850000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
+		i32.const 12 global.get $wave_sine i32.const 0 i32.const 1200
+		i32.const 110000 i32.const 65000 i32.const 35000
+		i32.const 850000 global.get $filter_none i32.const 0 i32.const 0
 		call $declare_swept_voice
 		i32.const 0)
 
@@ -1342,6 +1357,53 @@
 				(if (then local.get $address i32.const 0 i32.store))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
+	;; Resolves a hazardous explosion against a pre-hit asteroid snapshot so
+	;; split children survive; the attribution bit controls all resulting score.
+	(func $start_hazardous_blast (param $x i64) (param $y i64) (param $score_hit i32)
+		(local $index i32) (local $asteroid i32) (local $hit_mask i32)
+		i32.const 26624 i32.const 1 i32.store
+		i32.const 26628 local.get $score_hit i32.store
+		i32.const 26632 local.get $x i64.store
+		i32.const 26640 local.get $y i64.store
+		i32.const 26648 i32.const 0 i32.store
+		(block $snapshot_done (loop $snapshot
+			local.get $index i32.const 32 i32.ge_u br_if $snapshot_done
+			local.get $index call $asteroid_address local.set $asteroid
+			local.get $asteroid i32.load
+			(if (then
+				local.get $x local.get $y
+				local.get $asteroid i32.const 16 i32.add i64.load
+				local.get $asteroid i32.const 24 i32.add i64.load
+				i64.const 120000000 local.get $asteroid i32.const 48 i32.add i64.load i64.add
+				call $distance_lt
+				(if (then
+					local.get $hit_mask i32.const 1 local.get $index i32.shl i32.or local.set $hit_mask))))
+			local.get $index i32.const 1 i32.add local.set $index br $snapshot))
+		i32.const 0 local.set $index
+		(block $hits_done (loop $hits
+			local.get $index i32.const 32 i32.ge_u br_if $hits_done
+			local.get $hit_mask i32.const 1 local.get $index i32.shl i32.and
+			(if (then
+				local.get $index call $asteroid_address
+				i64.const 0 i64.const 0 local.get $score_hit call $hit_asteroid))
+			local.get $index i32.const 1 i32.add local.set $index br $hits))
+		i32.const 1124 i32.load i32.eqz
+		i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
+			(if (then
+				local.get $x local.get $y i32.const 1048 i64.load i32.const 1056 i64.load
+				i64.const 130000000 call $distance_lt
+				(if (then call $begin_ship_destruction))))
+		i32.const 12 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
+
+	;; Advances the 1.2-second expanding/contracting blast presentation from the
+	;; fixed simulation clock; collision damage remains an immediate snapshot.
+	(func $update_hazardous_blast
+		i32.const 26624 i32.load
+		(if (then
+			i32.const 26648 i32.const 26648 i32.load i32.const 1 i32.add i32.store
+			i32.const 26648 i32.load i32.const 72 call $ticks_from_sixty i32.ge_u
+			(if (then i32.const 26624 i32.const 0 i32.store)))))
+
 	;; Removes the saucer, starts its next independent appearance interval, and
 	;; optionally awards the fixed player-kill bounty.
 	(func $destroy_ufo (param $score_hit i32)
@@ -1349,7 +1411,7 @@
 		(if (then
 			i32.const 16040 i64.load i32.const 16048 i64.load i32.const 20
 			i32.const 16056 i64.load i64.const 0 call $spawn_particles
-			i32.const 2 f32.const 1 f32.const 1.2 i32.const 0 call $audio drop
+			i32.const 16040 i64.load i32.const 16048 i64.load local.get $score_hit call $start_hazardous_blast
 			i32.const 16032 i32.const 0 i32.store
 			i32.const 16512 call $random_spawn_ticks i32.store
 			local.get $score_hit (if (then i32.const 2000 call $add_score)))))
@@ -1588,7 +1650,8 @@
 					i32.const 16064 i64.load local.get $asteroid i32.const 48 i32.add i64.load i64.add
 					call $distance_lt
 					(if (then
-						local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
+						;; The blast snapshots the impact rock before splitting it; a
+						;; separate pre-hit would expose newborn children to the blast.
 						i32.const 0 call $destroy_ufo
 						br $asteroids_done))))
 				local.get $index i32.const 1 i32.add local.set $index br $asteroids))
@@ -1600,8 +1663,7 @@
 				i32.const 1048 i64.load i32.const 1056 i64.load
 				i32.const 16064 i64.load i64.const 10000000 i64.add call $distance_lt
 				(if (then
-					i32.const 0 call $destroy_ufo
-					call $begin_ship_destruction)))))))
+					i32.const 0 call $destroy_ufo)))))))
 
 	(func $respawn_radius (result i64)
 		i32.const 1128 i32.load i32.const 300 call $ticks_from_sixty i32.ge_s
@@ -1672,6 +1734,7 @@
 		i32.const 1108 i32.load i32.const 528 i32.and (if (then return))
 		i32.const 1124 i32.load i32.const 3 i32.eq
 		(if (then i32.const 1108 i32.load i32.const 8 i32.and (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset)) return))
+		call $update_hazardous_blast
 		call $update_power_timers
 		i32.const 1124 i32.load i32.eqz
 		(if (then
@@ -2014,24 +2077,53 @@
 	;; Keeps the once-per-life Death Blossom charge visible without depending on
 	;; an emoji glyph being present in the host's chosen font.
 	(func $draw_blossom_available
-		(local $x f32)
+		(local $x i64)
 		i32.const 1108 i32.load i32.const 256 i32.and i32.eqz (if (then return))
-		i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host local.set $x
-		i32.const 920 local.get $x f32.const 82 f32.const 4 f32.const 0
+		i32.const 1032 i64.load i64.const 2 i64.div_s local.set $x
+		i32.const 920 local.get $x call $to_host f32.const 82 f32.const 4 f32.const 0
 		i32.const 0xffcf5cff i32.const 1 call $circle drop
-		i32.const 921 local.get $x f32.const 14 f32.sub f32.const 82 local.get $x f32.const 7 f32.sub f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 922 local.get $x f32.const 7 f32.add f32.const 82 local.get $x f32.const 14 f32.add f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 923 local.get $x f32.const 68 local.get $x f32.const 75 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 924 local.get $x f32.const 89 local.get $x f32.const 96 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 925 local.get $x f32.const 10 f32.sub f32.const 72 local.get $x f32.const 5 f32.sub f32.const 77 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 926 local.get $x f32.const 5 f32.add f32.const 87 local.get $x f32.const 10 f32.add f32.const 92 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 927 local.get $x f32.const 10 f32.sub f32.const 92 local.get $x f32.const 5 f32.sub f32.const 87 f32.const 2 i32.const 0xffcf5cff call $line drop
-		i32.const 928 local.get $x f32.const 5 f32.add f32.const 77 local.get $x f32.const 10 f32.add f32.const 72 f32.const 2 i32.const 0xffcf5cff call $line drop)
+		i32.const 921 local.get $x i64.const 14000000 i64.sub call $to_host f32.const 82 local.get $x i64.const 7000000 i64.sub call $to_host f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 922 local.get $x i64.const 7000000 i64.add call $to_host f32.const 82 local.get $x i64.const 14000000 i64.add call $to_host f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 923 local.get $x call $to_host f32.const 68 local.get $x call $to_host f32.const 75 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 924 local.get $x call $to_host f32.const 89 local.get $x call $to_host f32.const 96 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 925 local.get $x i64.const 10000000 i64.sub call $to_host f32.const 72 local.get $x i64.const 5000000 i64.sub call $to_host f32.const 77 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 926 local.get $x i64.const 5000000 i64.add call $to_host f32.const 87 local.get $x i64.const 10000000 i64.add call $to_host f32.const 92 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 927 local.get $x i64.const 10000000 i64.sub call $to_host f32.const 92 local.get $x i64.const 5000000 i64.sub call $to_host f32.const 87 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 928 local.get $x i64.const 5000000 i64.add call $to_host f32.const 77 local.get $x i64.const 10000000 i64.add call $to_host f32.const 72 f32.const 2 i32.const 0xffcf5cff call $line drop)
+
+	;; Draws the blast as a triangular 1.2-second pulse with alternating hot
+	;; orange cores, giving deterministic expansion, contraction, and flicker.
+	(func $draw_hazardous_blast
+		(local $elapsed i32) (local $half i32) (local $duration i32)
+		(local $radius i64) (local $color i32)
+		i32.const 26624 i32.load i32.eqz (if (then return))
+		i32.const 26648 i32.load local.set $elapsed
+		i32.const 36 call $ticks_from_sixty local.set $half
+		i32.const 72 call $ticks_from_sixty local.set $duration
+		local.get $elapsed local.get $half i32.le_u
+		(if (then
+			local.get $elapsed i64.extend_i32_u i64.const 120000000 i64.mul
+			local.get $half i64.extend_i32_u i64.div_u local.set $radius)
+		(else
+			local.get $duration local.get $elapsed i32.sub i64.extend_i32_u
+			i64.const 120000000 i64.mul local.get $half i64.extend_i32_u i64.div_u local.set $radius))
+		local.get $radius i64.const 4000000 i64.lt_u
+		(if (then i64.const 4000000 local.set $radius))
+		local.get $elapsed i32.const 2 i32.div_u i32.const 1 i32.and
+		(if (result i32) (then i32.const 0xffcf5cff) (else i32.const 0xff8a2bff))
+		local.set $color
+		i32.const 930 i32.const 26632 i64.load call $to_host i32.const 26640 i64.load call $to_host
+		local.get $radius call $to_host f32.const 0 local.get $color i32.const 1 call $circle drop
+		i32.const 931 i32.const 26632 i64.load call $to_host i32.const 26640 i64.load call $to_host
+		local.get $radius i64.const 8000000 i64.add call $to_host f32.const 4 i32.const 0xff9b2f99 i32.const 0 call $circle drop)
 
 	(func (export "AE_render") (result i32)
 		(local $index i32) (local $address i32) (local $reserve_count i32)
 		(local $reserve_icons i32) (local $reserve_digits i32) (local $alpha i32)
-		f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop
+		i32.const 26624 i32.load i32.const 26648 i32.load i32.eqz i32.and
+		(if
+			(then f32.const 0.96862745 f32.const 0.95686275 f32.const 0.92941176 f32.const 1 call $frame_begin drop)
+			(else f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop))
 		i32.const 1132 i32.load i32.const 0 i32.gt_s
 		(if (then
 			call $splash_alpha local.set $alpha
@@ -2126,6 +2218,7 @@
 			local.get $index i32.const 4 i32.ge_u br_if $debris_done
 			local.get $index call $debris_address local.set $address local.get $index local.get $address call $draw_debris
 			local.get $index i32.const 1 i32.add local.set $index br $debris))
+		call $draw_hazardous_blast
 		i32.const 1124 i32.load i32.const 1 i32.eq
 		(if (then i32.const 32 i32.const 184 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 26 i32.const 0xff8a2bff i32.const 1 call $text drop))
 		call $draw_blossom_available

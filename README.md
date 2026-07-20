@@ -109,7 +109,7 @@ On July 16, 2026, Peter flew the ship while we removed its per-tick drag from
 WAT. In the next simulation tick the already-running ship coasted indefinitely:
 the process did not restart, Rust did not rebuild, and score, lives, wave,
 bullets, and rocks remained intact. We then restored gentler `0.995` drag and
-saw that change live too. The schema-7 implementation expresses it as
+saw that change live too. The schema-8 implementation expresses it as
 exact decimal-fixed `velocity * 995000 / 1000000`; the WAT policy test forbids
 IEEE-754 gameplay arithmetic outside the sealed host-scalar adapter.
 
@@ -128,11 +128,12 @@ Implemented:
   debris, particles, safe respawn, and extra lives;
 - auto-fire, Kid Mode, and the semi-secret Death Blossom;
 - independently scheduled disc UFOs with predictive, random, and defensive
-  fire, physical collisions, and a 2,000-point bounty;
+  fire, physical collisions, a 2,000-point bounty, and hazardous expanding
+  blasts whose asteroid score follows player-kill attribution;
 - drifting packages that grant 20 seconds of finite, non-wrapping,
   multi-target laser fire;
-- guest-declared shot, laser, thrust, explosion, extra-life, and Death Blossom
-  synths;
+- guest-declared shot, laser, thrust, explosion, extra-life, Death Blossom,
+  alert, notification, and layered 1.2-second-or-longer BOOM synths;
 - signed decimal-fixed internal state and physics, with one sealed float adapter
   for the host ABI;
 - deterministic seeds, snapshots, WAST behavior tests, and headless SVG; and

@@ -4,7 +4,11 @@ set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 suite=$(mktemp "$TMPDIR/vibesteroids_wat.XXXXXX.wast")
-trap 'unlink "$suite"' EXIT
+if [[ ${KEEP_WAST_SUITE:-0} == 1 ]]; then
+	printf 'WAST suite retained at %s\n' "$suite" >&2
+else
+	trap 'unlink "$suite"' EXIT
+fi
 
 append_rate_variant() {
 	local label=$1

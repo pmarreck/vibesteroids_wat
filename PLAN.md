@@ -132,13 +132,16 @@
     between button-down and button-up cannot strand autofire. (2026-07-20 12:39 EDT)
   - [x] Temporarily used a self-clearing primary-fire pulse with the old host;
     superseded it after the corrected native release build. (2026-07-20 14:07 EDT)
-  - [ ] After Aedicule's secondary button ID 2 work has a green Nix build and
-    commit, pin that revision so right-click thrust reaches the live guest.
+  - [x] Pin Aedicule's green secondary-button ID 2 revision so right-click
+    thrust reaches the live guest. (2026-07-20 15:38 EDT: `9c5b710`)
   - Curiosity poke: should keyboard rotation temporarily override pointer aim,
     or should the most recent input modality own heading until the other moves?
-- [ ] Add a snapshot-based, player-dangerous UFO blast with score attribution,
+- [x] Add a snapshot-based, player-dangerous UFO blast with score attribution,
   a flickering orange expansion/contraction, one-frame high-contrast flash, and
   a layered explosion synth lasting at least 1.2 seconds.
+  (2026-07-20 15:02 EDT: 120-pixel asteroid radius, 130-pixel player danger,
+  attribution/split-child WAST proof, 1.2-second pulse, three 1.2--1.5-second
+  synth layers)
   - Curiosity poke: can blast attribution stay correct when a scored parent rock
     splits while the same explosion is still resolving its original snapshot?
 - [ ] Add an independently scheduled 45--120-second derelict satellite that can
@@ -182,15 +185,16 @@
   IDs, 70-shot WAST/render proof, locked runtime test, optimized build)
   - Curiosity poke: which draw-command or snapshot byte limit becomes the next
     cap after projectile storage is raised?
-- [ ] After Aedicule wires its injected monotonic accumulator into the live
+- [x] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision, switch production from 60 to 120 Hz, and retain
   equal elapsed-time behavior at 60 and 120 Hz in WAST.
   - [x] Switch production to 120/1 with schema 7, a rate-agnostic WAST matrix,
     source-time fixture adapter, and equal-time projectile/retention proofs.
     (2026-07-20 14:46 EDT: fixed ship/particle/debris rate coupling; full
     locked-runtime test and optimized build)
-  - [ ] Pin Aedicule's clean monotonic-scheduler/input/diagnostic revision once
-    its agent supplies the pushed SHA and green gate record.
+  - [x] Pin Aedicule's clean monotonic-scheduler/input/diagnostic revision once
+    its agent supplies the pushed SHA and green gate record. (2026-07-20
+    15:38 EDT: pinned pushed `9c5b710671c17e8a210480b6168349ab20ed01b1`)
   - Curiosity poke: which collision differences are desirable reduced tunneling
     and which are unintended difficulty changes?
 - [ ] Perform Peter-guided playtests of the highest-priority findings in

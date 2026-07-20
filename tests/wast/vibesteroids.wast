@@ -20,7 +20,9 @@
 	(import "test.host" "test_menu_seen" (func $host_menu_seen (param i32) (result i32)))
 	(import "test.host" "test_synth_count" (func $host_synth_count (param i32) (result i32)))
 	(import "test.host" "test_invalid_synth_voices" (func $host_invalid_synth_voices (result i32)))
+	(import "test.host" "test_short_boom_voices" (func $host_short_boom_voices (result i32)))
 	(import "test.host" "test_frame_count" (func $host_frame_count (result i32)))
+	(import "test.host" "test_flash_frames" (func $host_flash_frames (result i32)))
 	(import "test.host" "test_text_seen" (func $host_text_seen (param i32) (result i32)))
 	(import "test.host" "test_asteroid_paths" (func $host_asteroid_paths (result i32)))
 	(import "test.host" "test_bad_asteroid_vertices" (func $host_bad_asteroid_vertices (result i32)))
@@ -34,6 +36,8 @@
 	(import "test.host" "test_laser_lines" (func $host_laser_lines (result i32)))
 	(import "test.host" "test_blossom_marks" (func $host_blossom_marks (result i32)))
 	(import "test.host" "test_blossom_help_valid" (func $host_blossom_help_valid (result i32)))
+	(import "test.host" "test_blast_circles" (func $host_blast_circles (result i32)))
+	(import "test.host" "test_blast_radius" (func $host_blast_radius (result f32)))
 	(import "test.host" "test_flame_min_x" (func $host_flame_min_x (result f32)))
 	(import "test.host" "test_audio_seen" (func $host_audio_seen (param i32) (result i32)))
 	(import "test.host" "test_effect_seen" (func $host_effect_seen (param i32) (result i32)))
@@ -210,7 +214,9 @@
 	(func (export "host_menu_seen") (param i32) (result i32) local.get 0 call $host_menu_seen)
 	(func (export "host_synth_count") (param i32) (result i32) local.get 0 call $host_synth_count)
 	(func (export "host_invalid_synth_voices") (result i32) call $host_invalid_synth_voices)
+	(func (export "host_short_boom_voices") (result i32) call $host_short_boom_voices)
 	(func (export "host_frame_count") (result i32) call $host_frame_count)
+	(func (export "host_flash_frames") (result i32) call $host_flash_frames)
 	(func (export "host_text_seen") (param i32) (result i32) local.get 0 call $host_text_seen)
 	(func (export "host_asteroid_paths") (result i32) call $host_asteroid_paths)
 	(func (export "host_bad_asteroid_vertices") (result i32) call $host_bad_asteroid_vertices)
@@ -224,6 +230,8 @@
 	(func (export "host_laser_lines") (result i32) call $host_laser_lines)
 	(func (export "host_blossom_marks") (result i32) call $host_blossom_marks)
 	(func (export "host_blossom_help_valid") (result i32) call $host_blossom_help_valid)
+	(func (export "host_blast_circles") (result i32) call $host_blast_circles)
+	(func (export "host_blast_radius") (result f32) call $host_blast_radius)
 	(func (export "host_flame_min_x") (result f32) call $host_flame_min_x)
 	(func (export "host_audio_seen") (param i32) (result i32) local.get 0 call $host_audio_seen)
 	(func (export "host_effect_seen") (param i32) (result i32) local.get 0 call $host_effect_seen)
@@ -413,7 +421,7 @@
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 7))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 8))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 32768))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
@@ -424,7 +432,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 7 stores canonical per-second velocities while integrating at 120 Hz.
+;; Schema 8 stores canonical per-second velocities while integrating at 120 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -2493750))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383979219))
@@ -455,6 +463,8 @@
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 9)) (i32.const 2))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 10)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 11)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 12)) (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_short_boom_voices") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_invalid_synth_voices") (i32.const 0))
 
 ;; The initial frame is a real vector game scene, not the former circle demo.
