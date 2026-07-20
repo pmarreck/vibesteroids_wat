@@ -11,7 +11,21 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 76)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 80)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 96)) (i32.const 30000))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 5))
+
+;; Free ships begin at 30,000; each later gap grows by exactly 1.5x while a
+;; scoring event crossing a threshold still awards at most one reserve.
+(assert_return (invoke $vibesteroids_tests "hit_terminal_asteroid_at_score" (i32.const 29900)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 30020))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 76)) (i32.const 4))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 96)) (i32.const 75000))
+(assert_return (invoke $vibesteroids_tests "hit_terminal_asteroid_at_score" (i32.const 74900)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 76)) (i32.const 5))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 96)) (i32.const 142500))
+(assert_return (invoke $vibesteroids_tests "hit_terminal_asteroid_at_score" (i32.const 142400)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 76)) (i32.const 6))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 96)) (i32.const 243750))
 
 ;; Three reserves remain icon-only; four reserves become three icons plus the
 ;; numeric reserve total in the former fourth-icon position.

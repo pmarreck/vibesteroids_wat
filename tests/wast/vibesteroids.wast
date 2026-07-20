@@ -165,6 +165,22 @@
 			local.get $index local.get $capacity i32.ge_u br_if $done
 			i32.const 1024 local.get $base i32.add local.get $index local.get $stride i32.mul i32.add i32.const 1 i32.store
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
+	;; Builds the smallest real scoring collision used to exercise production
+	;; extra-life accounting without exposing an otherwise-private score helper.
+	(func (export "hit_terminal_asteroid_at_score") (param $score i32) (result i32)
+		i32.const 1096 local.get $score i32.store
+		i32.const 4352 i32.const 1 i32.store
+		i32.const 4368 i64.const 200000000 i64.store
+		i32.const 4376 i64.const 200000000 i64.store
+		i32.const 4384 i64.const 0 i64.store
+		i32.const 4392 i64.const 0 i64.store
+		i32.const 4400 i64.const 20000000 i64.store
+		i32.const 1280 i32.const 1 i32.store
+		i32.const 1288 i64.const 200000000 i64.store
+		i32.const 1296 i64.const 200000000 i64.store
+		i32.const 1304 i64.const 0 i64.store
+		i32.const 1312 i64.const 0 i64.store
+		i32.const 1 call $tick)
 	(func (export "state_bits") (param $offset i32) (param $mask i32) (result i32)
 		i32.const 1024 local.get $offset i32.add i32.load local.get $mask i32.and i32.eqz i32.eqz)
 	(func (export "event") (param $kind i32) (param $code i32) (result i32)

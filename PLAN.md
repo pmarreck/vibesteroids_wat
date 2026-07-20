@@ -170,8 +170,10 @@
   total-lives state semantics, boundary/multi-digit WAST proof, full test/build)
   - Curiosity poke: should the number mean total lives or only off-screen
     reserves? Match the existing lives-state semantics and lock it in WAST.
-- [ ] Raise the first free-ship threshold to 30,000, then grow each subsequent
+- [x] Raise the first free-ship threshold to 30,000, then grow each subsequent
   score gap geometrically by 1.5x using deterministic integer arithmetic.
+  (2026-07-20 14:22 EDT: state-compatible sequence derivation, unsigned
+  saturation, three-threshold WAST proof, full test/build)
   - Curiosity poke: should a single huge score addition be allowed to cross
     and award multiple thresholds, or retain the current one-award behavior?
 - [ ] Expand the player projectile pool enough for level-one rapid-fire Death

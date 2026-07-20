@@ -560,7 +560,7 @@
 		i32.const 1108 i32.const 256 i32.store
 		i32.const 1112 i32.const -100 i32.store
 		i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store
-		i32.const 1120 i32.const 20000 i32.store
+		i32.const 1120 i32.const 30000 i32.store
 		i32.const 1124 i32.const 0 i32.store
 		i32.const 1128 i32.const 0 i32.store
 		i32.const 1136 local.get $normalized_seed i32.store
@@ -725,8 +725,25 @@
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		i32.const 0)
 
+	;; Replays the small geometric threshold sequence from its canonical origin,
+	;; avoiding a second mutable gap field that could diverge after restoration.
+	(func $next_free_ship_threshold (param $current i32) (result i32)
+		(local $threshold i64) (local $gap i64)
+		i64.const 30000 local.set $threshold
+		i64.const 30000 local.set $gap
+		(block $found (loop $advance
+			local.get $threshold local.get $current i64.extend_i32_u i64.ge_u br_if $found
+			local.get $gap i64.const 3 i64.mul i64.const 1 i64.add i64.const 2 i64.div_u local.set $gap
+			local.get $threshold local.get $gap i64.add local.set $threshold
+			br $advance))
+		local.get $gap i64.const 3 i64.mul i64.const 1 i64.add i64.const 2 i64.div_u local.set $gap
+		local.get $threshold local.get $gap i64.add local.set $threshold
+		local.get $threshold i64.const 4294967295 i64.gt_u
+		(if (then i32.const -1 return))
+		local.get $threshold i32.wrap_i64)
+
 	;; Centralizes score and extra-life accounting so non-asteroid targets obey
-	;; the same Kid Mode and 20,000-point reserve-ship rules.
+	;; the same Kid Mode and geometrically increasing reserve-ship rules.
 	(func $add_score (param $points i32)
 		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz
 		(if
@@ -735,7 +752,7 @@
 				i32.const 1096 i32.load i32.const 1120 i32.load i32.ge_u
 				(if (then
 					i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.add i32.store
-					i32.const 1120 i32.const 1120 i32.load i32.const 20000 i32.add i32.store
+					i32.const 1120 i32.const 1120 i32.load call $next_free_ship_threshold i32.store
 					i32.const 6 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))
 
 	(func $hit_asteroid (param $address i32) (param $impulse_x i64) (param $impulse_y i64)
