@@ -26,6 +26,7 @@
 	(global $bad_asteroid_vertices (mut i32) (i32.const 0))
 	(global $asteroid_circles (mut i32) (i32.const 0))
 	(global $reserve_paths (mut i32) (i32.const 0))
+	(global $reserve_count_text_valid (mut i32) (i32.const 0))
 	(global $bullet_circles (mut i32) (i32.const 0))
 	(global $star_circles (mut i32) (i32.const 0))
 	(global $ufo_paths (mut i32) (i32.const 0))
@@ -62,6 +63,7 @@
 		i32.const 0 global.set $bad_asteroid_vertices
 		i32.const 0 global.set $asteroid_circles
 		i32.const 0 global.set $reserve_paths
+		i32.const 0 global.set $reserve_count_text_valid
 		i32.const 0 global.set $bullet_circles
 		i32.const 0 global.set $star_circles
 		i32.const 0 global.set $ufo_paths
@@ -107,6 +109,7 @@
 	(func (export "test_bad_asteroid_vertices") (result i32) global.get $bad_asteroid_vertices)
 	(func (export "test_asteroid_circles") (result i32) global.get $asteroid_circles)
 	(func (export "test_reserve_paths") (result i32) global.get $reserve_paths)
+	(func (export "test_reserve_count_text_valid") (result i32) global.get $reserve_count_text_valid)
 	(func (export "test_bullet_circles") (result i32) global.get $bullet_circles)
 	(func (export "test_star_circles") (result i32) global.get $star_circles)
 	(func (export "test_ufo_paths") (result i32) global.get $ufo_paths)
@@ -151,7 +154,7 @@
 			global.get $current_path_lines i32.const 11 i32.gt_u i32.or
 			(if (then global.get $bad_asteroid_vertices i32.const 1 i32.add global.set $bad_asteroid_vertices))))
 		global.get $current_path_key i32.const 50 i32.ge_u
-		global.get $current_path_key i32.const 52 i32.lt_u i32.and
+		global.get $current_path_key i32.const 53 i32.lt_u i32.and
 		(if (then global.get $reserve_paths i32.const 1 i32.add global.set $reserve_paths))
 		global.get $current_path_key i32.const 900 i32.eq
 		(if (then global.get $ufo_paths i32.const 1 i32.add global.set $ufo_paths))
@@ -183,6 +186,12 @@
 			local.get $ptr i32.const 512 i32.eq
 			local.get $len i32.const 26 i32.eq i32.and
 			global.set $blossom_help_valid))
+		local.get $key i32.const 25 i32.eq
+		(if (then
+			local.get $len i32.const 1 i32.ge_u
+			local.get $len i32.const 6 i32.le_u i32.and
+			local.get $ptr local.get $len i32.add i32.const 550 i32.eq i32.and
+			global.set $reserve_count_text_valid))
 		i32.const 0)
 	(func (export "AE_frame_end") (result i32) i32.const 0)
 	(func (export "AE_audio") (param $id i32) (param f32 f32 i32) (result i32)

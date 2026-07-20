@@ -165,8 +165,9 @@
   every life receives one charge. (2026-07-20 14:14 EDT: font-independent
   nine-primitive starburst, exact help-text classifier, full test/build)
   - Curiosity poke: does the symbol need a short legend outside the help panel?
-- [ ] Render three reserve ships plus a numeric total in the fourth position
-  whenever four or more ships are available.
+- [x] Render three reserve ships plus a numeric total in the fourth position
+  whenever four or more ships are available. (2026-07-20 14:18 EDT: retained
+  total-lives state semantics, boundary/multi-digit WAST proof, full test/build)
   - Curiosity poke: should the number mean total lives or only off-screen
     reserves? Match the existing lives-state semantics and lock it in WAST.
 - [ ] Raise the first free-ship threshold to 30,000, then grow each subsequent

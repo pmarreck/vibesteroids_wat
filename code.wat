@@ -87,6 +87,7 @@
 	(data (i32.const 448) "F1 / H         HELP")
 	(data (i32.const 472) "DEATH BLOSSOM!")
 	(data (i32.const 512) "ONE DEATH BLOSSOM PER LIFE")
+	(data (i32.const 544) "000000")
 
 	(global $scale i64 (i64.const 1000000))
 	(global $tick_numerator i64 (i64.const 60))
@@ -447,6 +448,15 @@
 	(func $write_two_digits (param $address i32) (param $value i32)
 		local.get $address local.get $value i32.const 10 call $store_digit
 		local.get $address i32.const 1 i32.add local.get $value i32.const 1 call $store_digit)
+	;; Selects the visible suffix of a six-digit HUD buffer so reserve counts do
+	;; not acquire misleading leading zeroes as extra ships accumulate.
+	(func $decimal_digits (param $value i32) (result i32)
+		local.get $value i32.const 100000 i32.ge_u (if (then i32.const 6 return))
+		local.get $value i32.const 10000 i32.ge_u (if (then i32.const 5 return))
+		local.get $value i32.const 1000 i32.ge_u (if (then i32.const 4 return))
+		local.get $value i32.const 100 i32.ge_u (if (then i32.const 3 return))
+		local.get $value i32.const 10 i32.ge_u (if (then i32.const 2 return))
+		i32.const 1)
 
 	(func $splash_alpha (result i32)
 		(local $remaining i32) (local $elapsed i32) (local $one_second i32) (local $three_seconds i32)
@@ -1981,7 +1991,8 @@
 		i32.const 928 local.get $x f32.const 5 f32.add f32.const 77 local.get $x f32.const 10 f32.add f32.const 72 f32.const 2 i32.const 0xffcf5cff call $line drop)
 
 	(func (export "AE_render") (result i32)
-		(local $index i32) (local $address i32) (local $reserve_count i32) (local $alpha i32)
+		(local $index i32) (local $address i32) (local $reserve_count i32)
+		(local $reserve_icons i32) (local $reserve_digits i32) (local $alpha i32)
 		f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop
 		i32.const 1132 i32.load i32.const 0 i32.gt_s
 		(if (then
@@ -2019,13 +2030,21 @@
 		i32.const 24 i32.const 144 i32.const 5
 		i32.const 1032 i64.load i64.const 62000000 i64.sub call $to_host f32.const 24 f32.const 15 i32.const 0x9bb8d1ff i32.const 1 call $text drop
 		i32.const 1100 i32.load i32.const 1 i32.sub local.set $reserve_count
-		local.get $reserve_count i32.const 5 i32.gt_u (if (then i32.const 5 local.set $reserve_count))
+		local.get $reserve_count local.set $reserve_icons
+		local.get $reserve_icons i32.const 3 i32.gt_u (if (then i32.const 3 local.set $reserve_icons))
 		(block $reserves_done (loop $reserves
-			local.get $index local.get $reserve_count i32.ge_u br_if $reserves_done
+			local.get $index local.get $reserve_icons i32.ge_u br_if $reserves_done
 			i32.const 50 local.get $index i32.add
 			i32.const 1032 i64.load i64.const 40000000 i64.sub local.get $index i64.extend_i32_u i64.const 28000000 i64.mul i64.sub
 			i64.const 48000000 i64.const 1000000 i64.const 0 i64.const 550000 i32.const 0x58ff72ff i32.const 0 call $draw_ship
-			local.get $index i32.const 1 i32.add local.set $index br $reserves))))
+			local.get $index i32.const 1 i32.add local.set $index br $reserves))
+		local.get $reserve_count i32.const 4 i32.ge_u
+		(if (then
+			i32.const 544 local.get $reserve_count call $write_six_digits
+			local.get $reserve_count call $decimal_digits local.set $reserve_digits
+			i32.const 25 i32.const 550 local.get $reserve_digits i32.sub local.get $reserve_digits
+			i32.const 1032 i64.load i64.const 124000000 i64.sub call $to_host
+			f32.const 54 f32.const 18 i32.const 0xffcf5cff i32.const 1 call $text drop))))
 		i32.const 1124 i32.load local.set $index
 		local.get $index i32.eqz
 		(if (then

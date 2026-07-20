@@ -13,6 +13,26 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 80)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 5))
 
+;; Three reserves remain icon-only; four reserves become three icons plus the
+;; numeric reserve total in the former fourth-icon position.
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 76) (i32.const 4)))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reserve_paths") (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_reserve_count_text_valid") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 76) (i32.const 5)))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reserve_paths") (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_reserve_count_text_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 549)) (i32.const 0x34))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 76) (i32.const 13)))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reserve_paths") (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_reserve_count_text_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "data_u16" (i32.const 548)) (i32.const 0x3231))
+
 ;; Auto-fire is a latched toggle; releasing the key does not cancel it.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 7)) (i32.const 0))
