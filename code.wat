@@ -86,7 +86,7 @@
 	(data (i32.const 424) "R              RESTART")
 	(data (i32.const 448) "F1 / H         HELP")
 	(data (i32.const 472) "DEATH BLOSSOM!")
-	(data (i32.const 488) "\f0\9f\94\86")
+	(data (i32.const 512) "ONE DEATH BLOSSOM PER LIFE")
 
 	(global $scale i64 (i64.const 1000000))
 	(global $tick_numerator i64 (i64.const 60))
@@ -1963,6 +1963,23 @@
 			i32.const 16544 i64.load call $to_host i32.const 16552 i64.load call $to_host
 			f32.const 2 i32.const 0xd9fbffff call $line drop)))
 
+	;; Keeps the once-per-life Death Blossom charge visible without depending on
+	;; an emoji glyph being present in the host's chosen font.
+	(func $draw_blossom_available
+		(local $x f32)
+		i32.const 1108 i32.load i32.const 256 i32.and i32.eqz (if (then return))
+		i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host local.set $x
+		i32.const 920 local.get $x f32.const 82 f32.const 4 f32.const 0
+		i32.const 0xffcf5cff i32.const 1 call $circle drop
+		i32.const 921 local.get $x f32.const 14 f32.sub f32.const 82 local.get $x f32.const 7 f32.sub f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 922 local.get $x f32.const 7 f32.add f32.const 82 local.get $x f32.const 14 f32.add f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 923 local.get $x f32.const 68 local.get $x f32.const 75 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 924 local.get $x f32.const 89 local.get $x f32.const 96 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 925 local.get $x f32.const 10 f32.sub f32.const 72 local.get $x f32.const 5 f32.sub f32.const 77 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 926 local.get $x f32.const 5 f32.add f32.const 87 local.get $x f32.const 10 f32.add f32.const 92 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 927 local.get $x f32.const 10 f32.sub f32.const 92 local.get $x f32.const 5 f32.sub f32.const 87 f32.const 2 i32.const 0xffcf5cff call $line drop
+		i32.const 928 local.get $x f32.const 5 f32.add f32.const 77 local.get $x f32.const 10 f32.add f32.const 72 f32.const 2 i32.const 0xffcf5cff call $line drop)
+
 	(func (export "AE_render") (result i32)
 		(local $index i32) (local $address i32) (local $reserve_count i32) (local $alpha i32)
 		f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop
@@ -2054,8 +2071,7 @@
 			local.get $index i32.const 1 i32.add local.set $index br $debris))
 		i32.const 1124 i32.load i32.const 1 i32.eq
 		(if (then i32.const 32 i32.const 184 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 26 i32.const 0xff8a2bff i32.const 1 call $text drop))
-		i32.const 1108 i32.load i32.const 256 i32.and
-		(if (then i32.const 35 i32.const 488 i32.const 4 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 82000000 call $to_host f32.const 24 i32.const 0xffcf5cff i32.const 1 call $text drop))
+		call $draw_blossom_available
 		i32.const 1108 i32.load i32.const 128 i32.and
 		(if (then i32.const 36 i32.const 472 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 666667 call $fixed_mul call $to_host f32.const 36 i32.const 0xff5cf4ff i32.const 1 call $text drop))
 		i32.const 1108 i32.load i32.const 16 i32.and
@@ -2069,9 +2085,10 @@
 			i32.const 44 i32.const 312 i32.const 24 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 296000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
 			i32.const 45 i32.const 340 i32.const 23 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 328000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
 			i32.const 46 i32.const 368 i32.const 28 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 360000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 47 i32.const 400 i32.const 20 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 392000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 48 i32.const 424 i32.const 22 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 424000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 49 i32.const 448 i32.const 19 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 456000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop))
+			i32.const 50 i32.const 512 i32.const 26 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 388000000 call $to_host f32.const 16 i32.const 0xffcf5cff i32.const 1 call $text drop
+			i32.const 47 i32.const 400 i32.const 20 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 416000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 48 i32.const 424 i32.const 22 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 448000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 49 i32.const 448 i32.const 19 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 480000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop))
 		i32.const 1124 i32.load i32.const 3 i32.eq
 		(if (then i32.const 34 i32.const 108 i32.const 9 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 40 i32.const 0xff5c73ff i32.const 1 call $text drop))
 		call $frame_end drop i32.const 0)

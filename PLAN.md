@@ -161,8 +161,9 @@
   scroll event. (2026-07-20 14:07 EDT)
   - Curiosity poke: should horizontal-only wheel/trackpad motion activate too,
     or only vertical wheel movement?
-- [ ] Restore the visible Death Blossom-available symbol and state in help that
-  every life receives one charge.
+- [x] Restore the visible Death Blossom-available symbol and state in help that
+  every life receives one charge. (2026-07-20 14:14 EDT: font-independent
+  nine-primitive starburst, exact help-text classifier, full test/build)
   - Curiosity poke: does the symbol need a short legend outside the help panel?
 - [ ] Render three reserve ships plus a numeric total in the fourth position
   whenever four or more ships are available.

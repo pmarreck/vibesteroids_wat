@@ -32,6 +32,8 @@
 	(global $enemy_bullet_circles (mut i32) (i32.const 0))
 	(global $package_paths (mut i32) (i32.const 0))
 	(global $laser_lines (mut i32) (i32.const 0))
+	(global $blossom_marks (mut i32) (i32.const 0))
+	(global $blossom_help_valid (mut i32) (i32.const 0))
 	(global $current_path_key (mut i32) (i32.const -1))
 	(global $current_path_lines (mut i32) (i32.const 0))
 	(global $flame_min_x (mut f32) (f32.const 0))
@@ -66,6 +68,8 @@
 		i32.const 0 global.set $enemy_bullet_circles
 		i32.const 0 global.set $package_paths
 		i32.const 0 global.set $laser_lines
+		i32.const 0 global.set $blossom_marks
+		i32.const 0 global.set $blossom_help_valid
 		i32.const -1 global.set $current_path_key
 		i32.const 0 global.set $current_path_lines
 		f32.const 0 global.set $flame_min_x)
@@ -109,6 +113,8 @@
 	(func (export "test_enemy_bullet_circles") (result i32) global.get $enemy_bullet_circles)
 	(func (export "test_package_paths") (result i32) global.get $package_paths)
 	(func (export "test_laser_lines") (result i32) global.get $laser_lines)
+	(func (export "test_blossom_marks") (result i32) global.get $blossom_marks)
+	(func (export "test_blossom_help_valid") (result i32) global.get $blossom_help_valid)
 	(func (export "test_flame_min_x") (result f32) global.get $flame_min_x)
 
 	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
@@ -155,6 +161,8 @@
 	(func (export "AE_line") (param $key i32) (param f32 f32 f32 f32 f32 i32) (result i32)
 		local.get $key i32.const 980 i32.ge_u local.get $key i32.const 982 i32.lt_u i32.and
 		(if (then global.get $laser_lines i32.const 1 i32.add global.set $laser_lines))
+		local.get $key i32.const 921 i32.ge_u local.get $key i32.const 929 i32.lt_u i32.and
+		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
 		i32.const 0)
 	(func (export "AE_circle") (param $key i32) (param f32 f32 f32 f32 i32 i32) (result i32)
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
@@ -165,9 +173,16 @@
 		(if (then global.get $star_circles i32.const 1 i32.add global.set $star_circles))
 		local.get $key i32.const 960 i32.ge_u local.get $key i32.const 968 i32.lt_u i32.and
 		(if (then global.get $enemy_bullet_circles i32.const 1 i32.add global.set $enemy_bullet_circles))
+		local.get $key i32.const 920 i32.eq
+		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
 		i32.const 0)
-	(func (export "AE_text") (param $key i32) (param i32 i32 f32 f32 f32 i32 i32) (result i32)
+	(func (export "AE_text") (param $key i32) (param $ptr i32) (param $len i32) (param f32 f32 f32 i32 i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask
+		local.get $key i32.const 50 i32.eq
+		(if (then
+			local.get $ptr i32.const 512 i32.eq
+			local.get $len i32.const 26 i32.eq i32.and
+			global.set $blossom_help_valid))
 		i32.const 0)
 	(func (export "AE_frame_end") (result i32) i32.const 0)
 	(func (export "AE_audio") (param $id i32) (param f32 f32 i32) (result i32)
