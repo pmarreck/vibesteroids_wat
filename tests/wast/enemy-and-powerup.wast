@@ -305,8 +305,9 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15056)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 11)) (i32.const 1))
 
-;; Contact collects the package and grants exactly 20 simulated seconds.
+;; Seeded collection chooses lasers while granting exactly 20 simulated seconds.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 4) (i32.const 0)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 512000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 384000000)))
@@ -315,7 +316,40 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1200))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15568)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 10)) (i32.const 1))
+
+;; A different deterministic draw selects doubled fire rate for the same
+;; duration. At level one, its bounded 16-tick cadence becomes exactly 8.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 4) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 512000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 384000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1200))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15568)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 9)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64))
+	(i32.const 2))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1191))
+
+;; The capped difficulty endpoint also doubles exactly: its ordinary 8-tick
+;; cadence becomes 4 only while the temporary rapid-fire reward is active.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 20)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15568) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 5)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64))
+	(i32.const 2))
 
 ;; Laser fire snapshots and destroys a package present when the beam begins.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))

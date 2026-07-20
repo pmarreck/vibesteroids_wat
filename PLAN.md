@@ -146,8 +146,9 @@
   and detonates on player fire or physical collision.
   - Curiosity poke: does its blast radius create deliberate asteroid-grouping
     tactics without making accidental chain clears dominate ordinary play?
-- [ ] Make each collected gift deterministically choose between 20 seconds of
+- [x] Make each collected gift deterministically choose between 20 seconds of
   piercing lasers and 20 seconds of doubled bounded player fire rate.
+  (2026-07-20 12:47 EDT)
   - Curiosity poke: what minimal visual distinction tells Peter which timed
     reward is active without introducing a localization-heavy status label?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live

@@ -36,6 +36,7 @@
 ;;        beam start/end x/y:i64
 ;; 15536: completed UFO appearances:i32
 ;; 15544: pointer target x/y:i64, pointer-heading authority:i32
+;; 15568: temporary power kind:i32 (0 laser, 1 doubled fire rate)
 ;; 15572: pending primary-pointer fire pulse:i32
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
@@ -600,12 +601,18 @@
 		call $fire_interval_ticks local.set $interval
 		i32.const 1108 i32.load i32.const 128 i32.and
 		(if (then i32.const 2 local.set $interval))
+		;; Ceiling division bounds the reward at no more than exactly twice the
+		;; ordinary rate even when a difficulty interval contains an odd tick.
+		i32.const 16520 i32.load i32.const 0 i32.gt_s
+		i32.const 16592 i32.load i32.const 1 i32.eq i32.and
+		(if (then local.get $interval i32.const 1 i32.add i32.const 2 i32.div_u local.set $interval))
 		i32.const 1124 i32.load i32.eqz
 		i32.const 1108 i32.load i32.const 16 i32.and i32.eqz i32.and
 		i32.const 1024 i32.load i32.const 1112 i32.load i32.sub local.get $interval i32.ge_s i32.and
 		(if
 			(then
 				i32.const 16520 i32.load i32.const 0 i32.gt_s
+				i32.const 16592 i32.load i32.eqz i32.and
 				(if
 					(then call $fire_laser)
 					(else
@@ -1334,8 +1341,8 @@
 				(if (then i32.const 16516 i32.const 16516 i32.load i32.const 1 i32.sub i32.store))
 				i32.const 16516 i32.load i32.eqz (if (then call $spawn_package)))))
 
-	;; Collection atomically retires the package, grants 20 simulated seconds of
-	;; laser fire, and begins a fresh independent package schedule.
+	;; Collection atomically retires the package, draws a deterministic reward,
+	;; grants it for 20 simulated seconds, and begins a fresh package schedule.
 	(func $check_package_collection
 		i32.const 16464 i32.load
 		i32.const 1124 i32.load i32.eqz i32.and
@@ -1345,6 +1352,7 @@
 			i32.const 16504 i64.load i64.const 10000000 i64.add call $distance_lt
 			(if (then
 				i32.const 16464 i32.const 0 i32.store
+				i32.const 16592 call $rand_u32 i32.const 1 i32.and i32.store
 				i32.const 16516 call $random_spawn_ticks i32.store
 				i32.const 16520 i32.const 1200 call $ticks_from_sixty i32.store
 				i32.const 10 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)))))
