@@ -176,8 +176,10 @@
   saturation, three-threshold WAST proof, full test/build)
   - Curiosity poke: should a single huge score addition be allowed to cross
     and award multiple thresholds, or retain the current one-award behavior?
-- [ ] Expand the player projectile pool enough for level-one rapid-fire Death
+- [x] Expand the player projectile pool enough for level-one rapid-fire Death
   Blossom without starvation, while preserving legacy slot addresses.
+  (2026-07-20 14:28 EDT: schema-6 256-slot split pool, disjoint overflow draw
+  IDs, 70-shot WAST/render proof, locked runtime test, optimized build)
   - Curiosity poke: which draw-command or snapshot byte limit becomes the next
     cap after projectile storage is raised?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live

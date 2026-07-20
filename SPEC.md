@@ -55,16 +55,16 @@ AE_tick_rate(current_numerator, current_denominator) -> (60, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 5
+AE_state_schema() -> 6
 ~~~
 
-Schema 5 is 16,384 bytes. The behavior specification documents the address map.
+Schema 6 is 32,768 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
-Any layout or semantic change incompatible with the existing 16,384-byte snapshot
+Any layout or semantic change incompatible with the existing 32,768-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 5 so a live reload preserves the current game.
+tuning retains schema 6 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
@@ -198,7 +198,7 @@ parameters.
 Given the same seed and ordered input/tick stream, state bytes, rendered command
 frames, audio/effect emissions, and wave progression are deterministic.
 
-Pools are fixed and bounded: up to 32 rocks, 64 bullets, 150 particles, and four
+Pools are fixed and bounded: up to 32 rocks, 256 player bullets, 150 particles, and four
 ship-debris pieces in the current schema. Saturation follows an explicit
 application rule and must not trap, grow memory, or exceed host output budgets.
 

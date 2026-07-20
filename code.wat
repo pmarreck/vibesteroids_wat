@@ -1,13 +1,13 @@
 ;; Vibesteroids behavioral conversion for the gpui-frontplane-v0 ABI.
 ;;
-;; Schema 5 stores every gameplay scalar as an integer. Spatial quantities use
+;; Schema 6 stores every gameplay scalar as an integer. Spatial quantities use
 ;; signed decimal fixed point with SCALE = 1,000,000. IEEE-754 values exist
 ;; only at the host ABI boundary: viewport scalars enter through $from_host,
 ;; and completed draw scalars leave through $to_host. They never feed back.
 ;; Linear velocity is stored in logical pixels/second and angular velocity in
 ;; radians/second; only named integration helpers know the fixed tick rate.
 ;;
-;; Canonical state occupies [1024, 17408):
+;; Canonical state occupies [1024, 33792):
 ;;   0 tick:i32          4 rng:i32            8 width:i64
 ;;  16 height:i64      24 ship.x:i64         32 ship.y:i64
 ;;  40 ship.vx:i64     48 ship.vy:i64        56 ship.dx:i64
@@ -18,7 +18,7 @@
 ;; 120 blossom-rotation:i64
 ;;
 ;; Pools, relative to AE_state_ptr:
-;;   256: 64 bullets x 48 bytes
+;;   256: 64 legacy bullets x 48 bytes
 ;;        active:i32, pad:i32, x/y/vx/vy/distance-traveled:i64
 ;;  3328: 32 asteroids x 80 bytes
 ;;        active/generation/shape/pad:i32, x/y/vx/vy/radius/dx/dy:i64,
@@ -37,6 +37,7 @@
 ;; 15536: completed UFO appearances:i32
 ;; 15544: pointer target x/y:i64, pointer-heading authority:i32
 ;; 15568: temporary power kind:i32 (0 laser, 1 doubled fire rate)
+;; 16384: 192 overflow player bullets x 48 bytes, preserving legacy addresses
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -92,6 +93,7 @@
 	(global $scale i64 (i64.const 1000000))
 	(global $tick_numerator i64 (i64.const 60))
 	(global $tick_denominator i64 (i64.const 1))
+	(global $player_bullet_capacity i32 (i32.const 256))
 	(global $wave_sine i32 (i32.const 1))
 	(global $wave_saw i32 (i32.const 2))
 	(global $filter_none i32 (i32.const 0))
@@ -100,8 +102,8 @@
 	(func (export "AE_abi_major") (result i32) i32.const 0)
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
 	(func (export "AE_state_ptr") (result i32) i32.const 1024)
-	(func (export "AE_state_len") (result i32) i32.const 16384)
-	(func (export "AE_state_schema") (result i32) i32.const 5)
+	(func (export "AE_state_len") (result i32) i32.const 32768)
+	(func (export "AE_state_schema") (result i32) i32.const 6)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
@@ -379,8 +381,19 @@
 		local.get $source_vx local.get $lead_x local.get $speed i64.mul local.get $length i64.div_s i64.add
 		local.get $source_vy local.get $lead_y local.get $speed i64.mul local.get $length i64.div_s i64.add)
 
+	;; Extends the projectile pool without moving any of the 64 legacy records,
+	;; keeping old slot offsets stable while schema 6 adds a disjoint tail pool.
 	(func $bullet_address (param $index i32) (result i32)
-		i32.const 1280 local.get $index i32.const 48 i32.mul i32.add)
+		local.get $index i32.const 64 i32.lt_u
+		(if (result i32)
+			(then i32.const 1280 local.get $index i32.const 48 i32.mul i32.add)
+			(else i32.const 17408 local.get $index i32.const 64 i32.sub i32.const 48 i32.mul i32.add)))
+	;; Keeps new player projectile IDs out of the asteroid command-key range.
+	(func $bullet_draw_key (param $index i32) (result i32)
+		local.get $index i32.const 64 i32.lt_u
+		(if (result i32)
+			(then i32.const 100 local.get $index i32.add)
+			(else i32.const 1100 local.get $index i32.const 64 i32.sub i32.add)))
 	(func $enemy_bullet_address (param $index i32) (result i32)
 		i32.const 16080 local.get $index i32.const 48 i32.mul i32.add)
 	(func $asteroid_address (param $index i32) (result i32)
@@ -544,7 +557,7 @@
 		(local $normalized_seed i32)
 		local.get $seed local.set $normalized_seed
 		local.get $normalized_seed i32.eqz (if (then i32.const 1 local.set $normalized_seed))
-		i32.const 1024 i32.const 0 i32.const 16384 memory.fill
+		i32.const 1024 i32.const 0 i32.const 32768 memory.fill
 		i32.const 1028 local.get $normalized_seed i32.store
 		i32.const 1032 local.get $width i64.store
 		i32.const 1040 local.get $height i64.store
@@ -597,7 +610,7 @@
 		(local $index i32) (local $address i32)
 		(block $none
 			(loop $again
-				local.get $index i32.const 64 i32.ge_u br_if $none
+				local.get $index global.get $player_bullet_capacity i32.ge_u br_if $none
 				local.get $index call $bullet_address local.set $address
 				local.get $address i32.load i32.eqz
 				(if (then local.get $address return))
@@ -940,7 +953,7 @@
 		(local $bullet i32) (local $asteroid i32) (local $factor i64)
 		(local $impulse_x i64) (local $impulse_y i64)
 		(block $bullets_done (loop $next_bullet
-			local.get $bullet_index i32.const 64 i32.ge_u br_if $bullets_done
+			local.get $bullet_index global.get $player_bullet_capacity i32.ge_u br_if $bullets_done
 			local.get $bullet_index call $bullet_address local.set $bullet
 			local.get $bullet i32.load
 			(if
@@ -1125,7 +1138,7 @@
 	(func $update_bullets
 		(local $index i32) (local $address i32) (local $vx i64) (local $vy i64)
 		(block $done (loop $again
-			local.get $index i32.const 64 i32.ge_u br_if $done
+			local.get $index global.get $player_bullet_capacity i32.ge_u br_if $done
 			local.get $index call $bullet_address local.set $address
 			local.get $address i32.load
 			(if (then
@@ -1467,7 +1480,7 @@
 		i32.const 16032 i32.load
 		(if (then
 			(block $done (loop $again
-				local.get $index i32.const 64 i32.ge_u br_if $done
+				local.get $index global.get $player_bullet_capacity i32.ge_u br_if $done
 				local.get $index call $bullet_address local.set $bullet
 				local.get $bullet i32.load
 				(if (then
@@ -1488,7 +1501,7 @@
 		i32.const 16464 i32.load
 		(if (then
 			(block $done (loop $again
-				local.get $index i32.const 64 i32.ge_u br_if $done
+				local.get $index global.get $player_bullet_capacity i32.ge_u br_if $done
 				local.get $index call $bullet_address local.set $bullet
 				local.get $bullet i32.load
 				(if (then
@@ -1689,7 +1702,7 @@
 		(local $index i32) (local $address i32)
 		;; All records reserve x/y at +8/+16 except asteroids, which use +16/+24.
 		(block $bullets_done (loop $bullets
-			local.get $index i32.const 64 i32.ge_u br_if $bullets_done
+			local.get $index global.get $player_bullet_capacity i32.ge_u br_if $bullets_done
 			local.get $index call $bullet_address local.set $address
 			local.get $address i32.load (if (then
 				local.get $address i32.const 8 i32.add local.get $address i32.const 8 i32.add i64.load local.get $dx i64.add i64.store
@@ -2071,10 +2084,10 @@
 				(if (then i32.const 1 i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1080 i64.load i32.const 1088 i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))
 		i32.const 0 local.set $index
 		(block $bullets_done (loop $bullets
-			local.get $index i32.const 64 i32.ge_u br_if $bullets_done
+			local.get $index global.get $player_bullet_capacity i32.ge_u br_if $bullets_done
 			local.get $index call $bullet_address local.set $address
 			local.get $address i32.load (if (then
-				i32.const 100 local.get $index i32.add local.get $address i32.const 8 i32.add i64.load call $to_host local.get $address i32.const 16 i32.add i64.load call $to_host
+				local.get $index call $bullet_draw_key local.get $address i32.const 8 i32.add i64.load call $to_host local.get $address i32.const 16 i32.add i64.load call $to_host
 				f32.const 2 f32.const 0 i32.const 0x58ff72ff i32.const 1 call $circle drop))
 			local.get $index i32.const 1 i32.add local.set $index br $bullets))
 		i32.const 0 local.set $index

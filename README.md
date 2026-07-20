@@ -109,7 +109,7 @@ On July 16, 2026, Peter flew the ship while we removed its per-tick drag from
 WAT. In the next simulation tick the already-running ship coasted indefinitely:
 the process did not restart, Rust did not rebuild, and score, lives, wave,
 bullets, and rocks remained intact. We then restored gentler `0.995` drag and
-saw that change live too. The schema-5 implementation expresses it as
+saw that change live too. The schema-6 implementation expresses it as
 exact decimal-fixed `velocity * 995000 / 1000000`; the WAT policy test forbids
 IEEE-754 gameplay arithmetic outside the sealed host-scalar adapter.
 

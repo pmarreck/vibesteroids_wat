@@ -17,8 +17,8 @@
 		call $abi_major i32.const 0 i32.ne (if (then i32.const 1 return))
 		call $abi_minor i32.const 0 i32.ne (if (then i32.const 2 return))
 		call $state_ptr i32.const 1024 i32.ne (if (then i32.const 3 return))
-		call $state_len i32.const 16384 i32.ne (if (then i32.const 4 return))
-		call $state_schema i32.const 5 i32.ne (if (then i32.const 5 return))
+		call $state_len i32.const 32768 i32.ne (if (then i32.const 4 return))
+		call $state_schema i32.const 6 i32.ne (if (then i32.const 5 return))
 		call $configure (if (then i32.const 6 return))
 		i32.const 0x5eedcafe i32.const 0 f32.const 1024 f32.const 768 call $init
 		(if (then i32.const 7 return))

@@ -1307,7 +1307,7 @@ remain as design history; the fidelity matrix is authoritative for completion.
 - Store a full Mulberry32 state in snapshotted memory.
 - Define fixed-capacity arrays in WAT memory, initially:
   - 32 asteroids;
-  - 64 bullets;
+  - 256 player bullets (64 legacy-address slots plus 192 overflow slots);
   - 150 particles;
   - 4 ship-debris pieces.
 - Add authoritative `score`, `lives`, `level`, mode flags, timers, and

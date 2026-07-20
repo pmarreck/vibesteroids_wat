@@ -235,9 +235,9 @@
 		(local $before i64)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
-		i32.const 0 i32.const 4096 call $state_hash_from local.set $before
+		i32.const 0 i32.const 8192 call $state_hash_from local.set $before
 		call $render drop
-		i32.const 0 i32.const 4096 call $state_hash_from local.get $before i64.eq)
+		i32.const 0 i32.const 8192 call $state_hash_from local.get $before i64.eq)
 	(func (export "deterministic_input_replay") (result i32)
 		(local $before i64)
 		call $configure drop
@@ -247,30 +247,30 @@
 		i32.const 30 call $tick drop
 		i32.const 2 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 2 i32.const 2 f32.const 0 f32.const 0 call $event drop
-		i32.const 0 i32.const 4096 call $state_hash_from local.set $before
+		i32.const 0 i32.const 8192 call $state_hash_from local.set $before
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
 		i32.const 1 i32.const 2 f32.const 0 f32.const 0 call $event drop
 		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 30 call $tick drop
 		i32.const 2 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 2 i32.const 2 f32.const 0 f32.const 0 call $event drop
-		i32.const 0 i32.const 4096 call $state_hash_from local.get $before i64.eq)
+		i32.const 0 i32.const 8192 call $state_hash_from local.get $before i64.eq)
 	(func (export "help_freezes_state") (result i32)
 		(local $before i64)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
 		i32.const 7 i32.const 7 f32.const 0 f32.const 0 call $event drop
-		i32.const 4 i32.const 4095 call $state_hash_from local.set $before
+		i32.const 4 i32.const 8191 call $state_hash_from local.set $before
 		i32.const 10 call $tick drop
-		i32.const 4 i32.const 4095 call $state_hash_from local.get $before i64.eq)
+		i32.const 4 i32.const 8191 call $state_hash_from local.get $before i64.eq)
 	(func (export "pause_freezes_state") (result i32)
 		(local $before i64)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
 		i32.const 1 i32.const 5 f32.const 0 f32.const 0 call $event drop
-		i32.const 4 i32.const 4095 call $state_hash_from local.set $before
+		i32.const 4 i32.const 8191 call $state_hash_from local.set $before
 		i32.const 10 call $tick drop
-		i32.const 4 i32.const 4095 call $state_hash_from local.get $before i64.eq)
+		i32.const 4 i32.const 8191 call $state_hash_from local.get $before i64.eq)
 	(func (export "seeded_fields_differ") (result i32)
 		(local $x i64) (local $y i64)
 		call $configure drop
@@ -403,8 +403,8 @@
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 5))
-(assert_return (invoke $vibesteroids_tests "state_len") (i32.const 16384))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 6))
+(assert_return (invoke $vibesteroids_tests "state_len") (i32.const 32768))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
 	(i32.const 60) (i32.const 1))
@@ -414,7 +414,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 5 stores canonical per-second velocities while integrating at 60 Hz.
+;; Schema 6 stores canonical per-second velocities while integrating at 60 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -4975000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383917084))

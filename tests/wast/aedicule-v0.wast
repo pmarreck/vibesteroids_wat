@@ -169,6 +169,7 @@
 		i32.const 0)
 	(func (export "AE_circle") (param $key i32) (param f32 f32 f32 f32 i32 i32) (result i32)
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
+		local.get $key i32.const 1100 i32.ge_u local.get $key i32.const 1292 i32.lt_u i32.and i32.or
 		(if (then global.get $bullet_circles i32.const 1 i32.add global.set $bullet_circles))
 		local.get $key i32.const 200 i32.ge_u local.get $key i32.const 232 i32.lt_u i32.and
 		(if (then global.get $asteroid_circles i32.const 1 i32.add global.set $asteroid_circles))
