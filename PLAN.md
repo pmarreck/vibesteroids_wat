@@ -93,7 +93,7 @@
   arrival, package collection, and package loss or projectile destruction.
   - [x] UFO arrival: two-pulse red-alert saw sweep. (2026-07-20 11:57 EDT)
   - [x] Package arrival: ascending two-note notification. (2026-07-20 12:00 EDT)
-  - [ ] Package collection success cue.
+  - [x] Package collection: ascending major arpeggio. (2026-07-20 12:02 EDT)
   - [ ] Package loss/destruction failure cue.
   - Curiosity poke: can each short synthesized cue remain recognizable without
     masking firing, thrust, or collision sounds already in progress?

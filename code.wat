@@ -192,6 +192,19 @@
 		i32.const 987767 i32.const 987767 i32.const 987767
 		i32.const 280000 global.get $filter_none i32.const 0 i32.const 0
 		call $declare_swept_voice
+		;; Package collection: an ascending major arpeggio rewards the risky pickup.
+		i32.const 10 global.get $wave_sine i32.const 0 i32.const 180
+		i32.const 523251 i32.const 523251 i32.const 523251
+		i32.const 260000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
+		i32.const 10 global.get $wave_sine i32.const 90 i32.const 180
+		i32.const 659255 i32.const 659255 i32.const 659255
+		i32.const 280000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
+		i32.const 10 global.get $wave_sine i32.const 180 i32.const 240
+		i32.const 783991 i32.const 783991 i32.const 783991
+		i32.const 320000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN
@@ -1185,7 +1198,8 @@
 			(if (then
 				i32.const 16464 i32.const 0 i32.store
 				i32.const 16516 call $random_spawn_ticks i32.store
-				i32.const 16520 i32.const 1200 call $ticks_from_sixty i32.store)))))
+				i32.const 16520 i32.const 1200 call $ticks_from_sixty i32.store
+				i32.const 10 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)))))
 
 	;; Advances temporary power and beam-afterimage durations solely from
 	;; simulation ticks, keeping pause and tests independent of wall-clock time.
