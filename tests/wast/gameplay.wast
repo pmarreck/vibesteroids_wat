@@ -112,6 +112,16 @@
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 0))
+
+;; Live reload cannot promise a release edge for a key or button held while the
+;; guest is replaced. Restore clears only edge-latched controls, retaining the
+;; player's persistent toggles and precise pointer target authority.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 84) (i32.const 895)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15560) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "after_restore") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 84)) (i32.const 880))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))

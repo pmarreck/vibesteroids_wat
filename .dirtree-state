@@ -9,6 +9,7 @@ annotate=[
 	MEMORIES = Project-specific durable lessons discovered during the spike
 	MEMORIES/Complete test suites should enter a pure flake environment = Durable lesson preventing global PATH tools from masking undeclared test dependencies.
 	MEMORIES/Decimal fixed point in WAT needs a sealed float adapter and rescaled collision squares = Project lesson on decimal millionths, one-way GPUI conversion, and overflow-safe collision tests
+	MEMORIES/Hot reload must clear edge-latched input while preserving persistent toggles.frontmatter.md = Project lesson: post-restore clears held input edges but retains persistent modes
 	MEMORIES/Keep application ABI checks self-contained when the host checkout is not pinned = Durable guidance for reproducible downstream ABI conformance checks.
 	MEMORIES/Port per-second browser physics to fixed ticks by converting dimensions exactly once = Dimensional-analysis lesson for velocity, acceleration, rotation, and strict time thresholds in 60-Hz fixed simulation
 	MEMORIES/Rational display-following needs separate guest and host controls = Separates guest WAST selector assertions from independently controlled host rational-rate adoption tests

@@ -566,6 +566,13 @@
 		local.get $width call $from_host local.get $height call $from_host call $reset
 		i32.const 0)
 
+	;; A reload may replace the guest while an input is held, after the host has
+	;; delivered its down edge but before its matching release. Clear only the
+	;; four edge-latched controls; persistent mode toggles remain snapshotted.
+	(func (export "AE_after_restore") (result i32)
+		i32.const 1108 i32.const 1108 i32.load i32.const -16 i32.and i32.store
+		i32.const 0)
+
 	(func $asteroid_count (result i32)
 		(local $index i32) (local $count i32)
 		(block $done (loop $again

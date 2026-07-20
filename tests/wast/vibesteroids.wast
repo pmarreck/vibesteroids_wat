@@ -7,6 +7,7 @@
 	(import "sut" "AE_tick_rate" (func $tick_rate (param i32 i32) (result i32 i32)))
 	(import "sut" "AE_configure" (func $configure (result i32)))
 	(import "sut" "AE_init" (func $init (param i32 i32 f32 f32) (result i32)))
+	(import "sut" "AE_after_restore" (func $after_restore (result i32)))
 	(import "sut" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
 	(import "sut" "AE_tick" (func $tick (param i32) (result i32)))
 	(import "sut" "AE_render" (func $render (result i32)))
@@ -45,6 +46,7 @@
 	(func (export "reset_seed") (param $seed i32) (result i32)
 		call $configure drop
 		local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init)
+	(func (export "after_restore") (result i32) call $after_restore)
 	;; Classifies both independent spawn schedules over a deterministic seed set,
 	;; preventing one lucky fixture from vacuously satisfying a changed range.
 	(func (export "spawn_schedules_within")
