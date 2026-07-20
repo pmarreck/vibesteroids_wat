@@ -151,9 +151,34 @@
   (2026-07-20 12:47 EDT)
   - Curiosity poke: what minimal visual distinction tells Peter which timed
     reward is active without introducing a localization-heavy status label?
+- [x] Replace point-sampled player-bullet collisions with a finite swept
+  segment from each bullet's prior position to its next position.
+  (2026-07-20 14:04 EDT)
+  - Curiosity poke: when one segment crosses several rocks, should the first
+    geometric hit win rather than the first occupied pool slot?
+- [ ] Restore primary-button hold-to-fire after restarting the corrected
+  Aedicule release-edge host, and activate Death Blossom on any nonzero pointer
+  scroll event.
+  - Curiosity poke: should horizontal-only wheel/trackpad motion activate too,
+    or only vertical wheel movement?
+- [ ] Restore the visible Death Blossom-available symbol and state in help that
+  every life receives one charge.
+  - Curiosity poke: does the symbol need a short legend outside the help panel?
+- [ ] Render three reserve ships plus a numeric total in the fourth position
+  whenever four or more ships are available.
+  - Curiosity poke: should the number mean total lives or only off-screen
+    reserves? Match the existing lives-state semantics and lock it in WAST.
+- [ ] Raise the first free-ship threshold to 30,000, then grow each subsequent
+  score gap geometrically by 1.5x using deterministic integer arithmetic.
+  - Curiosity poke: should a single huge score addition be allowed to cross
+    and award multiple thresholds, or retain the current one-award behavior?
+- [ ] Expand the player projectile pool enough for level-one rapid-fire Death
+  Blossom without starvation, while preserving legacy slot addresses.
+  - Curiosity poke: which draw-command or snapshot byte limit becomes the next
+    cap after projectile storage is raised?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
-  host, pin that revision and prove equal elapsed-time behavior at 60 and 120
-  Hz in WAST before changing this game's preferred rate.
+  host, pin that revision, switch production from 60 to 120 Hz, and retain
+  equal elapsed-time behavior at 60 and 120 Hz in WAST.
   - Curiosity poke: which collision differences are desirable reduced tunneling
     and which are unintended difficulty changes?
 - [ ] Perform Peter-guided playtests of the highest-priority findings in

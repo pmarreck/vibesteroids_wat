@@ -876,8 +876,39 @@
 			i32.const 16040 i64.load i32.const 16048 i64.load i32.const 16064 i64.load
 			call $segment_circle_hit
 			(if (then i32.const 1 call $destroy_ufo))))
-		i32.const 1112 i32.const 1024 i32.load i32.store
+		 i32.const 1112 i32.const 1024 i32.load i32.store
 		i32.const 7 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
+
+	;; Reconstructs the unwrapped prior bullet endpoint from canonical velocity
+	;; and tests the finite tick segment. On a toroidal wrap tick, the reconstructed
+	;; point falls outside the expanded viewport, so point sampling avoids drawing
+	;; a false segment across the entire screen.
+	(func $bullet_hits_asteroid (param $bullet i32) (param $asteroid i32) (result i32)
+		(local $start_x i64) (local $start_y i64) (local $end_x i64) (local $end_y i64)
+		local.get $bullet i32.const 8 i32.add i64.load local.set $end_x
+		local.get $bullet i32.const 16 i32.add i64.load local.set $end_y
+		local.get $end_x local.get $bullet i32.const 24 i32.add i64.load call $per_tick i64.sub local.set $start_x
+		local.get $end_y local.get $bullet i32.const 32 i32.add i64.load call $per_tick i64.sub local.set $start_y
+		local.get $start_x i64.const -25000000 i64.lt_s
+		local.get $start_x i32.const 1032 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+		local.get $start_y i64.const -25000000 i64.lt_s i32.or
+		local.get $start_y i32.const 1040 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+		local.get $start_x local.get $end_x i64.eq
+		local.get $start_y local.get $end_y i64.eq i32.and i32.or
+		(if (result i32)
+			(then
+				local.get $end_x local.get $end_y
+				local.get $asteroid i32.const 16 i32.add i64.load
+				local.get $asteroid i32.const 24 i32.add i64.load
+				local.get $asteroid i32.const 48 i32.add i64.load i64.const 5000000 i64.add
+				call $distance_lt)
+			(else
+				local.get $start_x local.get $start_y local.get $end_x local.get $end_y
+				local.get $asteroid i32.const 16 i32.add i64.load
+				local.get $asteroid i32.const 24 i32.add i64.load
+				;; $segment_circle_hit adds two pixels for whole-pixel projection.
+				local.get $asteroid i32.const 48 i32.add i64.load i64.const 3000000 i64.add
+				call $segment_circle_hit)))
 
 	(func $check_bullet_collisions
 		(local $bullet_index i32) (local $asteroid_index i32)
@@ -896,12 +927,7 @@
 						local.get $asteroid i32.load
 						(if
 							(then
-								local.get $bullet i32.const 8 i32.add i64.load
-								local.get $bullet i32.const 16 i32.add i64.load
-								local.get $asteroid i32.const 16 i32.add i64.load
-								local.get $asteroid i32.const 24 i32.add i64.load
-								local.get $asteroid i32.const 48 i32.add i64.load i64.const 5000000 i64.add
-								call $distance_lt
+								local.get $bullet local.get $asteroid call $bullet_hits_asteroid
 								(if
 									(then
 										local.get $bullet i32.const 0 i32.store

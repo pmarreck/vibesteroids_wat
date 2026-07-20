@@ -290,6 +290,25 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 4))
 
+;; Swept collision catches tunneling: both discrete bullet endpoints lie well
+;; outside the rock, but the finite movement segment crosses its center.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3344) (i64.const 150000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3352) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3360) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3368) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3376) (i64.const 10000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 256) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 264) (i64.const 100000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 272) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 280) (i64.const 12000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 288) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
+
 ;; A full bullet pool fails closed and focus loss releases held controls.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "fill_active" (i32.const 256) (i32.const 48) (i32.const 64)))
