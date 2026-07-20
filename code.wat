@@ -769,13 +769,14 @@
 	;; Snapshots the 32 pre-fire asteroid slots, then lets one finite beam pierce
 	;; all members without recursively targeting children created by splitting.
 	(func $fire_laser
-		(local $index i32) (local $address i32) (local $snapshot i32)
+		(local $index i32) (local $address i32) (local $snapshot i32) (local $package_snapshot i32)
 		(local $end_x i64) (local $end_y i64)
 		i32.const 16528 i32.const 1048 i64.load i64.store
 		i32.const 16536 i32.const 1056 i64.load i64.store
 		call $compute_laser_end local.set $end_y local.set $end_x
 		i32.const 16544 local.get $end_x i64.store i32.const 16552 local.get $end_y i64.store
 		i32.const 16524 i32.const 4 call $ticks_from_sixty i32.store
+		i32.const 16464 i32.load local.set $package_snapshot
 		(block $snapshot_done (loop $snapshot_loop
 			local.get $index i32.const 32 i32.ge_u br_if $snapshot_done
 			local.get $index call $asteroid_address i32.load
@@ -796,6 +797,13 @@
 					local.get $address i32.const 48 i32.add i64.load call $segment_circle_hit
 					(if (then local.get $address i64.const 0 i64.const 0 i32.const 1 call $hit_asteroid))))))
 			local.get $index i32.const 1 i32.add local.set $index br $hits))
+		local.get $package_snapshot i32.const 16464 i32.load i32.and
+		(if (then
+			i32.const 16528 i64.load i32.const 16536 i64.load
+			local.get $end_x local.get $end_y
+			i32.const 16472 i64.load i32.const 16480 i64.load i32.const 16504 i64.load
+			call $segment_circle_hit
+			(if (then call $lose_package))))
 		i32.const 16032 i32.load
 		(if (then
 			i32.const 16528 i64.load i32.const 16536 i64.load

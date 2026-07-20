@@ -190,6 +190,19 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1200))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 10)) (i32.const 1))
 
+;; Laser fire snapshots and destroys a package present when the beam begins.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 512000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 300000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 11)) (i32.const 1))
+
 ;; Laser fire replaces bullets, stops at the viewport edge, pierces every
 ;; initially present target ahead, and cannot wrap around to a target behind.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))

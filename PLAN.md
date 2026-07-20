@@ -109,7 +109,8 @@
   target priority whenever both actors coexist.
   - [x] Player bullets destroy packages and trigger the failure cue.
     (2026-07-20 12:07 EDT)
-  - [ ] Player lasers destroy packages from their pre-fire target snapshot.
+  - [x] Player lasers destroy packages from their pre-fire target snapshot.
+    (2026-07-20 12:10 EDT)
   - [ ] UFO projectiles destroy packages.
   - [ ] UFO targeting prioritizes an active package over defense/player/random.
   - Curiosity poke: should a laser resolve package membership from the same
