@@ -157,6 +157,8 @@ for the Asteroids/Blasteroids engagement research and playtest proposals.
 `./test` enters a pure flake shell and accumulates all failures. It runs:
 
 - stock Wasmtime against the production WAT plus companion WAST scenarios;
+- the locked Aedicule `gpui-wasm-render` binary through configure, initialize,
+  tick, and render, with successful validation required to keep stderr silent;
 - the structural decimal-fixed classifier;
 - repository-boundary and Nix-composition classifiers; and
 - ShellCheck over every executable test/build script.
@@ -180,6 +182,7 @@ result/bin/vibesteroids-wat-render --ticks 300 -o frame.svg
 | `tests/wast/` | Standard WAST behavior, state, render, effect, and lifecycle specifications |
 | `tests/run-wast` | RAM-only composer and stock Wasmtime WAST runner |
 | `tests/lint-wat` | Structural fixed-point/float-adapter policy classifier |
+| `tests/cli/aedicule_runtime` | CI gate that runs production WAT through the locked native Aedicule renderer |
 | `flake.nix` | Pinned Mecha Aedicule dependency, WAT artifact, wrapper, checks, and tools |
 | `VIBESTEROIDS_BEHAVIOR_SPEC.md` | Source-derived original behavior and algorithms |
 | `FIDELITY_GAP_MATRIX.md` | Fidelity decisions and remaining work |

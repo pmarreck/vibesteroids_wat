@@ -44,8 +44,25 @@
 			checks = forAllSystems (system:
 				let
 					pkgs = pkgsFor system;
+					frontplane = self.packages.${system}.frontplane;
+					application = self.packages.${system}.application;
 				in {
 					package = self.packages.${system}.default;
+					runtime = pkgs.runCommand "vibesteroids_wat_aedicule_runtime" {
+						nativeBuildInputs = [ frontplane ];
+					} ''
+						mkdir -p $out
+						if ! gpui-wasm-render \
+							${application}/share/vibesteroids_wat/code.wat \
+							--ticks 1 -o $out/frame.svg 2>$TMPDIR/runtime.stderr; then
+							cat $TMPDIR/runtime.stderr >&2
+							exit 1
+						fi
+						if test -s $TMPDIR/runtime.stderr; then
+							cat $TMPDIR/runtime.stderr >&2
+							exit 1
+						fi
+					'';
 					wast = pkgs.stdenvNoCC.mkDerivation {
 						pname = "vibesteroids_wat_wast";
 						version = "0.1.0";

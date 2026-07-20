@@ -11,7 +11,6 @@ frontplane_paths=(
 	"tests/audio.rs"
 	"tests/composition.rs"
 	"tests/containment.rs"
-	"tests/fixtures"
 	"tests/gui_cli.rs"
 	"tests/hot_reload.rs"
 	"tests/launch.rs"

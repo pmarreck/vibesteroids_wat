@@ -18,6 +18,7 @@
 	(import "test.host" "test_menu_count" (func $host_menu_count (result i32)))
 	(import "test.host" "test_menu_seen" (func $host_menu_seen (param i32) (result i32)))
 	(import "test.host" "test_synth_count" (func $host_synth_count (param i32) (result i32)))
+	(import "test.host" "test_invalid_synth_voices" (func $host_invalid_synth_voices (result i32)))
 	(import "test.host" "test_frame_count" (func $host_frame_count (result i32)))
 	(import "test.host" "test_text_seen" (func $host_text_seen (param i32) (result i32)))
 	(import "test.host" "test_asteroid_paths" (func $host_asteroid_paths (result i32)))
@@ -147,6 +148,7 @@
 	(func (export "host_menu_count") (result i32) call $host_menu_count)
 	(func (export "host_menu_seen") (param i32) (result i32) local.get 0 call $host_menu_seen)
 	(func (export "host_synth_count") (param i32) (result i32) local.get 0 call $host_synth_count)
+	(func (export "host_invalid_synth_voices") (result i32) call $host_invalid_synth_voices)
 	(func (export "host_frame_count") (result i32) call $host_frame_count)
 	(func (export "host_text_seen") (param i32) (result i32) local.get 0 call $host_text_seen)
 	(func (export "host_asteroid_paths") (result i32) call $host_asteroid_paths)
@@ -385,6 +387,7 @@
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 5)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 6)) (i32.const 5))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 7)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "host_invalid_synth_voices") (i32.const 0))
 
 ;; The initial frame is a real vector game scene, not the former circle demo.
 (assert_return (invoke $vibesteroids_tests "render_initial") (i32.const 0))

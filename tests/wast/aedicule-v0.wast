@@ -13,6 +13,7 @@
 	(global $synth_5 (mut i32) (i32.const 0))
 	(global $synth_6 (mut i32) (i32.const 0))
 	(global $synth_7 (mut i32) (i32.const 0))
+	(global $invalid_synth_voices (mut i32) (i32.const 0))
 	(global $frame_count (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
@@ -42,7 +43,8 @@
 		i32.const 0 global.set $synth_4
 		i32.const 0 global.set $synth_5
 		i32.const 0 global.set $synth_6
-		i32.const 0 global.set $synth_7)
+		i32.const 0 global.set $synth_7
+		i32.const 0 global.set $invalid_synth_voices)
 	(func (export "test_reset_frame")
 		i32.const 0 global.set $frame_count
 		i64.const 0 global.set $text_mask
@@ -77,6 +79,7 @@
 		local.get $id i32.const 6 i32.eq (if (then global.get $synth_6 return))
 		local.get $id i32.const 7 i32.eq (if (then global.get $synth_7 return))
 		i32.const 0)
+	(func (export "test_invalid_synth_voices") (result i32) global.get $invalid_synth_voices)
 	(func (export "test_frame_count") (result i32) global.get $frame_count)
 	(func (export "test_text_seen") (param $id i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
@@ -159,8 +162,17 @@
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.or global.set $audio_mask
 		i32.const 0)
 	(func (export "AE_synth_voice")
-		(param $id i32) (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
+		(param $id i32) (param $waveform i32) (param i32) (param $duration i32)
+		(param i32 i32 i32) (param $gain_start i32) (param $gain_peak i32) (param $gain_end i32)
+		(param $filter i32) (param i32 i32 i32)
 		(result i32)
+		local.get $waveform i32.const 1 i32.lt_s local.get $waveform i32.const 4 i32.gt_s i32.or
+		local.get $duration i32.const 0 i32.le_s i32.or
+		local.get $gain_start i32.const 0 i32.lt_s local.get $gain_start i32.const 1000000 i32.gt_s i32.or i32.or
+		local.get $gain_peak i32.const 0 i32.lt_s local.get $gain_peak i32.const 1000000 i32.gt_s i32.or i32.or
+		local.get $gain_end i32.const 0 i32.lt_s local.get $gain_end i32.const 1000000 i32.gt_s i32.or i32.or
+		local.get $filter i32.const 0 i32.lt_s local.get $filter i32.const 2 i32.gt_s i32.or i32.or
+		(if (then global.get $invalid_synth_voices i32.const 1 i32.add global.set $invalid_synth_voices))
 		local.get $id i32.const 1 i32.eq (if (then global.get $synth_1 i32.const 1 i32.add global.set $synth_1))
 		local.get $id i32.const 2 i32.eq (if (then global.get $synth_2 i32.const 1 i32.add global.set $synth_2))
 		local.get $id i32.const 3 i32.eq (if (then global.get $synth_3 i32.const 1 i32.add global.set $synth_3))

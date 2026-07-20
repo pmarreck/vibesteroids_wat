@@ -88,6 +88,10 @@
 	(global $scale i64 (i64.const 1000000))
 	(global $tick_numerator i64 (i64.const 60))
 	(global $tick_denominator i64 (i64.const 1))
+	(global $wave_sine i32 (i32.const 1))
+	(global $wave_saw i32 (i32.const 2))
+	(global $filter_none i32 (i32.const 0))
+	(global $filter_low_pass i32 (i32.const 1))
 
 	(func (export "AE_abi_major") (result i32) i32.const 0)
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
@@ -97,6 +101,20 @@
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
+
+	;; Declares a zero-delay swept tone with a 0 -> peak -> 0 envelope. Naming
+	;; the reduced parameter surface prevents filter enums from being mistaken
+	;; for gain or cooldown values in the host's 14-scalar ABI call.
+	(func $declare_swept_voice
+		(param $program i32) (param $waveform i32) (param $duration_ms i32)
+		(param $frequency_start i32) (param $frequency_mid i32) (param $frequency_end i32)
+		(param $gain_peak i32) (param $filter i32)
+		(param $filter_start i32) (param $filter_end i32)
+		local.get $program local.get $waveform i32.const 0 local.get $duration_ms
+		local.get $frequency_start local.get $frequency_mid local.get $frequency_end
+		i32.const 0 local.get $gain_peak i32.const 0
+		local.get $filter local.get $filter_start local.get $filter_end i32.const 0
+		call $synth_voice drop)
 
 	(func (export "AE_configure") (result i32)
 		i32.const 0 i32.const 20 call $title drop
@@ -146,16 +164,16 @@
 		i32.const 6 i32.const 2 i32.const 300 i32.const 400 i32.const 654063 i32.const 654063 i32.const 654063 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1962189 i32.const 1962189 i32.const 0 call $synth_voice drop
 		i32.const 6 i32.const 2 i32.const 450 i32.const 400 i32.const 784875 i32.const 784875 i32.const 784875 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 2354625 i32.const 2354625 i32.const 0 call $synth_voice drop
 		i32.const 6 i32.const 2 i32.const 600 i32.const 400 i32.const 1046500 i32.const 1046500 i32.const 1046500 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 3139500 i32.const 3139500 i32.const 0 call $synth_voice drop
-		;; Laser: sfxr-style descending saw/square sweep with a zero attack and
+		;; Laser: sfxr-style descending saw/sine sweep with a zero attack and
 		;; short envelope, layered behind a fast high-frequency transient.
-		i32.const 7 i32.const 2 i32.const 0 i32.const 180
+		i32.const 7 global.get $wave_saw i32.const 180
 		i32.const 1400000 i32.const 650000 i32.const 120000
-		i32.const 0 i32.const 90000 i32.const 90000
-		i32.const 700 i32.const 1 i32.const 4000000 i32.const 500000 call $synth_voice drop
-		i32.const 7 i32.const 0 i32.const 0 i32.const 120
+		i32.const 700000 global.get $filter_low_pass i32.const 4000000 i32.const 500000
+		call $declare_swept_voice
+		i32.const 7 global.get $wave_sine i32.const 120
 		i32.const 900000 i32.const 450000 i32.const 160000
-		i32.const 0 i32.const 60000 i32.const 60000
-		i32.const 350 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
+		i32.const 350000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN

@@ -78,6 +78,17 @@
   verification, complete suite/build)
   - Curiosity poke: do every repository-level convenience script and its
     documented sibling invocation resolve paths from the script itself?
+- [x] Gate `code.wat` through the locked Aedicule runtime in CI and repair the
+  rejected laser synth declaration.
+  (2026-07-20 10:06 EDT: reproduced the reported filter rejection through
+  `gpui-wasm-render`, strengthened the WAST fake into a value classifier,
+  introduced a safe swept-voice helper, and passed the complete suite/build)
+  - Curiosity poke: which permissive WAST-host stubs should become ABI-value
+    classifiers, even after the real-host integration gate is authoritative?
+- [ ] Have Aedicule mirror initial-load and watched-candidate rejection details
+  to stderr while retaining the in-window error and previous live plugin.
+  - Curiosity poke: should a stable diagnostic prefix be Aedicule's public CLI
+    contract, or should it additionally expose a structured diagnostic mode?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.
