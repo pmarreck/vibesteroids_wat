@@ -89,14 +89,15 @@
   to stderr while retaining the in-window error and previous live plugin.
   - Curiosity poke: should a stable diagnostic prefix be Aedicule's public CLI
     contract, or should it additionally expose a structured diagnostic mode?
-- [ ] Add independently testable live-reload sounds for UFO arrival, package
+- [x] Add independently testable live-reload sounds for UFO arrival, package
   arrival, package collection, and package loss or projectile destruction.
   - [x] UFO arrival: two-pulse red-alert saw sweep. (2026-07-20 11:57 EDT)
   - [x] Package arrival: ascending two-note notification. (2026-07-20 12:00 EDT)
   - [x] Package collection: ascending major arpeggio. (2026-07-20 12:02 EDT)
   - [x] Unclaimed off-screen package: descending failure buzzer.
     (2026-07-20 12:05 EDT)
-  - [ ] Route player and UFO projectile destruction through the same failure cue.
+  - [x] Player bullets/lasers and UFO shots route through the failure cue.
+    (2026-07-20 12:13 EDT)
   - Curiosity poke: can each short synthesized cue remain recognizable without
     masking firing, thrust, or collision sounds already in progress?
 - [ ] Increase per-level asteroid count, player projectile speed, asteroid speed
@@ -111,7 +112,7 @@
     (2026-07-20 12:07 EDT)
   - [x] Player lasers destroy packages from their pre-fire target snapshot.
     (2026-07-20 12:10 EDT)
-  - [ ] UFO projectiles destroy packages.
+  - [x] UFO projectiles destroy packages. (2026-07-20 12:13 EDT)
   - [ ] UFO targeting prioritizes an active package over defense/player/random.
   - Curiosity poke: should a laser resolve package membership from the same
     pre-fire snapshot that already protects newly split asteroid children?

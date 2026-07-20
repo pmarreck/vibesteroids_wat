@@ -1320,8 +1320,8 @@
 						br $done))))
 				local.get $index i32.const 1 i32.add local.set $index br $again)))))
 
-	;; Resolves hostile shots against asteroids before the ship; neither impact
-	;; path can award score, and each bullet is consumed by its first collision.
+	;; Resolves hostile shots against shielding asteroids, then packages, then the
+	;; ship; no impact awards score and each bullet has exactly one victim.
 	(func $check_enemy_bullet_collisions
 		(local $bullet_index i32) (local $asteroid_index i32)
 		(local $bullet i32) (local $asteroid i32)
@@ -1347,6 +1347,15 @@
 							local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
 							br $asteroids_done))))
 					local.get $asteroid_index i32.const 1 i32.add local.set $asteroid_index br $next_asteroid))
+				local.get $bullet i32.load i32.const 16464 i32.load i32.and
+				(if (then
+					local.get $bullet i32.const 8 i32.add i64.load
+					local.get $bullet i32.const 16 i32.add i64.load
+					i32.const 16472 i64.load i32.const 16480 i64.load
+					i32.const 16504 i64.load i64.const 4000000 i64.add call $distance_lt
+					(if (then
+						local.get $bullet i32.const 0 i32.store
+						call $lose_package))))
 				local.get $bullet i32.load
 				i32.const 1124 i32.load i32.eqz i32.and
 				i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
