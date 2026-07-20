@@ -100,14 +100,16 @@
     (2026-07-20 12:13 EDT)
   - Curiosity poke: can each short synthesized cue remain recognizable without
     masking firing, thrust, or collision sounds already in progress?
-- [ ] Increase per-level asteroid count, player projectile speed, asteroid speed
-  cap, and player fire rate by a linear 20%; escalate each successive UFO visit;
-  and shorten independent UFO/package appearance windows to 45--120 seconds.
+- [x] Increase per-level asteroid count, player projectile speed, and asteroid
+  speed cap by a linear 20%; retain the bounded player fire-rate curve after
+  live playtesting; escalate successive UFO visits; and shorten independent
+  UFO/package appearance windows to 45--120 seconds.
   - [x] Shorten both independent schedules to 45--120 seconds and prove
     simultaneous appearances. (2026-07-20 12:22 EDT)
-  - [x] Scale wave count, player projectile speed/fire rate, and asteroid cap.
-    (2026-07-20 12:23 EDT)
-  - [ ] Scale successive UFO radius, traversal, projectile speed, and fire rate.
+  - [x] Scale wave count, player projectile speed, and asteroid cap; restore the
+    original fire cadence after Peter's level-23 playtest. (2026-07-20 12:29 EDT)
+  - [x] Scale successive UFO radius, traversal, projectile speed, and fire rate
+    while keeping enemy cadence below the player's. (2026-07-20 12:29 EDT)
   - Curiosity poke: which capped pool or minimum cooldown becomes the first
     difficulty ceiling during a long session?
 - [x] Preserve physical UFO/asteroid collisions while making packages intangible
@@ -138,6 +140,10 @@
   and detonates on player fire or physical collision.
   - Curiosity poke: does its blast radius create deliberate asteroid-grouping
     tactics without making accidental chain clears dominate ordinary play?
+- [ ] Make each collected gift deterministically choose between 20 seconds of
+  piercing lasers and 20 seconds of doubled bounded player fire rate.
+  - Curiosity poke: what minimal visual distinction tells Peter which timed
+    reward is active without introducing a localization-heavy status label?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.

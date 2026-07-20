@@ -77,13 +77,14 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 
-;; Level two applies one exact +20% step to projectile speed and fire rate.
+;; Level two applies one exact +20% projectile-speed step while retaining the
+;; original bounded fire-cadence curve after live play found 20%/level excessive.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 2)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -405000000))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 12)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 14)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
@@ -102,7 +103,7 @@
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 20)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 8)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -1620000000))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))

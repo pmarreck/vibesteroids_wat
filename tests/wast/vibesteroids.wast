@@ -98,6 +98,8 @@
 		call $render)
 	(func (export "state_i64") (param $offset i32) (result i64)
 		i32.const 1024 local.get $offset i32.add i64.load)
+	(func (export "state_i64_absolute") (param $offset i32) (result i64)
+		i32.const 1024 local.get $offset i32.add i64.load call $abs_i64)
 	(func (export "state_i32") (param $offset i32) (result i32)
 		i32.const 1024 local.get $offset i32.add i32.load)
 	(func (export "state_set_i64") (param $offset i32) (param $value i64)

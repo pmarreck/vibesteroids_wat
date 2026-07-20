@@ -34,6 +34,7 @@
 ;; 15440: powerup package: active/direction:i32, x/y/vx/vy/radius:i64
 ;; 15488: ufo/package spawn countdowns:i32, laser/beam timers:i32,
 ;;        beam start/end x/y:i64
+;; 15536: completed UFO appearances:i32
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -267,10 +268,48 @@
 	(func $fire_interval_ticks (result i32)
 		;; Source uses elapsed_ms > delay, so the first integral fixed tick after
 		;; the delay is floor(delay * 60 / 1000) + 1.
-		i64.const 250000000 global.get $scale i64.mul call $level_scale i64.div_s
+		i64.const 250000000 i64.const -125000000 call $difficulty_value
 		global.get $tick_numerator i64.mul
 		i64.const 1000000000 global.get $tick_denominator i64.mul i64.div_s
 		i32.wrap_i64 i32.const 1 i32.add)
+
+	(func $ufo_visit_index (result i64)
+		(local $visit i64)
+		i32.const 16560 i32.load i64.extend_i32_u i64.const 1 i64.sub local.set $visit
+		local.get $visit i64.const 0 i64.lt_s (if (then i64.const 0 return))
+		local.get $visit i64.const 20 i64.gt_s (if (then i64.const 20 return))
+		local.get $visit)
+
+	;; Each appearance after the first adds 5% offensive/traversal pressure while
+	;; the visit cap keeps long-running sessions within bounded integer ranges.
+	(func $ufo_scale (result i64)
+		global.get $scale call $ufo_visit_index i64.const 50000 i64.mul i64.add)
+
+	(func $ufo_scale_per_visit (param $base i64) (result i64)
+		local.get $base call $ufo_scale call $fixed_mul)
+
+	(func $ufo_radius (result i64)
+		(local $radius i64)
+		i64.const 20000000 call $ufo_visit_index i64.const 500000 i64.mul i64.sub
+		local.tee $radius i64.const 10000000 i64.lt_s
+		(if (result i64) (then i64.const 10000000) (else local.get $radius)))
+
+	(func $ufo_projectile_speed (result i64)
+		i64.const 280000000 call $ufo_scale_per_visit)
+
+	;; Scales the UFO alongside the player's level rate and successive visits,
+	;; then enforces an interval at least twice the player's current interval.
+	(func $ufo_fire_interval_ticks (result i32)
+		(local $interval i32) (local $minimum i32)
+		call $rand_u32 i32.const 46 i32.rem_u i32.const 45 i32.add
+		call $ticks_from_sixty i64.extend_i32_u
+		global.get $scale i64.mul call $level_scale i64.div_s
+		global.get $scale i64.mul call $ufo_scale i64.div_s i32.wrap_i64
+		local.set $interval
+		call $fire_interval_ticks i32.const 2 i32.mul local.set $minimum
+		local.get $interval local.get $minimum i32.lt_s
+		(if (then local.get $minimum return))
+		local.get $interval)
 
 	(func $small_sine (param $angle i64) (result i64)
 		(local $square i64)
@@ -1099,7 +1138,7 @@
 						i32.const 16056 i64.load i64.const 0
 						local.get $target i32.const 16 i32.add i64.load local.get $target i32.const 24 i32.add i64.load
 						local.get $target i32.const 32 i32.add i64.load local.get $target i32.const 40 i32.add i64.load
-						i64.const 280000000 call $aim_projectile_velocity
+						call $ufo_projectile_speed call $aim_projectile_velocity
 						local.set $vy local.set $vx)
 					(else
 						i32.const 16464 i32.load
@@ -1109,7 +1148,7 @@
 								i32.const 16056 i64.load i64.const 0
 								i32.const 16472 i64.load i32.const 16480 i64.load
 								i32.const 16488 i64.load i32.const 16496 i64.load
-								i64.const 280000000 call $aim_projectile_velocity
+								call $ufo_projectile_speed call $aim_projectile_velocity
 								local.set $vy local.set $vx)
 							(else
 								call $rand_u32 i32.const 1 i32.and i32.eqz
@@ -1119,15 +1158,15 @@
 										i32.const 16056 i64.load i64.const 0
 										i32.const 1048 i64.load i32.const 1056 i64.load
 										i32.const 1064 i64.load i32.const 1072 i64.load
-										i64.const 280000000 call $aim_projectile_velocity
+										call $ufo_projectile_speed call $aim_projectile_velocity
 										local.set $vy local.set $vx)
 									(else
 										call $rand_signed local.set $dx call $rand_signed local.set $dy
 										local.get $dx local.get $dy call $fixed_hypot local.set $length
 										local.get $length i64.eqz
 										(if (then i64.const 1000000 local.set $dx i64.const 1000000 local.set $length))
-										i32.const 16056 i64.load local.get $dx i64.const 280000000 i64.mul local.get $length i64.div_s i64.add local.set $vx
-										local.get $dy i64.const 280000000 i64.mul local.get $length i64.div_s local.set $vy))))))
+										i32.const 16056 i64.load local.get $dx call $ufo_projectile_speed i64.mul local.get $length i64.div_s i64.add local.set $vx
+										local.get $dy call $ufo_projectile_speed i64.mul local.get $length i64.div_s local.set $vy))))))
 				local.get $bullet i32.const 1 i32.store
 				local.get $bullet i32.const 8 i32.add i32.const 16040 i64.load i64.store
 				local.get $bullet i32.const 16 i32.add i32.const 16048 i64.load i64.store
@@ -1135,8 +1174,7 @@
 				local.get $bullet i32.const 32 i32.add local.get $vy i64.store
 				local.get $bullet i32.const 40 i32.add i64.const 0 i64.store
 				i32.const 1 f32.const 0.55 f32.const 0.72 i32.const 0 call $audio drop))
-		i32.const 16072 call $rand_u32 i32.const 46 i32.rem_u i32.const 45 i32.add
-		call $ticks_from_sixty i32.store)
+		i32.const 16072 call $ufo_fire_interval_ticks i32.store)
 
 	;; Advances non-wrapping hostile projectiles and retires them once outside a
 	;; small viewport margin, keeping their lifetime naturally bounded.
@@ -1256,6 +1294,7 @@
 	;; until this instance leaves play, preventing overlapping UFOs.
 	(func $spawn_ufo
 		(local $direction i32) (local $height_range i64)
+		i32.const 16560 i32.const 16560 i32.load i32.const 1 i32.add i32.store
 		call $rand_u32 i32.const 1 i32.and
 		(if (result i32) (then i32.const 1) (else i32.const -1)) local.set $direction
 		i32.const 16032 i32.const 1 i32.store
@@ -1271,10 +1310,10 @@
 		(if (then i64.const 0 local.set $height_range))
 		i32.const 16048 call $rand_unit local.get $height_range call $fixed_mul
 		i64.const 100000000 i64.add i64.store
-		i32.const 16056 local.get $direction i64.extend_i32_s i64.const 140000000 i64.mul i64.store
-		i32.const 16064 i64.const 20000000 i64.store
-		i32.const 16072 call $rand_u32 i32.const 46 i32.rem_u i32.const 45 i32.add
-		call $ticks_from_sixty i32.store
+		i32.const 16056 local.get $direction i64.extend_i32_s
+		i64.const 140000000 call $ufo_scale_per_visit i64.mul i64.store
+		i32.const 16064 call $ufo_radius i64.store
+		i32.const 16072 call $ufo_fire_interval_ticks i32.store
 		i32.const 8 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)
 
 	;; Advances the finite horizontal traversal and begins a fresh independent

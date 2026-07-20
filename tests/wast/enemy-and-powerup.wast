@@ -23,7 +23,61 @@
 
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 
+;; Each successive appearance shrinks and accelerates the UFO from a safe baseline.
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15488) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15536)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15040)) (i64.const 20000000))
+(assert_return (invoke $vibesteroids_tests "state_i64_absolute" (i32.const 15032)) (i64.const 140000000))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15488) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15536)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15040)) (i64.const 19500000))
+(assert_return (invoke $vibesteroids_tests "state_i64_absolute" (i32.const 15032)) (i64.const 147000000))
+
+;; Visit pressure raises projectile speed and lowers cadence, but the UFO still
+;; fires no faster than half the player's level-one rate.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15536) (i32.const 11)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15012) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15016) (i64.const 100000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15024) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15032) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15048) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 400000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15464) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15472) (i64.const 0)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15080)) (i64.const 420000000))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15088)) (i64.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "state_i32_between"
+		(i32.const 15048) (i32.const 32) (i32.const 60))
+	(i32.const 1))
+
+;; Level scaling applies to both sides while the UFO remains slower-firing.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 20)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15012) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15016) (i64.const 100000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15024) (i64.const 100000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15032) (i64.const 140000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15048) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "state_i32_between"
+		(i32.const 15048) (i32.const 9) (i32.const 18))
+	(i32.const 1))
+
 ;; A due UFO enters from exactly one horizontal edge with a signed direction.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15488) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
