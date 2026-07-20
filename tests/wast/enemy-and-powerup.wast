@@ -12,8 +12,10 @@
 
 ;; A due UFO enters from exactly one horizontal edge with a signed direction.
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15488) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15008)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 8)) (i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_is_either"
 		(i32.const 15012) (i32.const -1) (i32.const 1))

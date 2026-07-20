@@ -89,6 +89,28 @@
   to stderr while retaining the in-window error and previous live plugin.
   - Curiosity poke: should a stable diagnostic prefix be Aedicule's public CLI
     contract, or should it additionally expose a structured diagnostic mode?
+- [ ] Add independently testable live-reload sounds for UFO arrival, package
+  arrival, package collection, and package loss or projectile destruction.
+  - [x] UFO arrival: two-pulse red-alert saw sweep. (2026-07-20 11:57 EDT)
+  - [ ] Package arrival notification.
+  - [ ] Package collection success cue.
+  - [ ] Package loss/destruction failure cue.
+  - Curiosity poke: can each short synthesized cue remain recognizable without
+    masking firing, thrust, or collision sounds already in progress?
+- [ ] Increase per-level asteroid count, player projectile speed, asteroid speed
+  cap, and player fire rate by a linear 20%; escalate each successive UFO visit;
+  and shorten independent UFO/package appearance windows to 45--120 seconds.
+  - Curiosity poke: which capped pool or minimum cooldown becomes the first
+    difficulty ceiling during a long session?
+- [ ] Preserve physical UFO/asteroid collisions while making packages intangible
+  to asteroids, destructible by either side's projectiles, and the UFO's highest
+  target priority whenever both actors coexist.
+  - Curiosity poke: should a laser resolve package membership from the same
+    pre-fire snapshot that already protects newly split asteroid children?
+- [ ] Add precise pointer aim and primary-fire in WAT; after Aedicule documents
+  and emits secondary button ID 2, pin it and map secondary down/up to thrust.
+  - Curiosity poke: should keyboard rotation temporarily override pointer aim,
+    or should the most recent input modality own heading until the other moves?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.

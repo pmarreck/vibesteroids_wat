@@ -387,6 +387,7 @@
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 5)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 6)) (i32.const 5))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 7)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 8)) (i32.const 2))
 (assert_return (invoke $vibesteroids_tests "host_invalid_synth_voices") (i32.const 0))
 
 ;; The initial frame is a real vector game scene, not the former circle demo.

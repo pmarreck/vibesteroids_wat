@@ -102,15 +102,15 @@
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
 
-	;; Declares a zero-delay swept tone with a 0 -> peak -> 0 envelope. Naming
+	;; Declares a swept tone with a 0 -> peak -> 0 envelope. Naming
 	;; the reduced parameter surface prevents filter enums from being mistaken
 	;; for gain or cooldown values in the host's 14-scalar ABI call.
 	(func $declare_swept_voice
-		(param $program i32) (param $waveform i32) (param $duration_ms i32)
+		(param $program i32) (param $waveform i32) (param $delay_ms i32) (param $duration_ms i32)
 		(param $frequency_start i32) (param $frequency_mid i32) (param $frequency_end i32)
 		(param $gain_peak i32) (param $filter i32)
 		(param $filter_start i32) (param $filter_end i32)
-		local.get $program local.get $waveform i32.const 0 local.get $duration_ms
+		local.get $program local.get $waveform local.get $delay_ms local.get $duration_ms
 		local.get $frequency_start local.get $frequency_mid local.get $frequency_end
 		i32.const 0 local.get $gain_peak i32.const 0
 		local.get $filter local.get $filter_start local.get $filter_end i32.const 0
@@ -166,13 +166,22 @@
 		i32.const 6 i32.const 2 i32.const 600 i32.const 400 i32.const 1046500 i32.const 1046500 i32.const 1046500 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 3139500 i32.const 3139500 i32.const 0 call $synth_voice drop
 		;; Laser: sfxr-style descending saw/sine sweep with a zero attack and
 		;; short envelope, layered behind a fast high-frequency transient.
-		i32.const 7 global.get $wave_saw i32.const 180
+		i32.const 7 global.get $wave_saw i32.const 0 i32.const 180
 		i32.const 1400000 i32.const 650000 i32.const 120000
 		i32.const 700000 global.get $filter_low_pass i32.const 4000000 i32.const 500000
 		call $declare_swept_voice
-		i32.const 7 global.get $wave_sine i32.const 120
+		i32.const 7 global.get $wave_sine i32.const 0 i32.const 120
 		i32.const 900000 i32.const 450000 i32.const 160000
 		i32.const 350000 global.get $filter_none i32.const 0 i32.const 0
+		call $declare_swept_voice
+		;; Red alert: two filtered saw sweeps form a compact oscillating siren.
+		i32.const 8 global.get $wave_saw i32.const 0 i32.const 220
+		i32.const 900000 i32.const 560000 i32.const 900000
+		i32.const 350000 global.get $filter_low_pass i32.const 1800000 i32.const 1100000
+		call $declare_swept_voice
+		i32.const 8 global.get $wave_saw i32.const 260 i32.const 220
+		i32.const 900000 i32.const 560000 i32.const 900000
+		i32.const 350000 global.get $filter_low_pass i32.const 1800000 i32.const 1100000
 		call $declare_swept_voice
 		i32.const 0)
 
@@ -1198,7 +1207,8 @@
 		i32.const 16056 local.get $direction i64.extend_i32_s i64.const 140000000 i64.mul i64.store
 		i32.const 16064 i64.const 20000000 i64.store
 		i32.const 16072 call $rand_u32 i32.const 46 i32.rem_u i32.const 45 i32.add
-		call $ticks_from_sixty i32.store)
+		call $ticks_from_sixty i32.store
+		i32.const 8 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)
 
 	;; Advances the finite horizontal traversal and begins a fresh independent
 	;; schedule only after the saucer has cleared the opposite edge.

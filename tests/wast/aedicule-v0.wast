@@ -13,6 +13,7 @@
 	(global $synth_5 (mut i32) (i32.const 0))
 	(global $synth_6 (mut i32) (i32.const 0))
 	(global $synth_7 (mut i32) (i32.const 0))
+	(global $synth_8 (mut i32) (i32.const 0))
 	(global $invalid_synth_voices (mut i32) (i32.const 0))
 	(global $frame_count (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
@@ -44,6 +45,7 @@
 		i32.const 0 global.set $synth_5
 		i32.const 0 global.set $synth_6
 		i32.const 0 global.set $synth_7
+		i32.const 0 global.set $synth_8
 		i32.const 0 global.set $invalid_synth_voices)
 	(func (export "test_reset_frame")
 		i32.const 0 global.set $frame_count
@@ -78,6 +80,7 @@
 		local.get $id i32.const 5 i32.eq (if (then global.get $synth_5 return))
 		local.get $id i32.const 6 i32.eq (if (then global.get $synth_6 return))
 		local.get $id i32.const 7 i32.eq (if (then global.get $synth_7 return))
+		local.get $id i32.const 8 i32.eq (if (then global.get $synth_8 return))
 		i32.const 0)
 	(func (export "test_invalid_synth_voices") (result i32) global.get $invalid_synth_voices)
 	(func (export "test_frame_count") (result i32) global.get $frame_count)
@@ -180,6 +183,7 @@
 		local.get $id i32.const 5 i32.eq (if (then global.get $synth_5 i32.const 1 i32.add global.set $synth_5))
 		local.get $id i32.const 6 i32.eq (if (then global.get $synth_6 i32.const 1 i32.add global.set $synth_6))
 		local.get $id i32.const 7 i32.eq (if (then global.get $synth_7 i32.const 1 i32.add global.set $synth_7))
+		local.get $id i32.const 8 i32.eq (if (then global.get $synth_8 i32.const 1 i32.add global.set $synth_8))
 		i32.const 0)
 	(func (export "AE_effect") (param $id i32) (param i32 i32) (result i32)
 		global.get $effect_mask i32.const 1 local.get $id i32.shl i32.or global.set $effect_mask
