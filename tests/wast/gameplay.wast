@@ -52,6 +52,10 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 80)) (i32.const 2))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 6))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 80)) (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 7))
 
 ;; Level endpoints jointly scale thrust, turn, bullet speed, and fire cadence.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
@@ -73,6 +77,17 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 
+;; Level two applies one exact +20% step to projectile speed and fire rate.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 2)))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -405000000))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 12)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
+
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 20)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
@@ -87,8 +102,8 @@
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 20)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 8)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -765000000))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -1620000000))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
@@ -114,9 +129,14 @@
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 5888) (i32.const 48) (i32.const 150)) (i32.const 20))
 (assert_return (invoke $vibesteroids_tests "radius_components_within" (i64.const 24000000) (i64.const 60000000)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 2)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "split_at_level" (i32.const 2)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "radius_count" (i64.const 24000000)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "radius_components_within" (i64.const 24000000) (i64.const 71999999)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "radius_components_within" (i64.const 24000000) (i64.const 72000000)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "split_at_level" (i32.const 20)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "radius_count" (i64.const 24000000)) (i32.const 2))
-(assert_return (invoke $vibesteroids_tests "radius_components_within" (i64.const 24000000) (i64.const 60000000)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "radius_components_within" (i64.const 24000000) (i64.const 287999999)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "radius_components_within" (i64.const 24000000) (i64.const 288000000)) (i32.const 1))
 
 ;; Rendering is pure, replay is deterministic, and modal overlays freeze all state except the clock.
 (assert_return (invoke $vibesteroids_tests "render_is_state_pure") (i32.const 1))

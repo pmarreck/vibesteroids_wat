@@ -247,6 +247,14 @@
 	(func $difficulty_value (param $base i64) (param $delta i64) (result i64)
 		local.get $base local.get $delta call $difficulty_index i64.mul i64.const 19 i64.div_s i64.add)
 
+	;; Produces 1.0 + 0.2 per completed level, capped at level 20 with the other
+	;; difficulty controls so projectile and asteroid pacing share one contract.
+	(func $level_scale (result i64)
+		global.get $scale call $difficulty_index i64.const 200000 i64.mul i64.add)
+
+	(func $scale_per_level (param $base i64) (result i64)
+		local.get $base call $level_scale call $fixed_mul)
+
 	(func $ship_acceleration_per_second (result i64)
 		i64.const 300000000 i64.const 200000000 call $difficulty_value)
 
@@ -254,12 +262,12 @@
 		i64.const 5000000 i64.const 5000000 call $difficulty_value)
 
 	(func $bullet_speed_per_second (result i64)
-		i64.const 337500000 i64.const 427500000 call $difficulty_value)
+		i64.const 337500000 call $scale_per_level)
 
 	(func $fire_interval_ticks (result i32)
 		;; Source uses elapsed_ms > delay, so the first integral fixed tick after
 		;; the delay is floor(delay * 60 / 1000) + 1.
-		i64.const 250000000 i64.const -125000000 call $difficulty_value
+		i64.const 250000000 global.get $scale i64.mul call $level_scale i64.div_s
 		global.get $tick_numerator i64.mul
 		i64.const 1000000000 global.get $tick_denominator i64.mul i64.div_s
 		i32.wrap_i64 i32.const 1 i32.add)
@@ -379,8 +387,7 @@
 						(if (then i64.const -15000000 local.set $adjusted)
 							(else i64.const 15000000 local.set $adjusted)))
 						(else i64.const 15000000 local.set $adjusted))))))
-		i32.const 1104 i32.load i32.const 20 i32.ge_s (if (then local.get $adjusted return))
-		i64.const 60000000 call $difficulty_index i64.const 7500000 i64.mul i64.add local.set $cap
+		i64.const 60000000 call $scale_per_level local.set $cap
 		local.get $adjusted local.get $cap i64.gt_s (if (then local.get $cap return))
 		local.get $adjusted i64.const 0 local.get $cap i64.sub i64.lt_s
 		(if (then i64.const 0 local.get $cap i64.sub return))
@@ -456,6 +463,8 @@
 		local.get $address i32.const 76 i32.add
 		call $rand_u32 i32.const 5 i32.rem_u i32.const 8 i32.add i32.store)
 
+	;; Five initial parents plus one per completed level is exactly a linear 20%
+	;; increase from the baseline, capped only by the physical 32-record pool.
 	(func $spawn_wave
 		(local $index i32) (local $count i32) (local $address i32)
 		(local $edge i32) (local $x i64) (local $y i64) (local $radius i64)

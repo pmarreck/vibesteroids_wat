@@ -105,7 +105,8 @@
   and shorten independent UFO/package appearance windows to 45--120 seconds.
   - [x] Shorten both independent schedules to 45--120 seconds and prove
     simultaneous appearances. (2026-07-20 12:22 EDT)
-  - [ ] Scale wave count, player projectile speed/fire rate, and asteroid cap.
+  - [x] Scale wave count, player projectile speed/fire rate, and asteroid cap.
+    (2026-07-20 12:23 EDT)
   - [ ] Scale successive UFO radius, traversal, projectile speed, and fire rate.
   - Curiosity poke: which capped pool or minimum cooldown becomes the first
     difficulty ceiling during a long session?
@@ -127,6 +128,16 @@
   and emits secondary button ID 2, pin it and map secondary down/up to thrust.
   - Curiosity poke: should keyboard rotation temporarily override pointer aim,
     or should the most recent input modality own heading until the other moves?
+- [ ] Add a snapshot-based, player-dangerous UFO blast with score attribution,
+  a flickering orange expansion/contraction, one-frame high-contrast flash, and
+  a layered explosion synth lasting at least 1.2 seconds.
+  - Curiosity poke: can blast attribution stay correct when a scored parent rock
+    splits while the same explosion is still resolving its original snapshot?
+- [ ] Add an independently scheduled 45--120-second derelict satellite that can
+  overlap UFOs/packages, pings faintly without an arrival cue, pulses visually,
+  and detonates on player fire or physical collision.
+  - Curiosity poke: does its blast radius create deliberate asteroid-grouping
+    tactics without making accidental chain clears dominate ordinary play?
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision and prove equal elapsed-time behavior at 60 and 120
   Hz in WAST before changing this game's preferred rate.
