@@ -190,7 +190,17 @@
 		local.get $kind local.get $code local.get $x local.get $y call $event)
 	(func (export "viewport") (param $width f32) (param $height f32) (result i32)
 		i32.const 6 i32.const 0 local.get $width local.get $height call $event)
-	(func (export "tick") (param i32) (result i32) local.get 0 call $tick)
+	;; Converts source-authored 60-Hz fixture durations into the production
+	;; rational rate while leaving the guest's raw AE_tick contract untouched.
+	(func (export "tick") (param $source_ticks i32) (result i32)
+		(local $numerator i32) (local $denominator i32)
+		i32.const 0 i32.const 0 call $tick_rate
+		local.set $denominator local.set $numerator
+		local.get $source_ticks i64.extend_i32_u local.get $numerator i64.extend_i32_u i64.mul
+		i64.const 60 local.get $denominator i64.extend_i32_u i64.mul i64.div_u
+		i32.wrap_i64 call $tick)
+	(func (export "raw_tick") (param $ticks i32) (result i32)
+		local.get $ticks call $tick)
 	(func (export "render") (result i32) call $render)
 	(func (export "host_reset_frame") call $host_reset_frame)
 	(func (export "host_reset_effects") call $host_reset_effects)
@@ -394,36 +404,36 @@
 		i32.const 14136 i64.load local.set $debris_vx
 		i32.const 6916 i32.load local.set $particle_life
 		i32.const 1 call $tick drop
-		i32.const 14120 i64.load local.get $debris_x local.get $debris_vx i64.const 60 i64.div_s i64.add i64.ne
+		i32.const 14120 i64.load local.get $debris_x local.get $debris_vx i64.const 120 i64.div_s i64.add i64.ne
 		(if (then i32.const 0 return))
-		i32.const 14136 i64.load local.get $debris_vx i64.const 990000 i64.mul i64.const 1000000 i64.div_s i64.ne
+		i32.const 14136 i64.load local.get $debris_vx i64.const 995000 i64.mul i64.const 1000000 i64.div_s i64.ne
 		(if (then i32.const 0 return))
 		i32.const 6916 i32.load local.get $particle_life i32.const 1 i32.sub i32.ne
 		(if (then i32.const 0 return))
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 6))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 7))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 32768))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
-	(i32.const 60) (i32.const 1))
+	(i32.const 120) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 8)) (i64.const 1024000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 16)) (i64.const 768000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 6 stores canonical per-second velocities while integrating at 60 Hz.
+;; Schema 7 stores canonical per-second velocities while integrating at 120 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -4975000))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383917084))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -2493750))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383979219))
 (assert_return (invoke $vibesteroids_tests "fire_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -337500000))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 5625000))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 2812500))
 (assert_return (invoke $vibesteroids_tests "drag_once") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 40)) (i64.const 2487500))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -1243750))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 40)) (i64.const 2493750))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -1246875))
 
 ;; Configuration is application-owned: title, menus, and synth programs.
 (assert_return (invoke $vibesteroids_tests "configure_only") (i32.const 0))

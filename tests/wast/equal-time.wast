@@ -28,7 +28,13 @@
 		call $prepare
 		i32.const 60 call $tick drop
 		i32.const 1288 i64.load)
+	(func (export "drag_run") (result i64)
+		call $prepare
+		i32.const 1064 i64.const 100000000 i64.store
+		i32.const 60 call $tick drop
+		i32.const 1064 i64.load)
 )
+(register "rate_60_probe" $rate_60_probe)
 (module $rate_120_probe
 	(import "sut_120" "memory" (memory $state 1))
 	(import "sut_120" "AE_configure" (func $configure (result i32)))
@@ -57,7 +63,13 @@
 		call $prepare
 		i32.const 120 call $tick drop
 		i32.const 1288 i64.load)
+	(func (export "drag_run") (result i64)
+		call $prepare
+		i32.const 1064 i64.const 100000000 i64.store
+		i32.const 120 call $tick drop
+		i32.const 1064 i64.load)
 )
+(register "rate_120_probe" $rate_120_probe)
 (module $rate_60000_1001_probe
 	(import "sut_60000_1001" "memory" (memory $state 1))
 	(import "sut_60000_1001" "AE_configure" (func $configure (result i32)))
@@ -121,3 +133,16 @@
 (assert_return (invoke $rate_120_probe "run") (i64.const 160000000))
 (assert_return (invoke $rate_60000_1001_probe "run") (i64.const 159059000))
 (assert_return (invoke $rate_120000_1001_probe "run") (i64.const 159559500))
+
+;; Linearized retention factors keep one-second damping perceptually equal
+;; even though integer rounding differs across simulation step counts.
+(module $drag_equal_time_probe
+	(import "rate_60_probe" "drag_run" (func $drag_60 (result i64)))
+	(import "rate_120_probe" "drag_run" (func $drag_120 (result i64)))
+	(func (export "run") (result i32)
+		(local $difference i64)
+		call $drag_60 call $drag_120 i64.sub local.tee $difference i64.const 0 i64.lt_s
+		(if (then i64.const 0 local.get $difference i64.sub local.set $difference))
+		local.get $difference i64.const 500000 i64.le_u)
+)
+(assert_return (invoke $drag_equal_time_probe "run") (i32.const 1))

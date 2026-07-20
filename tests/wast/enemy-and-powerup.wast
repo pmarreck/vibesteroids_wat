@@ -2,16 +2,16 @@
 ;; simulated-second countdowns. Forced countdowns keep the proof fast.
 (assert_return
 	(invoke $vibesteroids_tests "spawn_schedules_within"
-		(i32.const 2700) (i32.const 7200) (i32.const 64))
+		(i32.const 5400) (i32.const 14400) (i32.const 64))
 	(i32.const 1))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15488) (i32.const 2700) (i32.const 7200))
+		(i32.const 15488) (i32.const 5400) (i32.const 14400))
 	(i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15492) (i32.const 2700) (i32.const 7200))
+		(i32.const 15492) (i32.const 5400) (i32.const 14400))
 	(i32.const 1))
 
 ;; Independent schedules may expire together; neither actor suppresses the other.
@@ -40,6 +40,10 @@
 ;; fires no faster than half the player's level-one rate.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3344) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3352) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3376) (i64.const 20000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15536) (i32.const 11)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15012) (i32.const 1)))
@@ -58,7 +62,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15088)) (i64.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15048) (i32.const 32) (i32.const 60))
+		(i32.const 15048) (i32.const 64) (i32.const 120))
 	(i32.const 1))
 
 ;; Level scaling applies to both sides while the UFO remains slower-firing.
@@ -73,7 +77,7 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15048) (i32.const 9) (i32.const 18))
+		(i32.const 15048) (i32.const 18) (i32.const 36))
 	(i32.const 1))
 
 ;; A due UFO enters from exactly one horizontal edge with a signed direction.
@@ -99,7 +103,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15024) (i64.const 200000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15032) (i64.const 140000000)))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15016)) (i64.const 102333333))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15016)) (i64.const 102333332))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_ufo_paths") (i32.const 1))
@@ -108,6 +112,10 @@
 ;; moving player's positive y velocity is led; the random sample points down.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3344) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3352) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3376) (i64.const 20000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 4) (i32.const 0)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 24) (i64.const 400000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 32) (i64.const 200000000)))
@@ -125,6 +133,10 @@
 
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3344) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3352) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3376) (i64.const 20000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 4) (i32.const 2)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 24) (i64.const 400000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 32) (i64.const 200000000)))
@@ -238,7 +250,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15472) (i64.const 30000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15448)) (i64.const 101333333))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15448)) (i64.const 101333332))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 15456)) (i64.const 200500000))
 
 ;; A package that escapes unclaimed retires and emits the failure cue.
@@ -313,9 +325,9 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 384000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "raw_tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15440)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1200))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 2400))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15568)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 10)) (i32.const 1))
 
@@ -328,22 +340,22 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 512000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 384000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1200))
+(assert_return (invoke $vibesteroids_tests "raw_tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 2400))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15568)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 9)) (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64))
 	(i32.const 2))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 1191))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15496)) (i32.const 2382))
 
 ;; The capped difficulty endpoint also doubles exactly: its ordinary 8-tick
 ;; cadence becomes 4 only while the temporary rapid-fire reward is active.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 80) (i32.const 20)))
-(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 2400)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15568) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 5)) (i32.const 0))
@@ -357,7 +369,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 512000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15456) (i64.const 300000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15480) (i64.const 14000000)))
-(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 2400)))
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
@@ -380,7 +392,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3504) (i64.const 512000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3512) (i64.const 500000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3536) (i64.const 20000000)))
-(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 2400)))
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
@@ -412,7 +424,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15024) (i64.const 300000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15040) (i64.const 20000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15048) (i32.const 100)))
-(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 2400)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15008)) (i32.const 0))
@@ -433,7 +445,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3424) (i64.const 100000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3432) (i64.const 100000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3456) (i64.const 20000000)))
-(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 1200)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 2400)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 3376)) (i64.const 24000000))

@@ -185,6 +185,12 @@
 - [ ] After Aedicule wires its injected monotonic accumulator into the live
   host, pin that revision, switch production from 60 to 120 Hz, and retain
   equal elapsed-time behavior at 60 and 120 Hz in WAST.
+  - [x] Switch production to 120/1 with schema 7, a rate-agnostic WAST matrix,
+    source-time fixture adapter, and equal-time projectile/retention proofs.
+    (2026-07-20 14:46 EDT: fixed ship/particle/debris rate coupling; full
+    locked-runtime test and optimized build)
+  - [ ] Pin Aedicule's clean monotonic-scheduler/input/diagnostic revision once
+    its agent supplies the pushed SHA and green gate record.
   - Curiosity poke: which collision differences are desirable reduced tunneling
     and which are unintended difficulty changes?
 - [ ] Perform Peter-guided playtests of the highest-priority findings in

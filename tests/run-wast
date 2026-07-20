@@ -12,11 +12,11 @@ append_rate_variant() {
 	local denominator=$3
 
 	awk -v numerator="$numerator" -v denominator="$denominator" '
-		$0 == "\t(global $tick_numerator i64 (i64.const 60))" {
+		$0 ~ /^\t\(global \$tick_numerator i64 \(i64.const [0-9]+\)\)$/ {
 			print "\t(global $tick_numerator i64 (i64.const " numerator "))"
 			next
 		}
-		$0 == "\t(global $tick_denominator i64 (i64.const 1))" {
+		$0 ~ /^\t\(global \$tick_denominator i64 \(i64.const [0-9]+\)\)$/ {
 			print "\t(global $tick_denominator i64 (i64.const " denominator "))"
 			next
 		}

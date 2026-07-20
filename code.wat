@@ -1,6 +1,6 @@
 ;; Vibesteroids behavioral conversion for the gpui-frontplane-v0 ABI.
 ;;
-;; Schema 6 stores every gameplay scalar as an integer. Spatial quantities use
+;; Schema 7 stores every gameplay scalar as an integer. Spatial quantities use
 ;; signed decimal fixed point with SCALE = 1,000,000. IEEE-754 values exist
 ;; only at the host ABI boundary: viewport scalars enter through $from_host,
 ;; and completed draw scalars leave through $to_host. They never feed back.
@@ -91,7 +91,7 @@
 	(data (i32.const 544) "000000")
 
 	(global $scale i64 (i64.const 1000000))
-	(global $tick_numerator i64 (i64.const 60))
+	(global $tick_numerator i64 (i64.const 120))
 	(global $tick_denominator i64 (i64.const 1))
 	(global $player_bullet_capacity i32 (i32.const 256))
 	(global $wave_sine i32 (i32.const 1))
@@ -103,7 +103,7 @@
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
 	(func (export "AE_state_ptr") (result i32) i32.const 1024)
 	(func (export "AE_state_len") (result i32) i32.const 32768)
-	(func (export "AE_state_schema") (result i32) i32.const 6)
+	(func (export "AE_state_schema") (result i32) i32.const 7)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
@@ -235,6 +235,14 @@
 	(func $per_tick (param $per_second i64) (result i64)
 		local.get $per_second global.get $tick_denominator i64.mul
 		global.get $tick_numerator i64.div_s)
+
+	;; Converts a source-authored 60-Hz retention factor into per-second linear
+	;; damping, preventing higher simulation rates from multiplying decay.
+	(func $retention_factor_per_tick (param $at_sixty i64) (result i64)
+		global.get $scale
+		global.get $scale local.get $at_sixty i64.sub i64.const 60 i64.mul
+		global.get $tick_denominator i64.mul global.get $tick_numerator i64.div_u
+		i64.sub)
 
 	(func $ticks_from_sixty (param $ticks i32) (result i32)
 		local.get $ticks i64.extend_i32_u global.get $tick_numerator i64.mul
@@ -382,7 +390,7 @@
 		local.get $source_vy local.get $lead_y local.get $speed i64.mul local.get $length i64.div_s i64.add)
 
 	;; Extends the projectile pool without moving any of the 64 legacy records,
-	;; keeping old slot offsets stable while schema 6 adds a disjoint tail pool.
+	;; keeping old slot offsets stable while the current schema adds a tail pool.
 	(func $bullet_address (param $index i32) (result i32)
 		local.get $index i32.const 64 i32.lt_u
 		(if (result i32)
@@ -1128,8 +1136,8 @@
 					(if (then i32.const 4 f32.const 0.18 f32.const 1 i32.const 0 call $audio drop))))
 				local.get $flags i32.const 8 i32.and local.get $flags i32.const 32 i32.and i32.or
 				(if (then call $fire))))
-		i32.const 1064 i32.const 1064 i64.load i64.const 995000 call $fixed_mul i64.store
-		i32.const 1072 i32.const 1072 i64.load i64.const 995000 call $fixed_mul i64.store
+		i32.const 1064 i32.const 1064 i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
+		i32.const 1072 i32.const 1072 i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
 		i32.const 1048
 		i32.const 1048 i64.load i32.const 1064 i64.load call $per_tick i64.add i64.const 0 i32.const 1032 i64.load call $wrap i64.store
 		i32.const 1056
@@ -1166,8 +1174,8 @@
 			(if (then
 				local.get $address i32.const 8 i32.add local.get $address i32.const 8 i32.add i64.load local.get $address i32.const 24 i32.add i64.load call $per_tick i64.add i64.store
 				local.get $address i32.const 16 i32.add local.get $address i32.const 16 i32.add i64.load local.get $address i32.const 32 i32.add i64.load call $per_tick i64.add i64.store
-				local.get $address i32.const 24 i32.add local.get $address i32.const 24 i32.add i64.load i64.const 980000 call $fixed_mul i64.store
-				local.get $address i32.const 32 i32.add local.get $address i32.const 32 i32.add i64.load i64.const 980000 call $fixed_mul i64.store
+				local.get $address i32.const 24 i32.add local.get $address i32.const 24 i32.add i64.load i64.const 980000 call $retention_factor_per_tick call $fixed_mul i64.store
+				local.get $address i32.const 32 i32.add local.get $address i32.const 32 i32.add i64.load i64.const 980000 call $retention_factor_per_tick call $fixed_mul i64.store
 				local.get $address i32.const 4 i32.add local.get $address i32.const 4 i32.add i32.load i32.const 1 i32.sub i32.store
 				local.get $address i32.const 4 i32.add i32.load i32.const 0 i32.le_s (if (then local.get $address i32.const 0 i32.store))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
@@ -1207,8 +1215,8 @@
 			(if (then
 				local.get $address i32.const 8 i32.add local.get $address i32.const 8 i32.add i64.load local.get $address i32.const 24 i32.add i64.load call $per_tick i64.add i64.store
 				local.get $address i32.const 16 i32.add local.get $address i32.const 16 i32.add i64.load local.get $address i32.const 32 i32.add i64.load call $per_tick i64.add i64.store
-				local.get $address i32.const 24 i32.add local.get $address i32.const 24 i32.add i64.load i64.const 990000 call $fixed_mul i64.store
-				local.get $address i32.const 32 i32.add local.get $address i32.const 32 i32.add i64.load i64.const 990000 call $fixed_mul i64.store
+				local.get $address i32.const 24 i32.add local.get $address i32.const 24 i32.add i64.load i64.const 990000 call $retention_factor_per_tick call $fixed_mul i64.store
+				local.get $address i32.const 32 i32.add local.get $address i32.const 32 i32.add i64.load i64.const 990000 call $retention_factor_per_tick call $fixed_mul i64.store
 				local.get $address i32.const 40 i32.add i64.load local.set $dx
 				local.get $address i32.const 48 i32.add i64.load local.set $dy
 				local.get $address i32.const 56 i32.add i32.load i32.const 0 i32.gt_s

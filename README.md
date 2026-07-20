@@ -109,7 +109,7 @@ On July 16, 2026, Peter flew the ship while we removed its per-tick drag from
 WAT. In the next simulation tick the already-running ship coasted indefinitely:
 the process did not restart, Rust did not rebuild, and score, lives, wave,
 bullets, and rocks remained intact. We then restored gentler `0.995` drag and
-saw that change live too. The schema-6 implementation expresses it as
+saw that change live too. The schema-7 implementation expresses it as
 exact decimal-fixed `velocity * 995000 / 1000000`; the WAT policy test forbids
 IEEE-754 gameplay arithmetic outside the sealed host-scalar adapter.
 
@@ -140,8 +140,7 @@ Implemented:
 
 Current deliberate limits:
 
-- the packaged simulation rate remains 60 Hz until equal-time 60/120 behavior
-  and Peter's visual playtest pass;
+- the packaged simulation rate is 120 Hz, with equal-time 60/120 WAST proof;
 - touch/shake browser controls have no native equivalent yet;
 - presentation and tuning remain POC quality; and
 - gameplay additions should be validated as experiments, not added merely

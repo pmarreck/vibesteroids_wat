@@ -51,20 +51,20 @@ AE_configure()
 AE_init(seed_lo, seed_hi, viewport_w, viewport_h)
 AE_event(kind, code, a, b)
 AE_tick(ticks)
-AE_tick_rate(current_numerator, current_denominator) -> (60, 1)
+AE_tick_rate(current_numerator, current_denominator) -> (120, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 6
+AE_state_schema() -> 7
 ~~~
 
-Schema 6 is 32,768 bytes. The behavior specification documents the address map.
+Schema 7 is 32,768 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
 Any layout or semantic change incompatible with the existing 32,768-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 6 so a live reload preserves the current game.
+tuning retains schema 7 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
@@ -77,8 +77,8 @@ declared tick rate or convert authored 60-Hz durations.
 Aedicule reports nominal display refresh with `AE_event` kind 9:
 `code = refresh_numerator_hz` and `a = refresh_denominator`. A guest may return
 `(0, 0)` from `AE_tick_rate` to follow that refresh, or an exact positive
-rational simulation rate. Vibesteroids presently returns the required 60/1
-simulation rate until its 60/120 proof and Peter's playtest permit a change.
+rational simulation rate. Vibesteroids requests 120/1 independently of the
+host display refresh.
 
 The only guest `f32` arithmetic is inside one mechanically marked adapter that:
 
@@ -90,7 +90,7 @@ The structural classifier rejects float loads/stores everywhere and arithmetic
 outside that adapter. Collision squares rescale operands before multiplication
 to remain within `i64` while preserving useful precision.
 
-The packaged preferred rate remains 60 Hz. Before selecting 120 Hz, equal seed,
+The packaged preferred rate is 120 Hz. Equal seed,
 equal simulated seconds, and an identical timestamped input script at both
 rates must demonstrate:
 
