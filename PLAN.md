@@ -202,6 +202,11 @@
 - [ ] Pin Aedicule's fix that keeps the full-window gameplay pointer surface
   from intercepting Reload, New Game, Help, and Quit; gate it and have Peter
   click-playtest the native controls.
+  - [x] Pin pushed Aedicule `a10241d942ec15194771486ede496a8a41271df1`
+    after its independent real-GPUI RED/GREEN proof, canonical `./test`, and
+    optimized `./build`. (2026-07-21 18:46 EDT)
+  - [ ] Have Peter click-playtest Reload, New Game, Help, and Quit in the native
+    window while gameplay pointer input remains active below the title bar.
   - Curiosity poke: can the title bar occlude guest pointer events without
     changing the full-window guest coordinate and rendering contract?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and
