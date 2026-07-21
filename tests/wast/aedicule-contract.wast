@@ -11,6 +11,11 @@
 	(import "sut" "AE_state_ptr" (func $state_ptr (result i32)))
 	(import "sut" "AE_state_len" (func $state_len (result i32)))
 	(import "sut" "AE_state_schema" (func $state_schema (result i32)))
+	(import "test.host" "test_reset_frame" (func $host_reset_frame))
+	(import "test.host" "test_duplicate_stable_ids" (func $host_duplicate_stable_ids (result i32)))
+	(import "test.host" "test_first_duplicate_stable_id" (func $host_first_duplicate_stable_id (result i32)))
+	(import "test.host" "AE_circle" (func $host_circle (param i32 f32 f32 f32 f32 i32 i32) (result i32)))
+	(import "test.host" "AE_text" (func $host_text (param i32 i32 i32 f32 f32 f32 i32 i32) (result i32)))
 
 	(func (export "normal_startup") (result i32)
 		(local $selected_numerator i32) (local $selected_denominator i32)
@@ -30,6 +35,20 @@
 		local.get $selected_numerator i32.const 120 i32.ne (if (then i32.const 10 return))
 		call $render (if (then i32.const 11 return))
 		i32.const 0)
+	;; Mutation/specificity controls prove the fake host accepts distinct IDs and
+	;; rejects cross-primitive reuse, so a reject-everything registry cannot pass.
+	(func (export "stable_id_registry_controls") (result i32)
+		call $host_reset_frame
+		i32.const 6000 f32.const 0 f32.const 0 f32.const 1 f32.const 0 i32.const -1 i32.const 1 call $host_circle drop
+		i32.const 6001 i32.const 0 i32.const 0 f32.const 0 f32.const 0 f32.const 1 i32.const -1 i32.const 0 call $host_text drop
+		call $host_duplicate_stable_ids i32.const 0 i32.ne (if (then i32.const 1 return))
+		call $host_reset_frame
+		i32.const 6000 f32.const 0 f32.const 0 f32.const 1 f32.const 0 i32.const -1 i32.const 1 call $host_circle drop
+		i32.const 6000 i32.const 0 i32.const 0 f32.const 0 f32.const 0 f32.const 1 i32.const -1 i32.const 0 call $host_text drop
+		call $host_duplicate_stable_ids i32.const 1 i32.ne (if (then i32.const 2 return))
+		call $host_first_duplicate_stable_id i32.const 6000 i32.ne (if (then i32.const 3 return))
+		i32.const 0)
 )
 
 (assert_return (invoke $aedicule_contract "normal_startup") (i32.const 0))
+(assert_return (invoke $aedicule_contract "stable_id_registry_controls") (i32.const 0))

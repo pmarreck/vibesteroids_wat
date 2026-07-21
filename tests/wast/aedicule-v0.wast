@@ -2,6 +2,7 @@
 ;; imports. Production behavior is exercised without a Rust test runner, while
 ;; query exports let companion WAST modules assert guest-emitted effects.
 (module $aedicule_v0
+	(memory $stable_ids 1)
 	(global $title_ptr (mut i32) (i32.const 0))
 	(global $title_len (mut i32) (i32.const 0))
 	(global $menu_count (mut i32) (i32.const 0))
@@ -22,6 +23,9 @@
 	(global $invalid_synth_voices (mut i32) (i32.const 0))
 	(global $frame_count (mut i32) (i32.const 0))
 	(global $flash_frames (mut i32) (i32.const 0))
+	(global $stable_id_count (mut i32) (i32.const 0))
+	(global $duplicate_stable_ids (mut i32) (i32.const 0))
+	(global $first_duplicate_stable_id (mut i32) (i32.const -1))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
 	(global $effect_mask (mut i32) (i32.const 0))
@@ -66,6 +70,9 @@
 	(func (export "test_reset_frame")
 		i32.const 0 global.set $frame_count
 		i32.const 0 global.set $flash_frames
+		i32.const 0 global.set $stable_id_count
+		i32.const 0 global.set $duplicate_stable_ids
+		i32.const -1 global.set $first_duplicate_stable_id
 		i64.const 0 global.set $text_mask
 		i32.const 0 global.set $asteroid_paths
 		i32.const 0 global.set $bad_asteroid_vertices
@@ -112,6 +119,8 @@
 	(func (export "test_short_boom_voices") (result i32) global.get $short_boom_voices)
 	(func (export "test_frame_count") (result i32) global.get $frame_count)
 	(func (export "test_flash_frames") (result i32) global.get $flash_frames)
+	(func (export "test_duplicate_stable_ids") (result i32) global.get $duplicate_stable_ids)
+	(func (export "test_first_duplicate_stable_id") (result i32) global.get $first_duplicate_stable_id)
 	(func (export "test_text_seen") (param $id i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
 	(func (export "test_audio_seen") (param $id i32) (result i32)
@@ -135,6 +144,30 @@
 	(func (export "test_blast_radius") (result f32) global.get $blast_radius)
 	(func (export "test_flame_min_x") (result f32) global.get $flame_min_x)
 
+	;; Mirrors the real host's frame-wide identity contract across primitive
+	;; kinds. A compact linear registry accepts every i32 ID without sentinels;
+	;; quadratic lookup is deliberate because this deterministic fake host favors
+	;; transparent validation over production rendering throughput.
+	(func $record_stable_id (param $id i32)
+		(local $index i32)
+		(block $new_id
+			(loop $search
+				local.get $index global.get $stable_id_count i32.ge_u br_if $new_id
+				local.get $index i32.const 4 i32.mul i32.load local.get $id i32.eq
+				(if (then
+					global.get $first_duplicate_stable_id i32.const -1 i32.eq
+					(if (then local.get $id global.set $first_duplicate_stable_id))
+					global.get $duplicate_stable_ids i32.const 1 i32.add global.set $duplicate_stable_ids
+					return))
+				local.get $index i32.const 1 i32.add local.set $index
+				br $search))
+		global.get $stable_id_count i32.const 16384 i32.ge_u
+		(if (then
+			global.get $duplicate_stable_ids i32.const 1 i32.add global.set $duplicate_stable_ids
+			return))
+		global.get $stable_id_count i32.const 4 i32.mul local.get $id i32.store
+		global.get $stable_id_count i32.const 1 i32.add global.set $stable_id_count)
+
 	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
 		local.get $ptr global.set $title_ptr
 		local.get $len global.set $title_len
@@ -151,6 +184,7 @@
 	(func (export "AE_transform_push") (param f32 f32 f32 f32 f32 f32) (result i32) i32.const 0)
 	(func (export "AE_transform_pop") (result i32) i32.const 0)
 	(func (export "AE_path_begin") (param $key i32) (result i32)
+		local.get $key call $record_stable_id
 		local.get $key global.set $current_path_key
 		i32.const 0 global.set $current_path_lines
 		local.get $key i32.const 4 i32.eq (if (then f32.const 0 global.set $flame_min_x))
@@ -179,12 +213,14 @@
 		(if (then global.get $package_paths i32.const 1 i32.add global.set $package_paths))
 		i32.const 0)
 	(func (export "AE_line") (param $key i32) (param f32 f32 f32 f32 f32 i32) (result i32)
+		local.get $key call $record_stable_id
 		local.get $key i32.const 980 i32.ge_u local.get $key i32.const 982 i32.lt_u i32.and
 		(if (then global.get $laser_lines i32.const 1 i32.add global.set $laser_lines))
 		local.get $key i32.const 921 i32.ge_u local.get $key i32.const 929 i32.lt_u i32.and
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
 		i32.const 0)
 	(func (export "AE_circle") (param $key i32) (param f32 f32) (param $radius f32) (param f32 i32 i32) (result i32)
+		local.get $key call $record_stable_id
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
 		local.get $key i32.const 1100 i32.ge_u local.get $key i32.const 1292 i32.lt_u i32.and i32.or
 		(if (then global.get $bullet_circles i32.const 1 i32.add global.set $bullet_circles))
@@ -202,8 +238,9 @@
 			local.get $key i32.const 930 i32.eq (if (then local.get $radius global.set $blast_radius))))
 		i32.const 0)
 	(func (export "AE_text") (param $key i32) (param $ptr i32) (param $len i32) (param f32 f32 f32 i32 i32) (result i32)
+		local.get $key call $record_stable_id
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask
-		local.get $key i32.const 50 i32.eq
+		local.get $key i32.const 53 i32.eq
 		(if (then
 			local.get $ptr i32.const 512 i32.eq
 			local.get $len i32.const 26 i32.eq i32.and

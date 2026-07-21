@@ -237,6 +237,8 @@
 (assert_return (invoke $vibesteroids_tests "help_freezes_state") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_first_duplicate_stable_id") (i32.const -1))
+(assert_return (invoke $vibesteroids_tests "host_duplicate_stable_ids") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_text_seen" (i32.const 40)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_blossom_help_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 7) (i32.const 7)) (i32.const 0))

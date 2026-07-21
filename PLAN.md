@@ -209,6 +209,19 @@
     window while gameplay pointer input remains active below the title bar.
   - Curiosity poke: can the title bar occlude guest pointer events without
     changing the full-window guest coordinate and rendering contract?
+- [ ] Enforce frame-global stable draw-ID uniqueness across primitive kinds and
+  expand the locked real-host gate beyond the initial frame.
+  - [x] Reproduce Peter's Help/reload failure with a generic fake-host registry
+    whose accept-distinct/reject-reuse controls pass before the production Help
+    frame fails on exact duplicate ID `50`. (2026-07-21 19:03 EDT)
+  - [x] Move the Death Blossom Help text from ID `50` to unused ID `53`, while
+    retaining reserve-ship path IDs `50`--`52`. (2026-07-21 19:07 EDT)
+  - [ ] After Aedicule exposes deterministic headless event injection, pin it
+    and make the real renderer gate initial, Help, pause, and menu-driven frames.
+  - [ ] Have Peter confirm Help, Reload, and New Game recover in the live
+    watched process; Quit is already confirmed host-only and working.
+  - Curiosity poke: should downstream tests sweep every declared standard menu
+    action as a set so future conditional frames cannot hide behind tick zero?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and
   implement Vibesteroids' multi-contact left/right-zone and stroke-direction
   semantics using opaque, page-local contact IDs.
