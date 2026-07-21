@@ -199,14 +199,15 @@
     15:38 EDT: pinned pushed `9c5b710671c17e8a210480b6168349ab20ed01b1`)
   - Curiosity poke: which collision differences are desirable reduced tunneling
     and which are unintended difficulty changes?
-- [ ] Pin Aedicule's fix that keeps the full-window gameplay pointer surface
+- [x] Pin Aedicule's fix that keeps the full-window gameplay pointer surface
   from intercepting Reload, New Game, Help, and Quit; gate it and have Peter
   click-playtest the native controls.
   - [x] Pin pushed Aedicule `a10241d942ec15194771486ede496a8a41271df1`
     after its independent real-GPUI RED/GREEN proof, canonical `./test`, and
     optimized `./build`. (2026-07-21 18:46 EDT)
-  - [ ] Have Peter click-playtest Reload, New Game, Help, and Quit in the native
+  - [x] Have Peter click-playtest Reload, New Game, Help, and Quit in the native
     window while gameplay pointer input remains active below the title bar.
+    (2026-07-21 19:12 EDT: Peter confirmed everything works as advertised)
   - Curiosity poke: can the title bar occlude guest pointer events without
     changing the full-window guest coordinate and rendering contract?
 - [ ] Enforce frame-global stable draw-ID uniqueness across primitive kinds and
@@ -218,8 +219,9 @@
     retaining reserve-ship path IDs `50`--`52`. (2026-07-21 19:07 EDT)
   - [ ] After Aedicule exposes deterministic headless event injection, pin it
     and make the real renderer gate initial, Help, pause, and menu-driven frames.
-  - [ ] Have Peter confirm Help, Reload, and New Game recover in the live
+  - [x] Have Peter confirm Help, Reload, and New Game recover in the live
     watched process; Quit is already confirmed host-only and working.
+    (2026-07-21 19:12 EDT: Peter confirmed the watched game recovered)
   - Curiosity poke: should downstream tests sweep every declared standard menu
     action as a set so future conditional frames cannot hide behind tick zero?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and
