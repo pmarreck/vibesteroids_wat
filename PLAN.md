@@ -85,8 +85,10 @@
   introduced a safe swept-voice helper, and passed the complete suite/build)
   - Curiosity poke: which permissive WAST-host stubs should become ABI-value
     classifiers, even after the real-host integration gate is authoritative?
-- [ ] Have Aedicule mirror initial-load and watched-candidate rejection details
+- [x] Have Aedicule mirror initial-load and watched-candidate rejection details
   to stderr while retaining the in-window error and previous live plugin.
+  (2026-07-20 15:38 EDT: pinned pushed Aedicule revision `9c5b710` and gated
+  `code.wat` through the real renderer with stderr required to remain clean)
   - Curiosity poke: should a stable diagnostic prefix be Aedicule's public CLI
     contract, or should it additionally expose a structured diagnostic mode?
 - [x] Add independently testable live-reload sounds for UFO arrival, package
@@ -197,6 +199,16 @@
     15:38 EDT: pinned pushed `9c5b710671c17e8a210480b6168349ab20ed01b1`)
   - Curiosity poke: which collision differences are desirable reduced tunneling
     and which are unintended difficulty changes?
+- [ ] Pin Aedicule's fix that keeps the full-window gameplay pointer surface
+  from intercepting Reload, New Game, Help, and Quit; gate it and have Peter
+  click-playtest the native controls.
+  - Curiosity poke: can the title bar occlude guest pointer events without
+    changing the full-window guest coordinate and rendering contract?
+- [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and
+  implement Vibesteroids' multi-contact left/right-zone and stroke-direction
+  semantics using opaque, page-local contact IDs.
+  - Curiosity poke: do touch end and touch cancel both clear every per-contact
+    gameplay state before the next fixed tick, including interrupted gestures?
 - [ ] Perform Peter-guided playtests of the highest-priority findings in
   `GAMEPLAY_DESIGN_RESEARCH.md`, one falsifiable experiment at a time.
   - Curiosity poke: which change improves repeated voluntary play rather than
