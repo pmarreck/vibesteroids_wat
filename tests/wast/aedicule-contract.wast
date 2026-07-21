@@ -34,6 +34,7 @@
 		local.get $selected_denominator i32.const 1 i32.ne (if (then i32.const 9 return))
 		local.get $selected_numerator i32.const 120 i32.ne (if (then i32.const 10 return))
 		call $render (if (then i32.const 11 return))
+		call $host_duplicate_stable_ids (if (then i32.const 12 return))
 		i32.const 0)
 	;; Mutation/specificity controls prove the fake host accepts distinct IDs and
 	;; rejects cross-primitive reuse, so a reject-everything registry cannot pass.

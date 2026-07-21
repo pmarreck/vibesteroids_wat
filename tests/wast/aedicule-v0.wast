@@ -177,6 +177,9 @@
 		global.get $menu_mask i32.const 1 local.get $id i32.shl i32.or global.set $menu_mask
 		i32.const 0)
 	(func (export "AE_frame_begin") (param $red f32) (param f32 f32 f32) (result i32)
+		i32.const 0 global.set $stable_id_count
+		i32.const 0 global.set $duplicate_stable_ids
+		i32.const -1 global.set $first_duplicate_stable_id
 		global.get $frame_count i32.const 1 i32.add global.set $frame_count
 		local.get $red f32.const 0.9 f32.gt
 		(if (then global.get $flash_frames i32.const 1 i32.add global.set $flash_frames))

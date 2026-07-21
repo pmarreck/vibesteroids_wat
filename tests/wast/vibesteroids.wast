@@ -10,7 +10,7 @@
 	(import "sut" "AE_after_restore" (func $after_restore (result i32)))
 	(import "sut" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
 	(import "sut" "AE_tick" (func $tick (param i32) (result i32)))
-	(import "sut" "AE_render" (func $render (result i32)))
+	(import "sut" "AE_render" (func $sut_render (result i32)))
 	(import "test.host" "test_reset_config" (func $host_reset_config))
 	(import "test.host" "test_reset_frame" (func $host_reset_frame))
 	(import "test.host" "test_reset_effects" (func $host_reset_effects))
@@ -44,6 +44,14 @@
 	(import "test.host" "test_audio_seen" (func $host_audio_seen (param i32) (result i32)))
 	(import "test.host" "test_effect_seen" (func $host_effect_seen (param i32) (result i32)))
 	(import "test.host" "test_bullet_circles" (func $host_bullet_circles (result i32)))
+
+	;; Makes every companion scenario enforce the real host's atomic frame-ID
+	;; contract, so a future conditional render cannot omit the duplicate check.
+	(func $render (result i32)
+		(local $status i32)
+		call $sut_render local.set $status
+		local.get $status (if (then local.get $status return))
+		call $host_duplicate_stable_ids)
 
 	(func (export "schema") (result i32) call $state_schema)
 	(func (export "state_len") (result i32) call $state_len)
