@@ -14,6 +14,14 @@
 	(import "test.host" "test_reset_frame" (func $host_reset_frame))
 	(import "test.host" "test_duplicate_stable_ids" (func $host_duplicate_stable_ids (result i32)))
 	(import "test.host" "test_first_duplicate_stable_id" (func $host_first_duplicate_stable_id (result i32)))
+	(import "test.host" "test_geometry_errors" (func $host_geometry_errors (result i32)))
+	(import "test.host" "AE_frame_begin" (func $host_frame_begin (param f32 f32 f32 f32) (result i32)))
+	(import "test.host" "AE_path_begin" (func $host_path_begin (param i32) (result i32)))
+	(import "test.host" "AE_path_move" (func $host_path_move (param f32 f32) (result i32)))
+	(import "test.host" "AE_path_line" (func $host_path_line (param f32 f32) (result i32)))
+	(import "test.host" "AE_path_end" (func $host_path_end (param f32 i32 i32 i32) (result i32)))
+	(import "test.host" "AE_frame_end" (func $host_frame_end (result i32)))
+	(import "test.host" "AE_line" (func $host_line (param i32 f32 f32 f32 f32 f32 i32) (result i32)))
 	(import "test.host" "AE_circle" (func $host_circle (param i32 f32 f32 f32 f32 i32 i32) (result i32)))
 	(import "test.host" "AE_text" (func $host_text (param i32 i32 i32 f32 f32 f32 i32 i32) (result i32)))
 
@@ -49,7 +57,28 @@
 		call $host_duplicate_stable_ids i32.const 1 i32.ne (if (then i32.const 2 return))
 		call $host_first_duplicate_stable_id i32.const 6000 i32.ne (if (then i32.const 3 return))
 		i32.const 0)
+	;; Geometry controls prove visible primitives pass while an empty path and a
+	;; zero-length/zero-width line fail independently.
+	(func (export "geometry_controls") (result i32)
+		call $host_reset_frame
+		f32.const 0 f32.const 0 f32.const 0 f32.const 1 call $host_frame_begin drop
+		i32.const 6000 call $host_path_begin drop
+		f32.const 0 f32.const 0 call $host_path_move drop
+		f32.const 1 f32.const 1 call $host_path_line drop
+		f32.const 1 i32.const 0 i32.const -1 i32.const 0 call $host_path_end drop
+		i32.const 6001 f32.const 0 f32.const 0 f32.const 1 f32.const 1 f32.const 1 i32.const -1 call $host_line drop
+		call $host_frame_end drop
+		call $host_geometry_errors i32.const 0 i32.ne (if (then i32.const 1 return))
+		call $host_reset_frame
+		f32.const 0 f32.const 0 f32.const 0 f32.const 1 call $host_frame_begin drop
+		i32.const 6000 call $host_path_begin drop
+		f32.const 1 i32.const 0 i32.const -1 i32.const 0 call $host_path_end drop
+		i32.const 6001 f32.const 0 f32.const 0 f32.const 0 f32.const 0 f32.const 0 i32.const -1 call $host_line drop
+		call $host_frame_end drop
+		call $host_geometry_errors i32.const 2 i32.ne (if (then i32.const 2 return))
+		i32.const 0)
 )
 
 (assert_return (invoke $aedicule_contract "normal_startup") (i32.const 0))
 (assert_return (invoke $aedicule_contract "stable_id_registry_controls") (i32.const 0))
+(assert_return (invoke $aedicule_contract "geometry_controls") (i32.const 0))

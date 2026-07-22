@@ -26,6 +26,7 @@
 	(global $stable_id_count (mut i32) (i32.const 0))
 	(global $duplicate_stable_ids (mut i32) (i32.const 0))
 	(global $first_duplicate_stable_id (mut i32) (i32.const -1))
+	(global $geometry_errors (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
 	(global $effect_mask (mut i32) (i32.const 0))
@@ -45,6 +46,7 @@
 	(global $blast_circles (mut i32) (i32.const 0))
 	(global $blast_radius (mut f32) (f32.const 0))
 	(global $current_path_key (mut i32) (i32.const -1))
+	(global $current_path_moves (mut i32) (i32.const 0))
 	(global $current_path_lines (mut i32) (i32.const 0))
 	(global $flame_min_x (mut f32) (f32.const 0))
 
@@ -73,6 +75,7 @@
 		i32.const 0 global.set $stable_id_count
 		i32.const 0 global.set $duplicate_stable_ids
 		i32.const -1 global.set $first_duplicate_stable_id
+		i32.const 0 global.set $geometry_errors
 		i64.const 0 global.set $text_mask
 		i32.const 0 global.set $asteroid_paths
 		i32.const 0 global.set $bad_asteroid_vertices
@@ -90,6 +93,7 @@
 		i32.const 0 global.set $blast_circles
 		f32.const 0 global.set $blast_radius
 		i32.const -1 global.set $current_path_key
+		i32.const 0 global.set $current_path_moves
 		i32.const 0 global.set $current_path_lines
 		f32.const 0 global.set $flame_min_x)
 	(func (export "test_reset_effects")
@@ -121,6 +125,7 @@
 	(func (export "test_flash_frames") (result i32) global.get $flash_frames)
 	(func (export "test_duplicate_stable_ids") (result i32) global.get $duplicate_stable_ids)
 	(func (export "test_first_duplicate_stable_id") (result i32) global.get $first_duplicate_stable_id)
+	(func (export "test_geometry_errors") (result i32) global.get $geometry_errors)
 	(func (export "test_text_seen") (param $id i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
 	(func (export "test_audio_seen") (param $id i32) (result i32)
@@ -189,10 +194,13 @@
 	(func (export "AE_path_begin") (param $key i32) (result i32)
 		local.get $key call $record_stable_id
 		local.get $key global.set $current_path_key
+		i32.const 0 global.set $current_path_moves
 		i32.const 0 global.set $current_path_lines
 		local.get $key i32.const 4 i32.eq (if (then f32.const 0 global.set $flame_min_x))
 		i32.const 0)
-	(func (export "AE_path_move") (param f32 f32) (result i32) i32.const 0)
+	(func (export "AE_path_move") (param f32 f32) (result i32)
+		global.get $current_path_moves i32.const 1 i32.add global.set $current_path_moves
+		i32.const 0)
 	(func (export "AE_path_line") (param $x f32) (param f32) (result i32)
 		global.get $current_path_lines i32.const 1 i32.add global.set $current_path_lines
 		global.get $current_path_key i32.const 4 i32.eq
@@ -200,8 +208,20 @@
 		i32.const 0)
 	(func (export "AE_path_close") (result i32) i32.const 0)
 	(func (export "AE_path_end") (param f32 i32 i32 i32) (result i32)
+		(local $minimum_lines i32) (local $valid i32)
+		i32.const 1 local.set $minimum_lines
+		global.get $current_path_key i32.const 900 i32.eq
+		(if (then i32.const 5 local.set $minimum_lines))
+		global.get $current_path_key i32.const 910 i32.eq
+		(if (then i32.const 3 local.set $minimum_lines))
+		global.get $current_path_moves i32.eqz
+		global.get $current_path_lines local.get $minimum_lines i32.lt_u i32.or
+		(if
+			(then global.get $geometry_errors i32.const 1 i32.add global.set $geometry_errors)
+			(else i32.const 1 local.set $valid))
 		global.get $current_path_key i32.const 200 i32.ge_u
 		global.get $current_path_key i32.const 232 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then
 			global.get $asteroid_paths i32.const 1 i32.add global.set $asteroid_paths
 			global.get $current_path_lines i32.const 7 i32.lt_u
@@ -209,33 +229,52 @@
 			(if (then global.get $bad_asteroid_vertices i32.const 1 i32.add global.set $bad_asteroid_vertices))))
 		global.get $current_path_key i32.const 50 i32.ge_u
 		global.get $current_path_key i32.const 53 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then global.get $reserve_paths i32.const 1 i32.add global.set $reserve_paths))
-		global.get $current_path_key i32.const 900 i32.eq
+		global.get $current_path_key i32.const 900 i32.eq local.get $valid i32.and
 		(if (then global.get $ufo_paths i32.const 1 i32.add global.set $ufo_paths))
-		global.get $current_path_key i32.const 910 i32.eq
+		global.get $current_path_key i32.const 910 i32.eq local.get $valid i32.and
 		(if (then global.get $package_paths i32.const 1 i32.add global.set $package_paths))
+		i32.const -1 global.set $current_path_key
 		i32.const 0)
-	(func (export "AE_line") (param $key i32) (param f32 f32 f32 f32 f32 i32) (result i32)
+	(func (export "AE_line") (param $key i32) (param $x1 f32) (param $y1 f32)
+		(param $x2 f32) (param $y2 f32) (param $width f32) (param i32) (result i32)
+		(local $valid i32)
 		local.get $key call $record_stable_id
+		local.get $width f32.const 0 f32.gt
+		local.get $x1 local.get $x2 f32.ne local.get $y1 local.get $y2 f32.ne i32.or
+		i32.and local.set $valid
+		local.get $valid i32.eqz
+		(if (then global.get $geometry_errors i32.const 1 i32.add global.set $geometry_errors))
 		local.get $key i32.const 980 i32.ge_u local.get $key i32.const 982 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then global.get $laser_lines i32.const 1 i32.add global.set $laser_lines))
 		local.get $key i32.const 921 i32.ge_u local.get $key i32.const 929 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
 		i32.const 0)
 	(func (export "AE_circle") (param $key i32) (param f32 f32) (param $radius f32) (param f32 i32 i32) (result i32)
+		(local $valid i32)
 		local.get $key call $record_stable_id
+		local.get $radius f32.const 0 f32.gt local.set $valid
+		local.get $valid i32.eqz
+		(if (then global.get $geometry_errors i32.const 1 i32.add global.set $geometry_errors))
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
-		local.get $key i32.const 1100 i32.ge_u local.get $key i32.const 1292 i32.lt_u i32.and i32.or
+		local.get $key i32.const 1100 i32.ge_u local.get $key i32.const 1292 i32.lt_u i32.and i32.or local.get $valid i32.and
 		(if (then global.get $bullet_circles i32.const 1 i32.add global.set $bullet_circles))
 		local.get $key i32.const 200 i32.ge_u local.get $key i32.const 232 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then global.get $asteroid_circles i32.const 1 i32.add global.set $asteroid_circles))
 		local.get $key i32.const 800 i32.ge_u local.get $key i32.const 900 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then global.get $star_circles i32.const 1 i32.add global.set $star_circles))
 		local.get $key i32.const 960 i32.ge_u local.get $key i32.const 968 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then global.get $enemy_bullet_circles i32.const 1 i32.add global.set $enemy_bullet_circles))
-		local.get $key i32.const 920 i32.eq
+		local.get $key i32.const 920 i32.eq local.get $valid i32.and
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
 		local.get $key i32.const 930 i32.ge_u local.get $key i32.const 932 i32.lt_u i32.and
+		local.get $valid i32.and
 		(if (then
 			global.get $blast_circles i32.const 1 i32.add global.set $blast_circles
 			local.get $key i32.const 930 i32.eq (if (then local.get $radius global.set $blast_radius))))

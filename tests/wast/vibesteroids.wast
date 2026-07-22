@@ -25,6 +25,7 @@
 	(import "test.host" "test_flash_frames" (func $host_flash_frames (result i32)))
 	(import "test.host" "test_duplicate_stable_ids" (func $host_duplicate_stable_ids (result i32)))
 	(import "test.host" "test_first_duplicate_stable_id" (func $host_first_duplicate_stable_id (result i32)))
+	(import "test.host" "test_geometry_errors" (func $host_geometry_errors (result i32)))
 	(import "test.host" "test_text_seen" (func $host_text_seen (param i32) (result i32)))
 	(import "test.host" "test_asteroid_paths" (func $host_asteroid_paths (result i32)))
 	(import "test.host" "test_bad_asteroid_vertices" (func $host_bad_asteroid_vertices (result i32)))
@@ -51,7 +52,8 @@
 		(local $status i32)
 		call $sut_render local.set $status
 		local.get $status (if (then local.get $status return))
-		call $host_duplicate_stable_ids)
+		call $host_duplicate_stable_ids
+		call $host_geometry_errors i32.or)
 
 	(func (export "schema") (result i32) call $state_schema)
 	(func (export "state_len") (result i32) call $state_len)
