@@ -205,6 +205,9 @@ starfield and translates all world objects by `new_center - old_center`,
 preserving trajectories rather than stretching them.
 
 The HUD clearly exposes score, level, lives, mode/status, help, and game over.
+While a timed gift is active, a text-plus-icon badge identifies `LASER` or
+`RAPID` and displays the ceil-rounded remaining time in tenths; it disappears
+at expiry. Help uses a filled two-column keyboard/pointer panel.
 The WAT declares composable shot, thrust, explosion, extra-life, Death Blossom,
 notification, and hazardous-blast synth programs. The hazardous blast layers
 three maximum-volume 1.2--1.5-second voices beneath a flickering orange pulse

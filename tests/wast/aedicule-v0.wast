@@ -48,6 +48,11 @@
 	(global $laser_lines (mut i32) (i32.const 0))
 	(global $blossom_marks (mut i32) (i32.const 0))
 	(global $blossom_help_valid (mut i32) (i32.const 0))
+	(global $help_copy_mask (mut i32) (i32.const 0))
+	(global $help_frame_lines (mut i32) (i32.const 0))
+	(global $power_hud_kind (mut i32) (i32.const -1))
+	(global $power_hud_text_valid (mut i32) (i32.const 0))
+	(global $power_hud_primitives (mut i32) (i32.const 0))
 	(global $blast_circles (mut i32) (i32.const 0))
 	(global $blast_radius (mut f32) (f32.const 0))
 	(global $current_path_key (mut i32) (i32.const -1))
@@ -100,6 +105,11 @@
 		i32.const 0 global.set $laser_lines
 		i32.const 0 global.set $blossom_marks
 		i32.const 0 global.set $blossom_help_valid
+		i32.const 0 global.set $help_copy_mask
+		i32.const 0 global.set $help_frame_lines
+		i32.const -1 global.set $power_hud_kind
+		i32.const 0 global.set $power_hud_text_valid
+		i32.const 0 global.set $power_hud_primitives
 		i32.const 0 global.set $blast_circles
 		f32.const 0 global.set $blast_radius
 		i32.const -1 global.set $current_path_key
@@ -161,6 +171,11 @@
 	(func (export "test_laser_lines") (result i32) global.get $laser_lines)
 	(func (export "test_blossom_marks") (result i32) global.get $blossom_marks)
 	(func (export "test_blossom_help_valid") (result i32) global.get $blossom_help_valid)
+	(func (export "test_help_copy_mask") (result i32) global.get $help_copy_mask)
+	(func (export "test_help_frame_lines") (result i32) global.get $help_frame_lines)
+	(func (export "test_power_hud_kind") (result i32) global.get $power_hud_kind)
+	(func (export "test_power_hud_text_valid") (result i32) global.get $power_hud_text_valid)
+	(func (export "test_power_hud_primitives") (result i32) global.get $power_hud_primitives)
 	(func (export "test_blast_circles") (result i32) global.get $blast_circles)
 	(func (export "test_blast_radius") (result f32) global.get $blast_radius)
 	(func (export "test_flame_min_x") (result f32) global.get $flame_min_x)
@@ -301,6 +316,12 @@
 		local.get $key i32.const 921 i32.ge_u local.get $key i32.const 929 i32.lt_u i32.and
 		local.get $valid i32.and
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
+		local.get $key i32.const 2010 i32.ge_u local.get $key i32.const 2015 i32.lt_u i32.and
+		local.get $valid i32.and
+		(if (then global.get $help_frame_lines i32.const 1 i32.add global.set $help_frame_lines))
+		local.get $key i32.const 2020 i32.ge_u local.get $key i32.const 2028 i32.lt_u i32.and
+		local.get $valid i32.and
+		(if (then global.get $power_hud_primitives i32.const 1 i32.add global.set $power_hud_primitives))
 		i32.const 0)
 	(func (export "AE_circle") (param $key i32) (param f32 f32) (param $radius f32) (param f32 i32 i32) (result i32)
 		(local $valid i32)
@@ -329,6 +350,8 @@
 		(if (then
 			global.get $blast_circles i32.const 1 i32.add global.set $blast_circles
 			local.get $key i32.const 930 i32.eq (if (then local.get $radius global.set $blast_radius))))
+		local.get $key i32.const 2025 i32.eq local.get $valid i32.and
+		(if (then global.get $power_hud_primitives i32.const 1 i32.add global.set $power_hud_primitives))
 		i32.const 0)
 	(func (export "AE_text") (param $key i32) (param $ptr i32) (param $len i32) (param f32 f32 f32 i32 i32) (result i32)
 		global.get $frame_open i32.eqz global.get $path_open i32.or
@@ -340,6 +363,32 @@
 			local.get $ptr i32.const 512 i32.eq
 			local.get $len i32.const 26 i32.eq i32.and
 			global.set $blossom_help_valid))
+		local.get $key i32.const 54 i32.eq
+		(if (then local.get $ptr i32.const 560 i32.eq local.get $len i32.const 8 i32.eq i32.and
+			(if (then global.get $help_copy_mask i32.const 1 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 55 i32.eq
+		(if (then local.get $ptr i32.const 568 i32.eq local.get $len i32.const 7 i32.eq i32.and
+			(if (then global.get $help_copy_mask i32.const 2 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 56 i32.eq
+		(if (then local.get $ptr i32.const 576 i32.eq local.get $len i32.const 16 i32.eq i32.and
+			(if (then global.get $help_copy_mask i32.const 4 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 57 i32.eq
+		(if (then local.get $ptr i32.const 592 i32.eq local.get $len i32.const 17 i32.eq i32.and
+			(if (then global.get $help_copy_mask i32.const 8 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 58 i32.eq
+		(if (then local.get $ptr i32.const 616 i32.eq local.get $len i32.const 19 i32.eq i32.and
+			(if (then global.get $help_copy_mask i32.const 16 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 59 i32.eq
+		(if (then local.get $ptr i32.const 640 i32.eq local.get $len i32.const 20 i32.eq i32.and
+			(if (then global.get $help_copy_mask i32.const 32 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 60 i32.eq
+		(if (then
+			i32.const 0 global.set $power_hud_kind
+			local.get $ptr i32.const 672 i32.eq local.get $len i32.const 11 i32.eq i32.and global.set $power_hud_text_valid))
+		local.get $key i32.const 61 i32.eq
+		(if (then
+			i32.const 1 global.set $power_hud_kind
+			local.get $ptr i32.const 688 i32.eq local.get $len i32.const 11 i32.eq i32.and global.set $power_hud_text_valid))
 		local.get $key i32.const 25 i32.eq
 		(if (then
 			local.get $len i32.const 1 i32.ge_u

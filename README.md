@@ -135,7 +135,8 @@ Implemented:
   fire, physical collisions, a 2,000-point bounty, and hazardous expanding
   blasts whose asteroid score follows player-kill attribution;
 - destructible drifting packages that randomly grant either 20 seconds of
-  finite, non-wrapping multi-target laser fire or doubled bounded fire rate;
+  finite, non-wrapping multi-target laser fire or doubled bounded fire rate,
+  with an icon-and-text tenths countdown for the active reward;
 - guest-declared shot, laser, thrust, explosion, extra-life, Death Blossom,
   alert, notification, and layered 1.2-second-or-longer BOOM synths;
 - signed decimal-fixed internal state and physics, with one sealed float adapter

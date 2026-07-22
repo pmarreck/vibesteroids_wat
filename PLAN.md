@@ -5,13 +5,13 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
-- [ ] Finish the two visually gated deep-review improvements.
+- [x] Finish the two visually gated deep-review improvements.
 	- [x] Create an inspectable Help/power-up HUD concept sheet at honest gameplay
 	  scale. (2026-07-21 22:48 EDT)
-	- [ ] Receive Peter's approval or requested revisions for the two-column Help
-	  layout and `LASER`/`RAPID` countdown badges.
-	- [ ] TDD the approved production geometry, copy, deterministic timer display,
-	  and mechanical visibility assertions.
+	- [x] Receive Peter's enthusiastic approval for the two-column Help layout and
+	  `LASER`/`RAPID` countdown badges. (2026-07-22 00:03 EDT)
+	- [x] TDD the approved production geometry, copy, deterministic timer display,
+	  and mechanical visibility assertions. (2026-07-22 00:10 EDT)
 	- Curiosity poke: can the countdown remain useful during intense play without
 	  competing with score, lives, or incoming threats?
 - [ ] Consume the Aedicule-owned deep-review ABI tranche after its agent sends a
@@ -30,8 +30,13 @@ implementation history remains recoverable in Git through commit `8df6b11`.
   and detonates on player fire or physical collision.
 	- [x] Create a Voyager-derived SVG concept at inspection and honest gameplay
 	  scales. (2026-07-21 19:17 EDT)
-	- [ ] Receive Peter's visual approval or requested revisions before encoding
-	  production drawing or visual assertions.
+	- [x] Receive Peter's visual approval with three revisions: keep the bent boom
+	  joined, render the craft about 33% smaller, and give it seeded slow rotation
+	  in either direction. (2026-07-22 00:05 EDT)
+	- [ ] TDD the independent schedule, but defer each spawn while 15 or more
+	  asteroids are active; do not impose the still-undecided once-per-level cap.
+	- [ ] TDD the approved connected Voyager geometry, seeded spin, quiet phone-home
+	  ping, glow pulse, collision/destruction rules, and attributed blast.
 	- Curiosity poke: does its blast radius create deliberate asteroid-grouping
 	  tactics without letting accidental chain clears dominate ordinary play?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and

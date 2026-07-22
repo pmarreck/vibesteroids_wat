@@ -89,6 +89,14 @@
 	(data (i32.const 472) "DEATH BLOSSOM!")
 	(data (i32.const 512) "ONE DEATH BLOSSOM PER LIFE")
 	(data (i32.const 544) "000000")
+	(data (i32.const 560) "KEYBOARD")
+	(data (i32.const 568) "POINTER")
+	(data (i32.const 576) "MOVE         AIM")
+	(data (i32.const 592) "HOLD LEFT    FIRE")
+	(data (i32.const 616) "HOLD RIGHT   THRUST")
+	(data (i32.const 640) "SCROLL       BLOSSOM")
+	(data (i32.const 672) "LASER  00.0")
+	(data (i32.const 688) "RAPID  00.0")
 
 	(global $scale i64 (i64.const 1000000))
 	(global $tick_numerator i64 (i64.const 120))
@@ -2236,6 +2244,97 @@
 		i32.const 927 local.get $x i64.const 10000000 i64.sub call $to_host f32.const 92 local.get $x i64.const 5000000 i64.sub call $to_host f32.const 87 f32.const 2 i32.const 0xffcf5cff call $line drop
 		i32.const 928 local.get $x i64.const 5000000 i64.add call $to_host f32.const 77 local.get $x i64.const 10000000 i64.add call $to_host f32.const 72 f32.const 2 i32.const 0xffcf5cff call $line drop)
 
+	;; Writes a ceil-rounded tenths countdown into either approved power-badge
+	;; label without mutating the canonical snapshot during rendering.
+	(func $write_power_timer_text (param $ptr i32)
+		(local $tenths i32)
+		i32.const 16520 i32.load i64.extend_i32_u global.get $tick_denominator i64.mul i64.const 10 i64.mul
+		global.get $tick_numerator i64.const 1 i64.sub i64.add
+		global.get $tick_numerator i64.div_u i32.wrap_i64 local.set $tenths
+		local.get $ptr i32.const 7 i32.add local.get $tenths i32.const 100 i32.div_u i32.const 48 i32.add i32.store8
+		local.get $ptr i32.const 8 i32.add local.get $tenths i32.const 10 i32.div_u i32.const 10 i32.rem_u i32.const 48 i32.add i32.store8
+		local.get $ptr i32.const 10 i32.add local.get $tenths i32.const 10 i32.rem_u i32.const 48 i32.add i32.store8)
+
+	;; Renders the Peter-approved non-color-only active reward badge. A textual
+	;; kind/countdown is paired with either a beam or double-chevron icon.
+	(func $draw_power_hud
+		(local $kind i32) (local $ptr i32) (local $key i32) (local $color i32) (local $fill i32)
+		i32.const 16520 i32.load i32.const 0 i32.le_s (if (then return))
+		i32.const 16592 i32.load local.set $kind
+		local.get $kind i32.eqz
+		(if
+			(then i32.const 672 local.set $ptr i32.const 60 local.set $key i32.const 0x5ee7ffff local.set $color i32.const 0x071a25ee local.set $fill)
+			(else i32.const 688 local.set $ptr i32.const 61 local.set $key i32.const 0xffcf5cff local.set $color i32.const 0x211807ee local.set $fill))
+		local.get $ptr call $write_power_timer_text
+		i32.const 2019 call $path_begin drop
+		f32.const 24 f32.const 72 call $path_move drop
+		f32.const 284 f32.const 72 call $path_line drop
+		f32.const 284 f32.const 118 call $path_line drop
+		f32.const 24 f32.const 118 call $path_line drop
+		call $path_close drop f32.const 0 local.get $fill i32.const 0 i32.const 0 call $path_end drop
+		i32.const 2020 f32.const 24 f32.const 72 f32.const 284 f32.const 72 f32.const 1 local.get $color call $line drop
+		i32.const 2021 f32.const 284 f32.const 72 f32.const 284 f32.const 118 f32.const 1 local.get $color call $line drop
+		i32.const 2022 f32.const 284 f32.const 118 f32.const 24 f32.const 118 f32.const 1 local.get $color call $line drop
+		i32.const 2023 f32.const 24 f32.const 118 f32.const 24 f32.const 72 f32.const 1 local.get $color call $line drop
+		local.get $kind i32.eqz
+		(if
+			(then
+				i32.const 2024 f32.const 44 f32.const 95 f32.const 72 f32.const 95 f32.const 3 local.get $color call $line drop
+				i32.const 2025 f32.const 44 f32.const 95 f32.const 4 f32.const 0 i32.const 0xffffffff i32.const 1 call $circle drop)
+			(else
+				i32.const 2024 f32.const 42 f32.const 84 f32.const 54 f32.const 95 f32.const 3 local.get $color call $line drop
+				i32.const 2025 f32.const 54 f32.const 95 f32.const 42 f32.const 106 f32.const 3 local.get $color call $line drop
+				i32.const 2026 f32.const 56 f32.const 84 f32.const 68 f32.const 95 f32.const 3 local.get $color call $line drop
+				i32.const 2027 f32.const 68 f32.const 95 f32.const 56 f32.const 106 f32.const 3 local.get $color call $line drop))
+		local.get $key local.get $ptr i32.const 11 f32.const 88 f32.const 87 f32.const 20 local.get $color i32.const 0 call $text drop)
+
+	;; Draws the approved two-column Help panel after the world, using a filled
+	;; vector backdrop so every keyboard and pointer row remains legible.
+	(func $draw_help_overlay
+		(local $center i64) (local $left i64) (local $right i64) (local $far_x i64) (local $bottom i64)
+		global.get $state_width_address i64.load i64.const 2 i64.div_s local.set $center
+		global.get $state_width_address i64.load i64.const 280000 call $fixed_mul local.set $left
+		global.get $state_width_address i64.load i64.const 650000 call $fixed_mul local.set $right
+		global.get $state_width_address i64.load i64.const 40000000 i64.sub local.set $far_x
+		global.get $state_height_address i64.load i64.const 16000000 i64.sub local.set $bottom
+		i32.const 2009 call $path_begin drop
+		f32.const 40 f32.const 62 call $path_move drop
+		local.get $far_x call $to_host f32.const 62 call $path_line drop
+		local.get $far_x call $to_host local.get $bottom call $to_host call $path_line drop
+		f32.const 40 local.get $bottom call $to_host call $path_line drop
+		call $path_close drop f32.const 0 i32.const 0x081021f5 i32.const 0 i32.const 0 call $path_end drop
+		i32.const 2010 f32.const 40 f32.const 62 local.get $far_x call $to_host f32.const 62 f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2011 local.get $far_x call $to_host f32.const 62 local.get $far_x call $to_host local.get $bottom call $to_host f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2012 local.get $far_x call $to_host local.get $bottom call $to_host f32.const 40 local.get $bottom call $to_host f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2013 f32.const 40 local.get $bottom call $to_host f32.const 40 f32.const 62 f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2014 f32.const 88 f32.const 150 global.get $state_width_address i64.load i64.const 88000000 i64.sub call $to_host f32.const 150 f32.const 1 i32.const 0x31536bff call $line drop
+		i32.const 40 i32.const 224 i32.const 8 local.get $center call $to_host f32.const 125 f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
+		i32.const 54 i32.const 560 i32.const 8 local.get $left call $to_host f32.const 190 f32.const 18 i32.const 0xffcf5cff i32.const 1 call $text drop
+		i32.const 55 i32.const 568 i32.const 7 local.get $right call $to_host f32.const 190 f32.const 18 i32.const 0xffcf5cff i32.const 1 call $text drop
+		i32.const 41 i32.const 240 i32.const 21 local.get $left call $to_host f32.const 230 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 42 i32.const 264 i32.const 21 local.get $left call $to_host f32.const 266 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 43 i32.const 288 i32.const 19 local.get $left call $to_host f32.const 302 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 44 i32.const 312 i32.const 24 local.get $left call $to_host f32.const 338 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 45 i32.const 340 i32.const 23 local.get $left call $to_host f32.const 374 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 46 i32.const 368 i32.const 28 local.get $left call $to_host f32.const 410 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 47 i32.const 400 i32.const 20 local.get $left call $to_host f32.const 446 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 48 i32.const 424 i32.const 22 local.get $left call $to_host f32.const 482 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 49 i32.const 448 i32.const 19 local.get $left call $to_host f32.const 518 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 56 i32.const 576 i32.const 16 local.get $right call $to_host f32.const 230 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 57 i32.const 592 i32.const 17 local.get $right call $to_host f32.const 266 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 58 i32.const 616 i32.const 19 local.get $right call $to_host f32.const 302 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 59 i32.const 640 i32.const 20 local.get $right call $to_host f32.const 338 f32.const 17 i32.const 0xffffffff i32.const 1 call $text drop
+		i32.const 2030 local.get $center call $to_host f32.const 585 f32.const 6 f32.const 0 i32.const 0xff5cf4ff i32.const 1 call $circle drop
+		i32.const 2031 local.get $center i64.const 18000000 i64.sub call $to_host f32.const 585 local.get $center i64.const 7000000 i64.sub call $to_host f32.const 585 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2032 local.get $center i64.const 7000000 i64.add call $to_host f32.const 585 local.get $center i64.const 18000000 i64.add call $to_host f32.const 585 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2033 local.get $center call $to_host f32.const 567 local.get $center call $to_host f32.const 578 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2034 local.get $center call $to_host f32.const 592 local.get $center call $to_host f32.const 603 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2035 local.get $center i64.const 13000000 i64.sub call $to_host f32.const 572 local.get $center i64.const 5000000 i64.sub call $to_host f32.const 580 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2036 local.get $center i64.const 5000000 i64.add call $to_host f32.const 590 local.get $center i64.const 13000000 i64.add call $to_host f32.const 598 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2037 local.get $center i64.const 13000000 i64.sub call $to_host f32.const 598 local.get $center i64.const 5000000 i64.sub call $to_host f32.const 590 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 2038 local.get $center i64.const 5000000 i64.add call $to_host f32.const 580 local.get $center i64.const 13000000 i64.add call $to_host f32.const 572 f32.const 2 i32.const 0xff5cf4ff call $line drop
+		i32.const 53 i32.const 512 i32.const 26 local.get $center call $to_host f32.const 636 f32.const 17 i32.const 0xffcf5cff i32.const 1 call $text drop)
+
 	;; Draws the blast as a triangular 1.2-second pulse with alternating hot
 	;; orange cores, giving deterministic expansion, contraction, and flicker.
 	(func $draw_hazardous_blast
@@ -2320,6 +2419,7 @@
 			i32.const 25 i32.const 550 local.get $reserve_digits i32.sub local.get $reserve_digits
 			global.get $state_width_address i64.load i64.const 124000000 i64.sub call $to_host
 			f32.const 54 f32.const 18 i32.const 0xffcf5cff i32.const 1 call $text drop))))
+		call $draw_power_hud
 		global.get $state_lifecycle_address i32.load local.set $index
 		local.get $index i32.eqz
 		(if (then
@@ -2372,18 +2472,7 @@
 		call $load_flags global.get $flag_paused i32.and
 		(if (then i32.const 33 i32.const 100 i32.const 6 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 2 i64.div_s call $to_host f32.const 36 i32.const 0xffcf5cff i32.const 1 call $text drop))
 		call $load_flags global.get $flag_help_visible i32.and
-		(if (then
-			i32.const 40 i32.const 224 i32.const 8 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 140000000 call $to_host f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
-			i32.const 41 i32.const 240 i32.const 21 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 200000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 42 i32.const 264 i32.const 21 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 232000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 43 i32.const 288 i32.const 19 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 264000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 44 i32.const 312 i32.const 24 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 296000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 45 i32.const 340 i32.const 23 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 328000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 46 i32.const 368 i32.const 28 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 360000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 53 i32.const 512 i32.const 26 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 388000000 call $to_host f32.const 16 i32.const 0xffcf5cff i32.const 1 call $text drop
-			i32.const 47 i32.const 400 i32.const 20 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 416000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 48 i32.const 424 i32.const 22 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 448000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 49 i32.const 448 i32.const 19 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 480000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop))
+		(if (then call $draw_help_overlay))
 		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
 		(if (then i32.const 34 i32.const 108 i32.const 9 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 2 i64.div_s call $to_host f32.const 40 i32.const 0xff5c73ff i32.const 1 call $text drop))
 		call $frame_end drop i32.const 0)

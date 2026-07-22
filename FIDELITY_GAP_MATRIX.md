@@ -59,10 +59,10 @@ applicable.
 | Recognizable vector ship/rocks/debris/particles | **Implemented, approximate** | Retain semantic scene-command tests while moving all geometry calculations to fixed decimal before draw conversion. |
 | Neon title/byline splash and timing | **Implemented; awaiting visual gate** | Layered magenta/cyan/white title and byline use an exact 60/120/60-tick fade/hold/fade lifecycle without render mutation. |
 | HUD, pause, game-over, and Play Again presentation | **Implemented, approximate styling** | Score/level/reserves, Kid hiding, Blossom status/message, pause/game-over, and native New Game exist; styling remains a visual comparison item. |
-| Discoverable Help/Controls | **Partial; awaiting Peter's visual gate** | Standard action 7 and F1/H open a plugin-owned overlay; keyboard rows are live, and the proposed desktop-pointer rows await visual approval. |
+| Discoverable Help/Controls | **Implemented; Peter-approved** | Standard action 7 and F1/H open a filled two-column keyboard/pointer overlay with text, icon, geometry, and stable-ID regression checks. |
 | Desktop pointer controls | **Implemented** | Rate-limited aim, held primary fire, held secondary thrust, release/focus cleanup, and wheel Death Blossom are covered through ordered `AE_event` calls. |
 | Multi-contact touch controls | **Deferred** | Pin Aedicule after event kinds 11--14 deploy, then implement guest-owned zones/strokes and clear opaque contact state on end and cancel. |
-| Timed power-up identity | **Partial; awaiting Peter's visual gate** | Seeded selection between lasers and doubled fire rate is tested; the proposed active-kind icon/countdown awaits visual approval. |
+| Timed power-up identity | **Implemented; Peter-approved** | Seeded laser/rapid selection is paired with a non-color-only icon, kind label, ceil-rounded tenths countdown, and expiry disappearance checks. |
 
 ## Audio
 
