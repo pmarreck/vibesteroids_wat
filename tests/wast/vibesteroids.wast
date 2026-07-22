@@ -21,6 +21,7 @@
 	(import "test.host" "test_synth_count" (func $host_synth_count (param i32) (result i32)))
 	(import "test.host" "test_invalid_synth_voices" (func $host_invalid_synth_voices (result i32)))
 	(import "test.host" "test_short_boom_voices" (func $host_short_boom_voices (result i32)))
+	(import "test.host" "test_satellite_ping_valid" (func $host_satellite_ping_valid (result i32)))
 	(import "test.host" "test_synth_signature" (func $host_synth_signature (result i64)))
 	(import "test.host" "test_frame_count" (func $host_frame_count (result i32)))
 	(import "test.host" "test_flash_frames" (func $host_flash_frames (result i32)))
@@ -38,11 +39,20 @@
 	(import "test.host" "test_ufo_paths" (func $host_ufo_paths (result i32)))
 	(import "test.host" "test_enemy_bullet_circles" (func $host_enemy_bullet_circles (result i32)))
 	(import "test.host" "test_package_paths" (func $host_package_paths (result i32)))
+	(import "test.host" "test_satellite_paths" (func $host_satellite_paths (result i32)))
+	(import "test.host" "test_satellite_lines" (func $host_satellite_lines (result i32)))
+	(import "test.host" "test_satellite_circles" (func $host_satellite_circles (result i32)))
+	(import "test.host" "test_satellite_connected_booms" (func $host_satellite_connected_booms (result i32)))
+	(import "test.host" "test_satellite_footprint_valid" (func $host_satellite_footprint_valid (result i32)))
+	(import "test.host" "test_satellite_glow_radius" (func $host_satellite_glow_radius (result f32)))
 	(import "test.host" "test_laser_lines" (func $host_laser_lines (result i32)))
 	(import "test.host" "test_blossom_marks" (func $host_blossom_marks (result i32)))
 	(import "test.host" "test_blossom_help_valid" (func $host_blossom_help_valid (result i32)))
 	(import "test.host" "test_help_copy_mask" (func $host_help_copy_mask (result i32)))
 	(import "test.host" "test_help_frame_lines" (func $host_help_frame_lines (result i32)))
+	(import "test.host" "test_help_columns_valid" (func $host_help_columns_valid (result i32)))
+	(import "test.host" "test_help_fits_height" (func $host_help_fits_height (param f32) (result i32)))
+	(import "test.host" "test_help_pointer_gap_valid" (func $host_help_pointer_gap_valid (result i32)))
 	(import "test.host" "test_power_hud_kind" (func $host_power_hud_kind (result i32)))
 	(import "test.host" "test_power_hud_text_valid" (func $host_power_hud_text_valid (result i32)))
 	(import "test.host" "test_power_hud_primitives" (func $host_power_hud_primitives (result i32)))
@@ -74,11 +84,11 @@
 		call $configure drop
 		local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init)
 	(func (export "after_restore") (result i32) call $after_restore)
-	;; Classifies both independent spawn schedules over a deterministic seed set,
+	;; Classifies all independent spawn schedules over a deterministic seed set,
 	;; preventing one lucky fixture from vacuously satisfying a changed range.
 	(func (export "spawn_schedules_within")
 		(param $minimum i32) (param $maximum i32) (param $seed_count i32) (result i32)
-		(local $seed i32) (local $ufo i32) (local $package i32)
+		(local $seed i32) (local $ufo i32) (local $package i32) (local $satellite i32)
 		call $configure drop
 		(block $valid (loop $seeds
 			local.get $seed local.get $seed_count i32.ge_u
@@ -87,14 +97,50 @@
 			f32.const 1024 f32.const 768 call $init drop
 			i32.const 16512 i32.load local.set $ufo
 			i32.const 16516 i32.load local.set $package
+			i32.const 26732 i32.load local.set $satellite
 			local.get $ufo local.get $minimum i32.lt_s
 			local.get $ufo local.get $maximum i32.gt_s i32.or
 			local.get $package local.get $minimum i32.lt_s i32.or
 			local.get $package local.get $maximum i32.gt_s i32.or
+			local.get $satellite local.get $minimum i32.lt_s i32.or
+			local.get $satellite local.get $maximum i32.gt_s i32.or
 			(if (then i32.const 0 return))
 			local.get $seed i32.const 1 i32.add local.set $seed
 				br $seeds))
 		i32.const 1)
+	;; Couples each seeded satellite traversal sign to its entry edge and proves
+	;; that clockwise and counter-clockwise initial spins both occur across a set.
+	(func (export "satellite_entries_valid") (param $seed_count i32) (result i32)
+		(local $seed i32) (local $direction i32) (local $spin i32)
+		(local $directions i32) (local $spins i32)
+		call $configure drop
+		(block $valid (loop $seeds
+			local.get $seed local.get $seed_count i32.ge_u br_if $valid
+			local.get $seed i32.const 1 i32.add i32.const 0
+			f32.const 1024 f32.const 768 call $init drop
+			i32.const 26732 i32.const 1 i32.store
+			i32.const 1 call $tick drop
+			i32.const 26656 i32.load i32.eqz (if (then i32.const 0 return))
+			i32.const 26660 i32.load local.tee $direction i32.const 1 i32.eq
+			(if
+				(then
+					i32.const 26664 i64.load i64.const -80000000 i64.ne (if (then i32.const 0 return))
+					local.get $directions i32.const 1 i32.or local.set $directions)
+				(else
+					local.get $direction i32.const -1 i32.ne (if (then i32.const 0 return))
+					i32.const 26664 i64.load i32.const 1032 i64.load i64.const 80000000 i64.add i64.ne
+					(if (then i32.const 0 return))
+					local.get $directions i32.const 2 i32.or local.set $directions))
+			i32.const 26720 i32.load local.tee $spin i32.const 1 i32.eq
+			(if
+				(then local.get $spins i32.const 1 i32.or local.set $spins)
+				(else
+					local.get $spin i32.const -1 i32.ne (if (then i32.const 0 return))
+					local.get $spins i32.const 2 i32.or local.set $spins))
+			local.get $seed i32.const 1 i32.add local.set $seed
+			br $seeds))
+		local.get $directions i32.const 3 i32.eq
+		local.get $spins i32.const 3 i32.eq i32.and)
 	;; Classifies foreign-actor directions over a seed set and couples each sign
 	;; to its exact entry edge; both signs must occur for both independent actors.
 	(func (export "foreign_actor_edges_valid") (param $seed_count i32) (result i32)
@@ -301,6 +347,7 @@
 	(func (export "host_synth_count") (param i32) (result i32) local.get 0 call $host_synth_count)
 	(func (export "host_invalid_synth_voices") (result i32) call $host_invalid_synth_voices)
 	(func (export "host_short_boom_voices") (result i32) call $host_short_boom_voices)
+	(func (export "host_satellite_ping_valid") (result i32) call $host_satellite_ping_valid)
 	(func (export "host_synth_signature") (result i64) call $host_synth_signature)
 	(func (export "host_frame_count") (result i32) call $host_frame_count)
 	(func (export "host_flash_frames") (result i32) call $host_flash_frames)
@@ -316,11 +363,22 @@
 	(func (export "host_ufo_paths") (result i32) call $host_ufo_paths)
 	(func (export "host_enemy_bullet_circles") (result i32) call $host_enemy_bullet_circles)
 	(func (export "host_package_paths") (result i32) call $host_package_paths)
+	(func (export "host_satellite_paths") (result i32) call $host_satellite_paths)
+	(func (export "host_satellite_lines") (result i32) call $host_satellite_lines)
+	(func (export "host_satellite_circles") (result i32) call $host_satellite_circles)
+	(func (export "host_satellite_connected_booms") (result i32) call $host_satellite_connected_booms)
+	(func (export "host_satellite_footprint_valid") (result i32) call $host_satellite_footprint_valid)
+	(func (export "host_satellite_glow_radius") (result f32) call $host_satellite_glow_radius)
 	(func (export "host_laser_lines") (result i32) call $host_laser_lines)
 	(func (export "host_blossom_marks") (result i32) call $host_blossom_marks)
 	(func (export "host_blossom_help_valid") (result i32) call $host_blossom_help_valid)
 	(func (export "host_help_copy_mask") (result i32) call $host_help_copy_mask)
 	(func (export "host_help_frame_lines") (result i32) call $host_help_frame_lines)
+	(func (export "host_help_columns_valid") (result i32) call $host_help_columns_valid)
+	(func (export "host_help_fits_height") (param f32) (result i32)
+		local.get 0 call $host_help_fits_height)
+	(func (export "host_help_pointer_gap_valid") (result i32)
+		call $host_help_pointer_gap_valid)
 	(func (export "host_power_hud_kind") (result i32) call $host_power_hud_kind)
 	(func (export "host_power_hud_text_valid") (result i32) call $host_power_hud_text_valid)
 	(func (export "host_power_hud_primitives") (result i32) call $host_power_hud_primitives)
@@ -521,7 +579,7 @@
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 9))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 10))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 32768))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
@@ -532,7 +590,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 9 stores canonical per-second velocities and precomputed projectile
+;; Schema 10 stores canonical per-second velocities and precomputed projectile
 ;; lifetimes while integrating at 120 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -2493750))
@@ -565,11 +623,13 @@
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 10)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 11)) (i32.const 2))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 12)) (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 13)) (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_satellite_ping_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_short_boom_voices") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_invalid_synth_voices") (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "host_synth_signature")
-	(i64.const -2610138172722065578))
+	(i64.const -1743333929801389800))
 
 ;; The initial frame is a real vector game scene, not the former circle demo.
 (assert_return (invoke $vibesteroids_tests "render_initial") (i32.const 0))
@@ -583,6 +643,8 @@
 (assert_return (invoke $vibesteroids_tests "host_asteroid_circles") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_reserve_paths") (i32.const 2))
 (assert_return (invoke $vibesteroids_tests "host_star_circles") (i32.const 100))
+(assert_return (invoke $vibesteroids_tests "host_satellite_paths") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_satellite_circles") (i32.const 0))
 
 ;; Thruster output remains behind the local-space hull tail at x=-10.
 (assert_return (invoke $vibesteroids_tests "render_thrust") (i32.const 0))

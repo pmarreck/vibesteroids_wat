@@ -66,6 +66,7 @@ if (( composition_status == 0 )); then
 		"$root/tests/wast/vibesteroids.wast" \
 		"$root/tests/wast/gameplay.wast" \
 		"$root/tests/wast/enemy-and-powerup.wast" \
+		"$root/tests/wast/satellite.wast" \
 		"$root/tests/wast/rational-timing.wast" \
 		"$root/tests/wast/equal-time.wast" >>"$suite"
 	composition_status=$?

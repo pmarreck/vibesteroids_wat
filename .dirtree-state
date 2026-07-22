@@ -55,5 +55,6 @@ annotate=[
 	tests/wast/gameplay.wast = Source-derived deterministic gameplay and rendering behavior assertions, including swept hits and Death Blossom UI/input.
 	tests/wast/host-v0.wast = Deterministic instrumented WAST implementation of host.v0 for guest-emitted render, menu, synth, audio, and effect assertions
 	tests/wast/rational-timing.wast = Guest contract fixtures for rational display refresh events and AE_tick_rate selector responses
+	tests/wast/satellite.wast = Deterministic Voyager scheduling, spin, ping, blast-attribution, collision, and vector-geometry scenarios
 	tests/wast/vibesteroids.wast = Public-ABI probe module for AE_* lifecycle, state, game configuration, render, resize, and rate assertions
 ]

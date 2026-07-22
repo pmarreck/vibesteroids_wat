@@ -244,12 +244,26 @@
 (assert_return (invoke $vibesteroids_tests "host_blossom_help_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_help_copy_mask") (i32.const 63))
 (assert_return (invoke $vibesteroids_tests "host_help_frame_lines") (i32.const 5))
+(assert_return (invoke $vibesteroids_tests "host_help_columns_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 560)) (i32.const 0x4b))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 568)) (i32.const 0x50))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 576)) (i32.const 0x4d))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 592)) (i32.const 0x48))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 616)) (i32.const 0x48))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 640)) (i32.const 0x53))
+;; The reference composition retains its exact 768px geometry, then compacts
+;; vertically inside the same panel edges when the live viewport is shorter.
+(assert_return
+	(invoke $vibesteroids_tests "viewport" (f32.const 800) (f32.const 600))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "host_help_fits_height" (f32.const 600))
+	(i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "host_help_pointer_gap_valid")
+	(i32.const 1))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 7) (i32.const 7)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))

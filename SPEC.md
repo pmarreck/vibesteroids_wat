@@ -55,16 +55,16 @@ AE_tick_rate(current_numerator, current_denominator) -> (120, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 9
+AE_state_schema() -> 10
 ~~~
 
-Schema 9 is 32,768 bytes. The behavior specification documents the address map.
+Schema 10 is 32,768 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
 Any layout or semantic change incompatible with the existing 32,768-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 9 so a live reload preserves the current game.
+tuning retains schema 10 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
@@ -166,7 +166,7 @@ children whose directions and speeds become wilder with level while respecting
 the level-scaled maximum speed. Completing a wave advances level, raises the
 difficulty envelope, and spawns the next bounded wave.
 
-### 6.4 Enemy ship and random-power package
+### 6.4 Enemy ship, random-power package, and derelict satellite
 
 The game independently schedules one enemy saucer and one collectible package
 at uniformly selected intervals from 45 through 120 simulated seconds. A new
@@ -198,7 +198,20 @@ never wraps, tests all targets present when fired, and may destroy multiple
 rocks without recursively targeting children created by that same beam. A
 short cyan afterimage makes the otherwise instantaneous command visible.
 
-### 6.4 Presentation and audio
+A third independent 45--120-second schedule controls a derelict Voyager-like
+satellite. A due appearance remains pending while 15 or more rocks are active,
+then enters as soon as the count falls below 15; no once-per-level limit exists.
+It may overlap the saucer and package, crosses without wrapping, drifts and
+rotates slowly in either seeded direction, and has no arrival cue. A faint
+pitch-stable sonar ping with two diminishing delayed reflections starts after
+1.5 simulated seconds and repeats every 3 seconds.
+
+Player bullets and finite lasers rupture the satellite reactor. The resulting
+hazardous blast has no intrinsic bounty, but rocks caught in it score because
+the player caused the detonation. Physical asteroid contact triggers the same
+blast with no score attribution.
+
+### 6.5 Presentation and audio
 
 The scene fills the drawable window. Resize regenerates the deterministic
 starfield and translates all world objects by `new_center - old_center`,
@@ -211,8 +224,10 @@ at expiry. Help uses a filled two-column keyboard/pointer panel.
 The WAT declares composable shot, thrust, explosion, extra-life, Death Blossom,
 notification, and hazardous-blast synth programs. The hazardous blast layers
 three maximum-volume 1.2--1.5-second voices beneath a flickering orange pulse
-and one high-contrast background frame. The host knows only generic program IDs
-and oscillator parameters.
+and one high-contrast background frame. Voyager adds a faint single-voice sine
+ping and a pure fixed-phase 52--56-pixel cyan glow. Its connected damaged-boom
+silhouette is approximately 136 by 47 logical pixels. The host knows only
+generic program IDs and oscillator parameters.
 
 ## 7. Determinism and limits
 

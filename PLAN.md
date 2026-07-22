@@ -5,6 +5,30 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [x] Fix Peter's playtest finding that Help inputs/actions drift horizontally
+  instead of matching the mockup's four explicit left-aligned columns.
+	- [x] Reproduce centered combined rows with a failing fake-host alignment and
+	  anchor classifier. (2026-07-22 00:50 EDT)
+	- [x] Split inputs/actions into exact mockup columns and inspect the real SVG
+	  frame. (2026-07-22 00:53 EDT)
+	- [x] Obtain Peter's live approval for the four-column alignment.
+	  (2026-07-22 11:39 EDT)
+	- [x] TDD proportional vertical compaction inside the panel so every Help
+	  element remains above the lower edge of a 600px-tall live viewport.
+	  (2026-07-22 11:49 EDT)
+	- Curiosity poke: do narrow viewports need a separate degradation layout once
+	  the approved 1024×768 geometry is exact?
+- [x] Replace Voyager's descending "sad trombone" sweep with a faint deep-space
+  sonar ping while preserving its existing three-second repetition cadence.
+	- [x] TDD one constant-pitch sine transient plus two diminishing delayed
+	  reflections using Aedicule's existing composable-voice ABI.
+	  (2026-07-22 11:49 EDT)
+	- [x] Pass the complete `./test` suite and optimized `./build`.
+	  (2026-07-22 11:50 EDT)
+	- [x] Have Peter audition and approve the improved live result.
+	  (2026-07-22 12:19 EDT)
+	- Curiosity poke: does the echo remain audible without masking nearby threats
+	  or turning the quiet derelict into a navigational alarm?
 - [x] Finish the two visually gated deep-review improvements.
 	- [x] Create an inspectable Help/power-up HUD concept sheet at honest gameplay
 	  scale. (2026-07-21 22:48 EDT)
@@ -33,10 +57,16 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- [x] Receive Peter's visual approval with three revisions: keep the bent boom
 	  joined, render the craft about 33% smaller, and give it seeded slow rotation
 	  in either direction. (2026-07-22 00:05 EDT)
-	- [ ] TDD the independent schedule, but defer each spawn while 15 or more
+	- [x] TDD the independent schedule, but defer each spawn while 15 or more
 	  asteroids are active; do not impose the still-undecided once-per-level cap.
-	- [ ] TDD the approved connected Voyager geometry, seeded spin, quiet phone-home
+	  (2026-07-22 00:28 EDT)
+	- [x] TDD the approved connected Voyager geometry, seeded spin, quiet phone-home
 	  ping, glow pulse, collision/destruction rules, and attributed blast.
+	  (2026-07-22 00:28 EDT)
+	- [x] Pass the complete `./test` suite and optimized `./build` with schema 10.
+	  (2026-07-22 00:30 EDT)
+	- [x] Have Peter playtest and approve the live schema-10 release candidate.
+	  (2026-07-22 12:19 EDT)
 	- Curiosity poke: does its blast radius create deliberate asteroid-grouping
 	  tactics without letting accidental chain clears dominate ordinary play?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and

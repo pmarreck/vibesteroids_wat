@@ -113,7 +113,7 @@ On July 16, 2026, Peter flew the ship while we removed its per-tick drag from
 WAT. In the next simulation tick the already-running ship coasted indefinitely:
 the process did not restart, Rust did not rebuild, and score, lives, wave,
 bullets, and rocks remained intact. We then restored gentler `0.995` drag and
-saw that change live too. The schema-9 implementation expresses it as
+saw that change live too. The schema-10 implementation expresses it as
 exact decimal-fixed `velocity * 995000 / 1000000`; the WAT policy test forbids
 IEEE-754 gameplay arithmetic outside the sealed host-scalar adapter.
 
@@ -137,8 +137,12 @@ Implemented:
 - destructible drifting packages that randomly grant either 20 seconds of
   finite, non-wrapping multi-target laser fire or doubled bounded fire rate,
   with an icon-and-text tenths countdown for the active reward;
+- a compact, slowly rotating derelict Voyager that defers arrival during dense
+  waves, pings faintly, pulses cyan, and turns deliberate player fire into an
+  asteroid-scoring reactor blast while accidental rock contact scores nothing;
 - guest-declared shot, laser, thrust, explosion, extra-life, Death Blossom,
-  alert, notification, and layered 1.2-second-or-longer BOOM synths;
+  alert, notification, phone-home ping, and layered 1.2-second-or-longer BOOM
+  synths;
 - signed decimal-fixed internal state and physics, with one sealed float adapter
   for the host ABI;
 - deterministic seeds, snapshots, WAST behavior tests, and headless SVG; and
@@ -146,7 +150,8 @@ Implemented:
 
 Current deliberate limits:
 
-- the packaged simulation rate is 120 Hz, with equal-time 60/120 WAST proof;
+- the packaged simulation rate is 120 Hz, with equal-time integral and
+  NTSC-derived rational-rate WAST proof;
 - touch/shake browser controls have no deployed native equivalent yet;
 - presentation and tuning remain POC quality; and
 - gameplay additions should be validated as experiments, not added merely

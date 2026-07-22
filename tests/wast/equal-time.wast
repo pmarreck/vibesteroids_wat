@@ -61,6 +61,18 @@
 		i32.const 1280 i32.load
 		i32.const 1 call $tick drop
 		i32.const 1280 i32.load local.get $remaining)
+	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26656 i32.const 1 i32.store
+		i32.const 26664 i64.const 200000000 i64.store
+		i32.const 26672 i64.const 200000000 i64.store
+		i32.const 26696 i64.const 1000000 i64.store
+		i32.const 26712 i64.const 60000000 i64.store
+		i32.const 26724 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26724 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26724 i32.load)
 )
 (register "rate_60_probe" $rate_60_probe)
 (module $rate_120_probe
@@ -124,6 +136,18 @@
 		i32.const 1280 i32.load
 		i32.const 1 call $tick drop
 		i32.const 1280 i32.load local.get $remaining)
+	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26656 i32.const 1 i32.store
+		i32.const 26664 i64.const 200000000 i64.store
+		i32.const 26672 i64.const 200000000 i64.store
+		i32.const 26696 i64.const 1000000 i64.store
+		i32.const 26712 i64.const 60000000 i64.store
+		i32.const 26724 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26724 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26724 i32.load)
 )
 (register "rate_120_probe" $rate_120_probe)
 (module $rate_60000_1001_probe
@@ -182,6 +206,18 @@
 		i32.const 1280 i32.load
 		i32.const 1 call $tick drop
 		i32.const 1280 i32.load local.get $remaining)
+	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26656 i32.const 1 i32.store
+		i32.const 26664 i64.const 200000000 i64.store
+		i32.const 26672 i64.const 200000000 i64.store
+		i32.const 26696 i64.const 1000000 i64.store
+		i32.const 26712 i64.const 60000000 i64.store
+		i32.const 26724 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26724 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26724 i32.load)
 )
 (module $rate_120000_1001_probe
 	(import "sut_120000_1001" "memory" (memory $state 1))
@@ -239,6 +275,18 @@
 		i32.const 1280 i32.load
 		i32.const 1 call $tick drop
 		i32.const 1280 i32.load local.get $remaining)
+	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26656 i32.const 1 i32.store
+		i32.const 26664 i64.const 200000000 i64.store
+		i32.const 26672 i64.const 200000000 i64.store
+		i32.const 26696 i64.const 1000000 i64.store
+		i32.const 26712 i64.const 60000000 i64.store
+		i32.const 26724 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26724 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26724 i32.load)
 )
 
 (assert_return (invoke $rate_60_probe "run") (i64.const 160000000))
@@ -268,6 +316,13 @@
 (assert_return (invoke $rate_120_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 227))
 (assert_return (invoke $rate_60000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 113))
 (assert_return (invoke $rate_120000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 227))
+
+;; The delayed phone-home cue resets on the same three simulated seconds at
+;; integral and NTSC-derived rates, without sleeps or wall-clock observation.
+(assert_return (invoke $rate_60_probe "satellite_ping_boundary" (i32.const 90)) (i32.const 1) (i32.const 180))
+(assert_return (invoke $rate_120_probe "satellite_ping_boundary" (i32.const 180)) (i32.const 1) (i32.const 360))
+(assert_return (invoke $rate_60000_1001_probe "satellite_ping_boundary" (i32.const 89)) (i32.const 1) (i32.const 179))
+(assert_return (invoke $rate_120000_1001_probe "satellite_ping_boundary" (i32.const 179)) (i32.const 1) (i32.const 359))
 
 ;; Linearized retention factors keep one-second damping perceptually equal
 ;; even though integer rounding differs across simulation step counts.

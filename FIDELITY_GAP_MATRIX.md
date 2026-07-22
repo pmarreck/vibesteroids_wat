@@ -24,11 +24,11 @@ applicable.
 
 | Requirement | Current state | Completion evidence |
 |---|---|---|
-| Decimal fixed-point world values | **Implemented** | Schema 9 stores gameplay dimensions in signed `i64` decimal millionths and velocities in canonical per-second units; WAST schema, motion, and exact-drag assertions pass. |
+| Decimal fixed-point world values | **Implemented** | Schema 10 stores gameplay dimensions in signed `i64` decimal millionths and velocities in canonical per-second units; WAST schema, motion, and exact-drag assertions pass. |
 | Integer-only simulation | **Implemented** | A structural classifier rejects floating-point arithmetic, loads, and stores outside explicitly marked host-scalar conversion adapters. |
 | Safe fixed-point multiplication and distance tests | **Implemented** | Collision deltas rescale to milli-fixed before squaring; exact `0.995`, negative values, collision equality, and 8K bounds are covered. |
 | One-way host conversion | **Implemented** | Host viewport scalars convert once on ingress and completed draw scalars once on egress; no converted value re-enters gameplay state. |
-| Explicit incompatible schema transitions | **Implemented** | Schema 9 records the player-bullet lifetime semantic; transactional reload restarts rather than restoring bytes with a different meaning. Earlier transitions remain preserved in Git. |
+| Explicit incompatible schema transitions | **Implemented** | Schema 10 adds the independently scheduled satellite record; transactional reload restarts rather than restoring bytes with a different meaning. Earlier transitions remain preserved in Git. |
 
 ## Gameplay and state
 
@@ -63,6 +63,7 @@ applicable.
 | Desktop pointer controls | **Implemented** | Rate-limited aim, held primary fire, held secondary thrust, release/focus cleanup, and wheel Death Blossom are covered through ordered `AE_event` calls. |
 | Multi-contact touch controls | **Deferred** | Pin Aedicule after event kinds 11--14 deploy, then implement guest-owned zones/strokes and clear opaque contact state on end and cancel. |
 | Timed power-up identity | **Implemented; Peter-approved** | Seeded laser/rapid selection is paired with a non-color-only icon, kind label, ceil-rounded tenths countdown, and expiry disappearance checks. |
+| Derelict Voyager hazard | **Implemented; Peter-approved concept** | A third seeded schedule overlaps other actors, defers at 15+ rocks, rotates both ways, renders a connected 136×47 silhouette with pure glow phase, pings on rational fixed time, and preserves player-vs-contact blast attribution. |
 
 ## Audio
 
@@ -76,6 +77,7 @@ applicable.
 | Ship explosion | **Implemented, source-shaped approximation** | White/brown noise, band-/low-pass shaping, and a short impulse layer span 1.2 s. |
 | Death Blossom siren | **Implemented** | Three scheduled 400→800→400-Hz sine whoops start 400 ms apart. |
 | Extra life | **Implemented** | Five sawtooth chimes use the specified ratios, filters, and 150-ms scheduling. |
+| Derelict phone-home ping | **Implemented** | One faint, pitch-stable 520-Hz sine transient plus two diminishing delayed reflections begins after 1.5 simulated seconds and repeats every 3 seconds at integral and NTSC-derived rates. |
 | Failure isolation and bounds | **Partial** | Invalid graphs, excessive voices/duration/events, or unavailable devices fail silently to gameplay while yielding diagnostic host state. |
 
 ## Completion gate

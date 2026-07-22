@@ -41,7 +41,7 @@ decisions and Aedicule's accepted host-owned tranche.
 | Duplicate CI/Nix work | Fixed with one manifest, one flake evaluation, and a post-flake mode that skips only already-proved checks |
 | Positional synth configuration | Full 14-scalar signature locked; host call centralized; each cue isolated behind an intent-named declaration function |
 | Raw scalar addresses and opaque lifecycle/input flags | Every scalar snapshot address plus every flag bit/composite/mutation is named; structural lint rejects raw scalar load/store addresses and opaque flag composites |
-| Bullet collision/expiry hot paths | Segment setup hoisted per bullet with AABB rejection; schema 9 uses cached-range, per-shot lifetime countdowns instead of per-tick square roots |
+| Bullet collision/expiry hot paths | Segment setup hoisted per bullet with AABB rejection; schema 10 retains cached-range, per-shot lifetime countdowns instead of per-tick square roots |
 | Stale public documentation and PLAN history | README/SPEC/fidelity ledger reconciled; active plan pruned while Git preserves history |
 | Mouse Help rows and active gift identity | Peter approved the retained concept sheet; production geometry, copy, deterministic tenths display, and mechanical visibility checks are green |
 | Synth ranges, host budgets/minor negotiation, real conditional-frame injection | Aedicule accepted ownership; tested pushed pin pending in `inbox/2026-07-21-from-aedicule-deep-review-dispositions.md` |
