@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+sandbox=$(mktemp -d "$TMPDIR/vibesteroids-wast-diagnostics.XXXXXX")
+trap 'rm -rf "$sandbox"' EXIT
+real_awk=$(command -v awk)
+failures=0
+
+run_case() {
+	local label=$1
+	local awk_failure=$2
+	local wasmtime_status=$3
+	local status
+
+	: >"$sandbox/$label.calls"
+	TMPDIR="$sandbox" \
+	PATH="$root/tests/fixtures/wast-bin:$PATH" \
+	REAL_AWK="$real_awk" \
+	FAKE_AWK_FAIL="$awk_failure" \
+	FAKE_WASMTIME_STATUS="$wasmtime_status" \
+	WASMTIME_CALLS="$sandbox/$label.calls" \
+		"$root/tests/run-wast" \
+		>"$sandbox/$label.stdout" 2>"$sandbox/$label.stderr"
+	status=$?
+	printf '%d' "$status" >"$sandbox/$label.status"
+}
+
+run_case execution 0 23
+if [[ $(<"$sandbox/execution.status") != 23 ]]; then
+	printf 'Wasmtime failure status was not preserved\n' >&2
+	failures=$((failures + 1))
+fi
+retained=$(sed -n 's/^WAST suite retained at //p' "$sandbox/execution.stderr")
+if [[ -z $retained || ! -f $retained ]]; then
+	printf 'failed WAST suite was not retained and disclosed\n' >&2
+	failures=$((failures + 1))
+fi
+if ! rg --quiet '^synthetic Wasmtime failure$' "$sandbox/execution.stderr"; then
+	printf 'Wasmtime diagnostic was not preserved\n' >&2
+	failures=$((failures + 1))
+fi
+
+run_case composition 1 0
+if [[ $(<"$sandbox/composition.status") == 0 ]]; then
+	printf 'WAST composition failure returned success\n' >&2
+	failures=$((failures + 1))
+fi
+if [[ -s $sandbox/composition.calls ]]; then
+	printf 'Wasmtime ran after WAST composition failed\n' >&2
+	failures=$((failures + 1))
+fi
+if ! rg --quiet 'synthetic WAST composition failure' "$sandbox/composition.stderr"; then
+	printf 'composition diagnostic was not preserved\n' >&2
+	failures=$((failures + 1))
+fi
+
+exit "$failures"

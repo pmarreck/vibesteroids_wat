@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -u
+
+if (( ${FAKE_AWK_FAIL:-0} != 0 )); then
+	printf 'synthetic WAST composition failure\n' >&2
+	exit 17
+fi
+
+exec "$REAL_AWK" "$@"

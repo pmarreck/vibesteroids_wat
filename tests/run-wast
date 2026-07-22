@@ -4,11 +4,14 @@ set -u
 
 root=$(cd "$(dirname "$0")/.." && pwd)
 suite=$(mktemp "$TMPDIR/vibesteroids_wat.XXXXXX.wast")
-if [[ ${KEEP_WAST_SUITE:-0} == 1 ]]; then
-	printf 'WAST suite retained at %s\n' "$suite" >&2
-else
-	trap 'unlink "$suite"' EXIT
-fi
+retain_suite=${KEEP_WAST_SUITE:-0}
+
+cleanup_suite() {
+	if (( retain_suite == 0 )) && [[ -f $suite ]]; then
+		unlink "$suite"
+	fi
+}
+trap cleanup_suite EXIT
 
 append_rate_variant() {
 	local label=$1
@@ -26,23 +29,62 @@ append_rate_variant() {
 		}
 		{ print }
 	' "$root/code.wat"
+	status=$?
+	if (( status != 0 )); then
+		return "$status"
+	fi
 	printf '(register "%s")\n' "$label"
 }
 
-{
-	awk '1' "$root/tests/wast/aedicule-v0.wast" "$root/code.wat"
-	printf '%s\n' '(register "sut")'
-	append_rate_variant sut_60 60 1
-	append_rate_variant sut_120 120 1
-	append_rate_variant sut_60000_1001 60000 1001
-	append_rate_variant sut_120000_1001 120000 1001
+composition_status=0
+awk '1' "$root/tests/wast/aedicule-v0.wast" "$root/code.wat" >"$suite"
+composition_status=$?
+
+if (( composition_status == 0 )); then
+	printf '%s\n' '(register "sut")' >>"$suite"
+	composition_status=$?
+fi
+if (( composition_status == 0 )); then
+	append_rate_variant sut_60 60 1 >>"$suite"
+	composition_status=$?
+fi
+if (( composition_status == 0 )); then
+	append_rate_variant sut_120 120 1 >>"$suite"
+	composition_status=$?
+fi
+if (( composition_status == 0 )); then
+	append_rate_variant sut_60000_1001 60000 1001 >>"$suite"
+	composition_status=$?
+fi
+if (( composition_status == 0 )); then
+	append_rate_variant sut_120000_1001 120000 1001 >>"$suite"
+	composition_status=$?
+fi
+if (( composition_status == 0 )); then
 	awk '1' \
 		"$root/tests/wast/aedicule-contract.wast" \
 		"$root/tests/wast/vibesteroids.wast" \
 		"$root/tests/wast/gameplay.wast" \
 		"$root/tests/wast/enemy-and-powerup.wast" \
 		"$root/tests/wast/rational-timing.wast" \
-		"$root/tests/wast/equal-time.wast"
-} >"$suite"
+		"$root/tests/wast/equal-time.wast" >>"$suite"
+	composition_status=$?
+fi
+
+if (( composition_status != 0 )); then
+	retain_suite=1
+	printf 'WAST suite composition failed; retained at %s\n' "$suite" >&2
+	exit "$composition_status"
+fi
 
 wasmtime wast --async=false "$suite"
+status=$?
+if (( status != 0 )); then
+	retain_suite=1
+	printf 'WAST suite retained at %s\n' "$suite" >&2
+	exit "$status"
+fi
+
+if (( retain_suite != 0 )); then
+	printf 'WAST suite retained at %s\n' "$suite" >&2
+fi

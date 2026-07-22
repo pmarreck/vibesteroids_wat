@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+set -u
+
+printf '%s\n' "$*" >>"$WASMTIME_CALLS"
+if (( ${FAKE_WASMTIME_STATUS:-0} != 0 )); then
+	printf 'synthetic Wasmtime failure\n' >&2
+	exit "$FAKE_WASMTIME_STATUS"
+fi
