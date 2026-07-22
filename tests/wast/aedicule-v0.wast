@@ -27,6 +27,10 @@
 	(global $duplicate_stable_ids (mut i32) (i32.const 0))
 	(global $first_duplicate_stable_id (mut i32) (i32.const -1))
 	(global $geometry_errors (mut i32) (i32.const 0))
+	(global $lifecycle_errors (mut i32) (i32.const 0))
+	(global $frame_open (mut i32) (i32.const 0))
+	(global $path_open (mut i32) (i32.const 0))
+	(global $transform_depth (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
 	(global $effect_mask (mut i32) (i32.const 0))
@@ -76,6 +80,10 @@
 		i32.const 0 global.set $duplicate_stable_ids
 		i32.const -1 global.set $first_duplicate_stable_id
 		i32.const 0 global.set $geometry_errors
+		i32.const 0 global.set $lifecycle_errors
+		i32.const 0 global.set $frame_open
+		i32.const 0 global.set $path_open
+		i32.const 0 global.set $transform_depth
 		i64.const 0 global.set $text_mask
 		i32.const 0 global.set $asteroid_paths
 		i32.const 0 global.set $bad_asteroid_vertices
@@ -126,6 +134,11 @@
 	(func (export "test_duplicate_stable_ids") (result i32) global.get $duplicate_stable_ids)
 	(func (export "test_first_duplicate_stable_id") (result i32) global.get $first_duplicate_stable_id)
 	(func (export "test_geometry_errors") (result i32) global.get $geometry_errors)
+	(func (export "test_lifecycle_errors") (result i32)
+		global.get $lifecycle_errors
+		global.get $frame_open global.get $path_open i32.or
+		global.get $transform_depth i32.eqz i32.eqz i32.or
+		i32.add)
 	(func (export "test_text_seen") (param $id i32) (result i32)
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
 	(func (export "test_audio_seen") (param $id i32) (result i32)
@@ -172,6 +185,8 @@
 			return))
 		global.get $stable_id_count i32.const 4 i32.mul local.get $id i32.store
 		global.get $stable_id_count i32.const 1 i32.add global.set $stable_id_count)
+	(func $record_lifecycle_error
+		global.get $lifecycle_errors i32.const 1 i32.add global.set $lifecycle_errors)
 
 	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
 		local.get $ptr global.set $title_ptr
@@ -182,6 +197,10 @@
 		global.get $menu_mask i32.const 1 local.get $id i32.shl i32.or global.set $menu_mask
 		i32.const 0)
 	(func (export "AE_frame_begin") (param $red f32) (param f32 f32 f32) (result i32)
+		global.get $frame_open global.get $path_open i32.or
+		global.get $transform_depth i32.eqz i32.eqz i32.or
+		(if (then call $record_lifecycle_error i32.const 0 return))
+		i32.const 1 global.set $frame_open
 		i32.const 0 global.set $stable_id_count
 		i32.const 0 global.set $duplicate_stable_ids
 		i32.const -1 global.set $first_duplicate_stable_id
@@ -189,9 +208,21 @@
 		local.get $red f32.const 0.9 f32.gt
 		(if (then global.get $flash_frames i32.const 1 i32.add global.set $flash_frames))
 		i32.const 0)
-	(func (export "AE_transform_push") (param f32 f32 f32 f32 f32 f32) (result i32) i32.const 0)
-	(func (export "AE_transform_pop") (result i32) i32.const 0)
+	(func (export "AE_transform_push") (param f32 f32 f32 f32 f32 f32) (result i32)
+		global.get $frame_open i32.eqz global.get $path_open i32.or
+		(if (then call $record_lifecycle_error i32.const 0 return))
+		global.get $transform_depth i32.const 1 i32.add global.set $transform_depth
+		i32.const 0)
+	(func (export "AE_transform_pop") (result i32)
+		global.get $frame_open i32.eqz global.get $path_open i32.or
+		global.get $transform_depth i32.eqz i32.or
+		(if (then call $record_lifecycle_error i32.const 0 return))
+		global.get $transform_depth i32.const 1 i32.sub global.set $transform_depth
+		i32.const 0)
 	(func (export "AE_path_begin") (param $key i32) (result i32)
+		global.get $frame_open i32.eqz global.get $path_open i32.or
+		(if (then call $record_lifecycle_error i32.const 0 return))
+		i32.const 1 global.set $path_open
 		local.get $key call $record_stable_id
 		local.get $key global.set $current_path_key
 		i32.const 0 global.set $current_path_moves
@@ -199,16 +230,25 @@
 		local.get $key i32.const 4 i32.eq (if (then f32.const 0 global.set $flame_min_x))
 		i32.const 0)
 	(func (export "AE_path_move") (param f32 f32) (result i32)
+		global.get $path_open i32.eqz
+		(if (then call $record_lifecycle_error i32.const 0 return))
 		global.get $current_path_moves i32.const 1 i32.add global.set $current_path_moves
 		i32.const 0)
 	(func (export "AE_path_line") (param $x f32) (param f32) (result i32)
+		global.get $path_open i32.eqz
+		(if (then call $record_lifecycle_error i32.const 0 return))
 		global.get $current_path_lines i32.const 1 i32.add global.set $current_path_lines
 		global.get $current_path_key i32.const 4 i32.eq
 		(if (then local.get $x global.get $flame_min_x f32.lt (if (then local.get $x global.set $flame_min_x))))
 		i32.const 0)
-	(func (export "AE_path_close") (result i32) i32.const 0)
+	(func (export "AE_path_close") (result i32)
+		global.get $path_open i32.eqz
+		(if (then call $record_lifecycle_error))
+		i32.const 0)
 	(func (export "AE_path_end") (param f32 i32 i32 i32) (result i32)
 		(local $minimum_lines i32) (local $valid i32)
+		global.get $path_open i32.eqz
+		(if (then call $record_lifecycle_error i32.const 0 return))
 		i32.const 1 local.set $minimum_lines
 		global.get $current_path_key i32.const 900 i32.eq
 		(if (then i32.const 5 local.set $minimum_lines))
@@ -235,11 +275,14 @@
 		(if (then global.get $ufo_paths i32.const 1 i32.add global.set $ufo_paths))
 		global.get $current_path_key i32.const 910 i32.eq local.get $valid i32.and
 		(if (then global.get $package_paths i32.const 1 i32.add global.set $package_paths))
+		i32.const 0 global.set $path_open
 		i32.const -1 global.set $current_path_key
 		i32.const 0)
 	(func (export "AE_line") (param $key i32) (param $x1 f32) (param $y1 f32)
 		(param $x2 f32) (param $y2 f32) (param $width f32) (param i32) (result i32)
 		(local $valid i32)
+		global.get $frame_open i32.eqz global.get $path_open i32.or
+		(if (then call $record_lifecycle_error))
 		local.get $key call $record_stable_id
 		local.get $width f32.const 0 f32.gt
 		local.get $x1 local.get $x2 f32.ne local.get $y1 local.get $y2 f32.ne i32.or
@@ -255,6 +298,8 @@
 		i32.const 0)
 	(func (export "AE_circle") (param $key i32) (param f32 f32) (param $radius f32) (param f32 i32 i32) (result i32)
 		(local $valid i32)
+		global.get $frame_open i32.eqz global.get $path_open i32.or
+		(if (then call $record_lifecycle_error))
 		local.get $key call $record_stable_id
 		local.get $radius f32.const 0 f32.gt local.set $valid
 		local.get $valid i32.eqz
@@ -280,6 +325,8 @@
 			local.get $key i32.const 930 i32.eq (if (then local.get $radius global.set $blast_radius))))
 		i32.const 0)
 	(func (export "AE_text") (param $key i32) (param $ptr i32) (param $len i32) (param f32 f32 f32 i32 i32) (result i32)
+		global.get $frame_open i32.eqz global.get $path_open i32.or
+		(if (then call $record_lifecycle_error))
 		local.get $key call $record_stable_id
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask
 		local.get $key i32.const 53 i32.eq
@@ -294,7 +341,16 @@
 			local.get $ptr local.get $len i32.add i32.const 550 i32.eq i32.and
 			global.set $reserve_count_text_valid))
 		i32.const 0)
-	(func (export "AE_frame_end") (result i32) i32.const 0)
+	(func (export "AE_frame_end") (result i32)
+		global.get $frame_open i32.eqz
+		(if (then call $record_lifecycle_error i32.const 0 return))
+		global.get $path_open global.get $transform_depth i32.eqz i32.eqz i32.or
+		(if (then call $record_lifecycle_error))
+		i32.const 0 global.set $frame_open
+		i32.const 0 global.set $path_open
+		i32.const 0 global.set $transform_depth
+		i32.const -1 global.set $current_path_key
+		i32.const 0)
 	(func (export "AE_audio") (param $id i32) (param f32 f32 i32) (result i32)
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.or global.set $audio_mask
 		i32.const 0)
