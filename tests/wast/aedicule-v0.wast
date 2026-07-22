@@ -21,6 +21,7 @@
 	(global $synth_12 (mut i32) (i32.const 0))
 	(global $short_boom_voices (mut i32) (i32.const 0))
 	(global $invalid_synth_voices (mut i32) (i32.const 0))
+	(global $synth_signature (mut i64) (i64.const -3750763034362895579))
 	(global $frame_count (mut i32) (i32.const 0))
 	(global $flash_frames (mut i32) (i32.const 0))
 	(global $stable_id_count (mut i32) (i32.const 0))
@@ -72,7 +73,8 @@
 		i32.const 0 global.set $synth_11
 		i32.const 0 global.set $synth_12
 		i32.const 0 global.set $short_boom_voices
-		i32.const 0 global.set $invalid_synth_voices)
+		i32.const 0 global.set $invalid_synth_voices
+		i64.const -3750763034362895579 global.set $synth_signature)
 	(func (export "test_reset_frame")
 		i32.const 0 global.set $frame_count
 		i32.const 0 global.set $flash_frames
@@ -129,6 +131,7 @@
 		i32.const 0)
 	(func (export "test_invalid_synth_voices") (result i32) global.get $invalid_synth_voices)
 	(func (export "test_short_boom_voices") (result i32) global.get $short_boom_voices)
+	(func (export "test_synth_signature") (result i64) global.get $synth_signature)
 	(func (export "test_frame_count") (result i32) global.get $frame_count)
 	(func (export "test_flash_frames") (result i32) global.get $flash_frames)
 	(func (export "test_duplicate_stable_ids") (result i32) global.get $duplicate_stable_ids)
@@ -187,6 +190,9 @@
 		global.get $stable_id_count i32.const 1 i32.add global.set $stable_id_count)
 	(func $record_lifecycle_error
 		global.get $lifecycle_errors i32.const 1 i32.add global.set $lifecycle_errors)
+	(func $record_synth_scalar (param $value i32)
+		global.get $synth_signature local.get $value i64.extend_i32_u i64.xor
+		i64.const 1099511628211 i64.mul global.set $synth_signature)
 
 	(func (export "AE_title") (param $ptr i32) (param $len i32) (result i32)
 		local.get $ptr global.set $title_ptr
@@ -355,10 +361,25 @@
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.or global.set $audio_mask
 		i32.const 0)
 	(func (export "AE_synth_voice")
-		(param $id i32) (param $waveform i32) (param i32) (param $duration i32)
-		(param i32 i32 i32) (param $gain_start i32) (param $gain_peak i32) (param $gain_end i32)
-		(param $filter i32) (param i32 i32 i32)
+		(param $id i32) (param $waveform i32) (param $delay i32) (param $duration i32)
+		(param $frequency_start i32) (param $frequency_mid i32) (param $frequency_end i32)
+		(param $gain_start i32) (param $gain_peak i32) (param $gain_end i32)
+		(param $filter i32) (param $filter_start i32) (param $filter_end i32) (param $cooldown i32)
 		(result i32)
+		local.get $id call $record_synth_scalar
+		local.get $waveform call $record_synth_scalar
+		local.get $delay call $record_synth_scalar
+		local.get $duration call $record_synth_scalar
+		local.get $frequency_start call $record_synth_scalar
+		local.get $frequency_mid call $record_synth_scalar
+		local.get $frequency_end call $record_synth_scalar
+		local.get $gain_start call $record_synth_scalar
+		local.get $gain_peak call $record_synth_scalar
+		local.get $gain_end call $record_synth_scalar
+		local.get $filter call $record_synth_scalar
+		local.get $filter_start call $record_synth_scalar
+		local.get $filter_end call $record_synth_scalar
+		local.get $cooldown call $record_synth_scalar
 		local.get $waveform i32.const 1 i32.lt_s local.get $waveform i32.const 4 i32.gt_s i32.or
 		local.get $duration i32.const 0 i32.le_s i32.or
 		local.get $gain_start i32.const 0 i32.lt_s local.get $gain_start i32.const 1000000 i32.gt_s i32.or i32.or
