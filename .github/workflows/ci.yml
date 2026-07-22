@@ -33,4 +33,4 @@ jobs:
         run: nix flake check --print-build-logs
 
       - name: Run repository and shell controls
-        run: ./test
+        run: VIBESTEROIDS_WAT_FLAKE_CHECKED=1 ./test

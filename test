@@ -16,31 +16,50 @@ run_check() {
 	"$@"
 	status=$?
 	if (( status != 0 )); then
+		printf 'check failed (%d):' "$status" >&2
+		printf ' %q' "$@" >&2
+		printf '\n' >&2
 		failures=$((failures + 1))
 	fi
 }
 
-run_check ./tests/cli/development_dependencies
-run_check ./tests/cli/repository_boundary
-run_check ./tests/cli/naming_conventions
-run_check ./tests/cli/abi_namespace
-run_check ./tests/cli/aedicule_abi_contract
-run_check ./tests/cli/flake_composition
-run_check ./tests/cli/run_from_any_directory
-run_check ./tests/cli/aedicule_runtime
-run_check ./tests/cli/aedicule_runtime_portability
-run_check ./tests/cli/run_wast_diagnostics
-run_check ./tests/run-wast
-run_check ./tests/lint-wat
-run_check shellcheck build run test tests/cli/development_dependencies \
-	tests/cli/repository_boundary tests/cli/naming_conventions \
-	tests/cli/abi_namespace tests/cli/aedicule_abi_contract \
-	tests/cli/flake_composition tests/cli/run_from_any_directory \
-	tests/cli/aedicule_runtime tests/cli/aedicule_runtime_portability \
-	tests/cli/run_wast_diagnostics tests/fixtures/run-bin/nix \
-	tests/fixtures/runtime-bin/nix tests/fixtures/wast-bin/awk \
-	tests/fixtures/wast-bin/wasmtime tests/run-wast \
-	tests/lint-wat
+repository_checks=(
+	./tests/cli/development_dependencies
+	./tests/cli/repository_boundary
+	./tests/cli/naming_conventions
+	./tests/cli/abi_namespace
+	./tests/cli/aedicule_abi_contract
+	./tests/cli/flake_composition
+	./tests/cli/run_from_any_directory
+	./tests/cli/aedicule_runtime_portability
+	./tests/cli/run_wast_diagnostics
+)
+flake_proved_checks=(
+	./tests/cli/aedicule_runtime
+	./tests/run-wast
+	./tests/lint-wat
+)
+checks=("${repository_checks[@]}")
+if [[ ${VIBESTEROIDS_WAT_FLAKE_CHECKED:-0} != 1 ]]; then
+	checks+=("${flake_proved_checks[@]}")
+fi
+
+for check in "${checks[@]}"; do
+	run_check "$check"
+done
+
+shell_scripts=(
+	build
+	run
+	test
+	"${repository_checks[@]}"
+	"${flake_proved_checks[@]}"
+	tests/fixtures/run-bin/nix
+	tests/fixtures/runtime-bin/nix
+	tests/fixtures/wast-bin/awk
+	tests/fixtures/wast-bin/wasmtime
+)
+run_check shellcheck "${shell_scripts[@]}"
 
 if (( failures > 255 )); then
 	exit 255

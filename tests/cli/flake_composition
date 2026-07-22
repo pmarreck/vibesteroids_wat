@@ -2,36 +2,59 @@
 
 set -u
 
+root=$(cd "$(dirname "$0")/../.." && pwd)
+diagnostics=$(mktemp -d "$TMPDIR/vibesteroids-flake-composition.XXXXXX")
+trap 'rm -rf "$diagnostics"' EXIT
 failures=0
-system=$(nix eval --impure --raw --expr builtins.currentSystem 2>"$TMPDIR/vibesteroids-system.err")
+
+evaluation=$(
+	cd "$root" || exit 1
+	# Nix, not Bash, expands the ${system} attribute selector below.
+	# shellcheck disable=SC2016
+	nix eval --impure --raw --expr '
+		let
+			flake = builtins.getFlake (toString ./.);
+			system = builtins.currentSystem;
+			packages = flake.packages.${system};
+		in builtins.concatStringsSep "\n" [
+			packages.application.drvPath
+			packages.frontplane.drvPath
+			packages.default.drvPath
+		]
+	' 2>"$diagnostics/evaluation.stderr"
+)
 status=$?
 if (( status != 0 )); then
+	printf 'could not evaluate composed package derivations\n' >&2
+	if [[ -s $diagnostics/evaluation.stderr ]]; then
+		cat "$diagnostics/evaluation.stderr" >&2
+	fi
 	exit 1
 fi
 
-application_drv=$(nix eval --raw ".#packages.$system.application.drvPath" 2>"$TMPDIR/vibesteroids-application.err")
-status=$?
-if (( status != 0 )); then
-	failures=$((failures + 1))
+derivations=()
+while IFS= read -r derivation; do
+	derivations+=("$derivation")
+done <<<"$evaluation"
+if (( ${#derivations[@]} != 3 )); then
+	printf 'flake evaluation returned %d derivations; expected 3\n' "${#derivations[@]}" >&2
+	exit 1
 fi
+application_drv=${derivations[0]}
+frontplane_drv=${derivations[1]}
+default_drv=${derivations[2]}
 
-frontplane_drv=$(nix eval --raw ".#packages.$system.frontplane.drvPath" 2>"$TMPDIR/vibesteroids-frontplane.err")
-status=$?
-if (( status != 0 )); then
-	failures=$((failures + 1))
-fi
-
-default_drv=$(nix eval --raw ".#packages.$system.default.drvPath" 2>"$TMPDIR/vibesteroids-default.err")
-status=$?
-if (( status != 0 )); then
-	failures=$((failures + 1))
-elif [[ "$default_drv" == "$application_drv" || "$default_drv" == "$frontplane_drv" ]]; then
+if [[ "$default_drv" == "$application_drv" || "$default_drv" == "$frontplane_drv" ]]; then
 	printf 'default package must compose distinct application and frontplane derivations\n' >&2
 	failures=$((failures + 1))
 else
-	references=$(nix-store --query --references "$default_drv")
+	references=$(nix-store --query --references "$default_drv" 2>"$diagnostics/references.stderr")
 	status=$?
 	if (( status != 0 )); then
+		printf 'could not inspect default package references: %s\n' "$default_drv" >&2
+		if [[ -s $diagnostics/references.stderr ]]; then
+			cat "$diagnostics/references.stderr" >&2
+		fi
 		failures=$((failures + 1))
 	else
 		for dependency in "$application_drv" "$frontplane_drv"; do
