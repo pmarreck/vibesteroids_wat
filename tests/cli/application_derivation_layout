@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd -P)
+diagnostics=$(mktemp -d "$TMPDIR/vibesteroids-application-layout.XXXXXX")
+trap 'rm -rf "$diagnostics"' EXIT
+failures=0
+
+application=$(
+	cd "$root" || exit 1
+	nix build .#application --no-link --print-out-paths \
+		>"$diagnostics/build.stdout" 2>"$diagnostics/build.stderr"
+	status=$?
+	if (( status != 0 )); then
+		exit "$status"
+	fi
+	cat "$diagnostics/build.stdout"
+)
+status=$?
+if (( status != 0 )); then
+	printf 'could not build the clean application directory\n' >&2
+	if [[ -s $diagnostics/build.stderr ]]; then
+		cat "$diagnostics/build.stderr" >&2
+	fi
+	exit 1
+fi
+
+delivery=$(
+	cd "$root" || exit 1
+	nix build .#default --no-link --print-out-paths \
+		>"$diagnostics/delivery-build.stdout" 2>"$diagnostics/delivery-build.stderr"
+	status=$?
+	if (( status != 0 )); then
+		exit "$status"
+	fi
+	cat "$diagnostics/delivery-build.stdout"
+)
+status=$?
+if (( status != 0 )); then
+	printf 'could not build the runnable application delivery\n' >&2
+	if [[ -s $diagnostics/delivery-build.stderr ]]; then
+		cat "$diagnostics/delivery-build.stderr" >&2
+	fi
+	exit 1
+fi
+
+archive=$(
+	cd "$root" || exit 1
+	nix build .#aed --no-link --print-out-paths \
+		>"$diagnostics/archive-build.stdout" 2>"$diagnostics/archive-build.stderr"
+	status=$?
+	if (( status != 0 )); then
+		exit "$status"
+	fi
+	cat "$diagnostics/archive-build.stdout"
+)
+status=$?
+if (( status != 0 )); then
+	printf 'could not build the shareable .aed application archive\n' >&2
+	if [[ -s $diagnostics/archive-build.stderr ]]; then
+		cat "$diagnostics/archive-build.stderr" >&2
+	fi
+	exit 1
+fi
+
+mapfile -t actual_files < <(
+	cd "$application/share/vibesteroids_wat" || exit 1
+	rg --hidden --files | LC_ALL=C sort
+)
+expected_files=(
+	LICENSE
+	README.md
+	assets/audio/satellite-destroyed.flac
+	code.wat
+	tests/main.wast
+)
+if [[ ${actual_files[*]-} != "${expected_files[*]}" ]]; then
+	printf 'built application directory differs from the distributable file set\n' >&2
+	printf 'expected: %s\n' "${expected_files[*]}" >&2
+	printf 'actual: %s\n' "${actual_files[*]-}" >&2
+	failures=$((failures + 1))
+fi
+
+for required_directory in assets lib tests; do
+	if [[ ! -d $application/share/vibesteroids_wat/$required_directory ]]; then
+		printf 'built application is missing required root directory: %s\n' "$required_directory" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+(
+	cd "$application/share/vibesteroids_wat" || exit 1
+	wasmtime wast --async=false tests/main.wast
+) >"$diagnostics/main-wast.stdout" 2>"$diagnostics/main-wast.stderr"
+status=$?
+if (( status != 0 )); then
+	printf 'packaged application WAST entry point failed (%d)\n' "$status" >&2
+	if [[ -s $diagnostics/main-wast.stdout ]]; then
+		cat "$diagnostics/main-wast.stdout" >&2
+	fi
+	if [[ -s $diagnostics/main-wast.stderr ]]; then
+		cat "$diagnostics/main-wast.stderr" >&2
+	fi
+	failures=$((failures + 1))
+elif [[ -s $diagnostics/main-wast.stdout || -s $diagnostics/main-wast.stderr ]]; then
+	printf 'successful packaged application WAST emitted output\n' >&2
+	failures=$((failures + 1))
+fi
+
+"$delivery/bin/vibesteroids-wat-render" --ticks 1 \
+	-o "$diagnostics/delivery.svg" \
+	>"$diagnostics/delivery.stdout" 2>"$diagnostics/delivery.stderr"
+status=$?
+if (( status != 0 )); then
+	printf 'normal application delivery cannot render with its packaged assets (%d)\n' "$status" >&2
+	if [[ -s $diagnostics/delivery.stderr ]]; then
+		cat "$diagnostics/delivery.stderr" >&2
+	fi
+	failures=$((failures + 1))
+elif [[ -s $diagnostics/delivery.stdout || -s $diagnostics/delivery.stderr ]]; then
+	printf 'successful normal application delivery emitted output\n' >&2
+	failures=$((failures + 1))
+elif [[ ! -s $diagnostics/delivery.svg ]]; then
+	printf 'normal application delivery produced no rendered artifact\n' >&2
+	failures=$((failures + 1))
+fi
+
+"$delivery/bin/vibesteroids-wat" --test "$archive/vibesteroids.aed" \
+	--seed 20260722 \
+	>"$diagnostics/archive-test.stdout" 2>"$diagnostics/archive-test.stderr"
+status=$?
+if (( status != 0 )); then
+	printf 'shareable .aed application archive failed its bundled WAST suite (%d)\n' \
+		"$status" >&2
+	if [[ -s $diagnostics/archive-test.stderr ]]; then
+		cat "$diagnostics/archive-test.stderr" >&2
+	fi
+	failures=$((failures + 1))
+elif [[ -s $diagnostics/archive-test.stderr ]]; then
+	printf 'successful .aed application test emitted stderr\n' >&2
+	failures=$((failures + 1))
+fi
+
+if (( failures > 255 )); then
+	exit 255
+fi
+exit "$failures"

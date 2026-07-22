@@ -65,7 +65,8 @@
 (assert_return (invoke $vibesteroids_tests "state_i64_negative" (i32.const 25680)) (i32.const 1))
 
 ;; A player bullet gives the reactor blast score attribution but no intrinsic
-;; satellite bounty. A nearby terminal rock therefore contributes exactly 120.
+;; satellite bounty. The doubled blast clears two terminal rocks in one strategic
+;; shot, including one 230 pixels away; a rock beyond radius + hull survives.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
@@ -73,9 +74,13 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3352) (i64.const 200000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3376) (i64.const 20000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3408) (i32.const 1)))
-(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3424) (i64.const 900000000)))
-(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3432) (i64.const 700000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3424) (i64.const 430000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3432) (i64.const 200000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3456) (i64.const 20000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3488) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3504) (i64.const 470000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3512) (i64.const 200000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3536) (i64.const 20000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 25632) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 25640) (i64.const 200000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 25648) (i64.const 200000000)))
@@ -90,8 +95,23 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25600)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25604)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3328)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3408)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3408)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3488)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 240))
+;; The quote is a deferred playback event, not part of the blast program: it
+;; fires exactly one simulated second after player attribution is established.
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25712)) (i32.const 120))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_sample_play_count") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "raw_tick" (i32.const 119)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25712)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_sample_play_count") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "raw_tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25712)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_sample_play_count") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_sample_play_valid") (i32.const 1))
 
 ;; Peter-approved production geometry keeps both bent boom rails connected and
 ;; compresses the original concept to an approximately 136x47-pixel footprint.
@@ -141,6 +161,7 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 25648) (i64.const 200000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 25688) (i64.const 60000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 25700) (i32.const 1000)))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "raw_tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25632)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25600)) (i32.const 1))
@@ -149,6 +170,10 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3408)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3488)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25712)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "raw_tick" (i32.const 120)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_sample_play_count") (i32.const 0))
 
 ;; Laser fire is still player fire: a finite beam may deliberately trigger the
 ;; reactor and attributes collateral asteroid points to the player.
@@ -178,3 +203,4 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3328)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3408)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25712)) (i32.const 120))

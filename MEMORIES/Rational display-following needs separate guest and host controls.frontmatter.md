@@ -1,3 +1,8 @@
+---
+description: "Rational display following needs separate guest and host controls."
+datetime: 2026-07-17T13:05:19-04:00 # America/New_York (EDT)
+tags: [rational, display, gui, graphics, following, separate, guest, host, controls]
+---
 An application-owned WAST fixture can prove that a guest receives an exact
 rational display-refresh event, records its payload, receives the prior
 simulation rate in its selector, and returns an exact replacement or `(0, 0)`.

@@ -29,6 +29,7 @@ repository_checks=(
 	./tests/cli/naming_conventions
 	./tests/cli/abi_namespace
 	./tests/cli/aedicule_abi_contract
+	./tests/cli/application_package_layout
 	./tests/cli/flake_composition
 	./tests/cli/run_from_any_directory
 	./tests/cli/aedicule_runtime_portability
@@ -36,6 +37,7 @@ repository_checks=(
 )
 flake_proved_checks=(
 	./tests/cli/aedicule_runtime
+	./tests/cli/application_derivation_layout
 	./tests/run-wast
 	./tests/lint-wat
 )
@@ -54,6 +56,7 @@ shell_scripts=(
 	test
 	"${repository_checks[@]}"
 	"${flake_proved_checks[@]}"
+	tests/compose-wast
 	tests/fixtures/run-bin/nix
 	tests/fixtures/runtime-bin/nix
 	tests/fixtures/wast-bin/awk

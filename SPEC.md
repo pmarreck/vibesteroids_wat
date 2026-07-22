@@ -55,16 +55,16 @@ AE_tick_rate(current_numerator, current_denominator) -> (120, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 10
+AE_state_schema() -> 11
 ~~~
 
-Schema 10 is 32,768 bytes. The behavior specification documents the address map.
+Schema 11 is 32,768 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
 Any layout or semantic change incompatible with the existing 32,768-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 10 so a live reload preserves the current game.
+tuning retains schema 11 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
@@ -180,12 +180,13 @@ takes priority; otherwise a seeded choice selects either a random bearing or a
 fixed-point iterative intercept of the moving player. Enemy shots may destroy
 rocks but never score. The saucer and player can each die from their mutual
 collision or from rocks; player bullets and lasers destroy the saucer for 2,000
-points. Every saucer destruction creates an immediate 120-pixel-radius
-snapshot blast that can destroy nearby rocks, plus a 130-pixel danger radius
-for the player. Rocks score only when the player caused the saucer destruction;
-contact-triggered blasts never manufacture points. The 1.2-second presentation
-expands and contracts through the same fixed clock as gameplay, while damage is
-resolved once at detonation so newly split children survive the parent blast.
+points. Every saucer destruction creates an immediate 240-pixel-radius
+snapshot blast that can destroy nearby rocks; target radii extend that boundary,
+so the player's 10-pixel hull is endangered at 250 pixels. Rocks score only when
+the player caused the saucer destruction; contact-triggered blasts never
+manufacture points. The 1.2-second presentation expands and contracts to the
+same 240-pixel gameplay radius through the fixed clock, while damage is resolved
+once at detonation so newly split children survive the parent blast.
 
 The package drifts across the viewport without wrapping and does not collide
 with rocks. Player bullets, lasers, and enemy shots can destroy it; leaving the
@@ -207,9 +208,14 @@ pitch-stable sonar ping with two diminishing delayed reflections starts after
 1.5 simulated seconds and repeats every 3 seconds.
 
 Player bullets and finite lasers rupture the satellite reactor. The resulting
-hazardous blast has no intrinsic bounty, but rocks caught in it score because
-the player caused the detonation. Physical asteroid contact triggers the same
-blast with no score attribution.
+hazardous blast shares the 240-pixel UFO radius and has no intrinsic bounty, but
+clustered rocks caught in it score because the player caused the detonation.
+Physical asteroid contact triggers the same blast with no score attribution.
+
+Player-attributed destruction also arms a schema-backed one-simulated-second
+countdown, after which the guest requests the packaged Greta "How Dare You"
+sample at normal volume and pitch. Physical asteroid contact never arms that
+quote. Paused/help-modal time does not advance the countdown.
 
 ### 6.5 Presentation and audio
 
@@ -265,9 +271,12 @@ default are distinct derivations and that the wrapper depends on both.
 The flake pins `github:pmarreck/aedicule/yolo` to an immutable commit in
 `flake.lock` and follows the same nixpkgs input.
 
-`packages.application` copies only `code.wat` into a data artifact.
-`packages.frontplane` aliases the pinned dependency. `packages.default` creates
-game-named launch and render wrappers and points them at the packaged WAT.
+`packages.application` constructs the bounded guest root containing `code.wat`,
+its FLAC asset, documentation, and a self-contained `tests/main.wast`.
+`packages.aed` deterministically packages that root as the portable guest
+artifact. `packages.frontplane` aliases the pinned dependency, while
+`packages.default` creates game-named launch and render wrappers pointing at
+the complete application root so declared assets remain available.
 
 Ordinary game changes should use:
 

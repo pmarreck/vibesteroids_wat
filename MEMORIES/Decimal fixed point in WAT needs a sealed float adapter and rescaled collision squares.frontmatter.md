@@ -1,3 +1,8 @@
+---
+description: "Decimal fixed point in WAT needs a sealed float adapter and rescaled collision squares."
+datetime: 2026-07-17T08:06:07-04:00 # America/New_York (EDT)
+tags: [decimal, fixed, point, wat, wasm, webassembly, sealed, float, adapter, rescaled, collision, squares]
+---
 Schema 3 migrated every gameplay scalar in Vibesteroids from IEEE-754 values
 to signed `i64` decimal millionths (`SCALE = 1,000,000`). GPUI and the v0 ABI
 still require `f32` viewport/draw scalars, so the WAT marks one mechanically

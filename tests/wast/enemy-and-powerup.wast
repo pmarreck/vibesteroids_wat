@@ -523,7 +523,11 @@
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_flash_frames") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "host_blast_radius") (f32.const 60))
+(assert_return (invoke $vibesteroids_tests "host_blast_radius") (f32.const 120))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 18)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_blast_radius") (f32.const 240))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 18)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
@@ -531,17 +535,13 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 18)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "host_blast_radius") (f32.const 60))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 18)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
-(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_blast_circles") (i32.const 0))
 
-;; Shooting at point-blank range still earns the bounty, but the resulting
-;; blast consumes one life: the explosion is not a consequence-free weapon.
+;; Shooting from 240 pixels away still earns the bounty, but the doubled blast
+;; consumes one life: the explosion is not a consequence-free weapon.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
-(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 24) (i64.const 300000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 24) (i64.const 440000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 32) (i64.const 200000000)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 92) (i32.const 0)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 1)))

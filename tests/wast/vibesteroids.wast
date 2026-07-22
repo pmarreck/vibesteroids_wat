@@ -60,6 +60,9 @@
 	(import "test.host" "test_blast_radius" (func $host_blast_radius (result f32)))
 	(import "test.host" "test_flame_min_x" (func $host_flame_min_x (result f32)))
 	(import "test.host" "test_audio_seen" (func $host_audio_seen (param i32) (result i32)))
+	(import "test.host" "test_sample_asset_valid" (func $host_sample_asset_valid (result i32)))
+	(import "test.host" "test_sample_play_count" (func $host_sample_play_count (result i32)))
+	(import "test.host" "test_sample_play_valid" (func $host_sample_play_valid (result i32)))
 	(import "test.host" "test_effect_seen" (func $host_effect_seen (param i32) (result i32)))
 	(import "test.host" "test_bullet_circles" (func $host_bullet_circles (result i32)))
 
@@ -386,6 +389,9 @@
 	(func (export "host_blast_radius") (result f32) call $host_blast_radius)
 	(func (export "host_flame_min_x") (result f32) call $host_flame_min_x)
 	(func (export "host_audio_seen") (param i32) (result i32) local.get 0 call $host_audio_seen)
+	(func (export "host_sample_asset_valid") (result i32) call $host_sample_asset_valid)
+	(func (export "host_sample_play_count") (result i32) call $host_sample_play_count)
+	(func (export "host_sample_play_valid") (result i32) call $host_sample_play_valid)
 	(func (export "host_effect_seen") (param i32) (result i32) local.get 0 call $host_effect_seen)
 	(func (export "host_bullet_circles") (result i32) call $host_bullet_circles)
 	(func $abs_i64 (param $value i64) (result i64)
@@ -579,7 +585,7 @@
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 10))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 11))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 32768))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
@@ -590,7 +596,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 10 stores canonical per-second velocities and precomputed projectile
+;; Schema 11 stores canonical per-second velocities and precomputed projectile
 ;; lifetimes while integrating at 120 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -2493750))
@@ -625,6 +631,7 @@
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 12)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 13)) (i32.const 3))
 (assert_return (invoke $vibesteroids_tests "host_satellite_ping_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_sample_asset_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_short_boom_voices") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_invalid_synth_voices") (i32.const 0))
 (assert_return

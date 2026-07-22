@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd -P)
+asset=assets/audio/satellite-destroyed.flac
+expected_asset_hash=d8aa38ecf43e5933abd0d5738b3f2ae2e7b3a5885353b00b6790379b8107aa5c
+failures=0
+
+required_root_files=(
+	code.wat
+	README.md
+	LICENSE
+)
+
+for relative in "${required_root_files[@]}"; do
+	if [[ ! -f $root/$relative ]]; then
+		printf 'application source is missing required root file: %s\n' "$relative" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+mapfile -t actual_assets < <(
+	cd "$root" || exit 1
+	rg --files assets 2>/dev/null | LC_ALL=C sort
+)
+expected_assets=("$asset")
+if [[ ${actual_assets[*]-} != "${expected_assets[*]}" ]]; then
+	printf 'application assets differ from the declared package set\n' >&2
+	printf 'expected: %s\n' "${expected_assets[*]}" >&2
+	printf 'actual: %s\n' "${actual_assets[*]-}" >&2
+	failures=$((failures + 1))
+fi
+
+if [[ -f $root/$asset ]]; then
+	actual_magic=$(od -An -N4 -tc "$root/$asset" | tr -d ' \n')
+	if [[ $actual_magic != fLaC ]]; then
+		printf 'packaged sample is not FLAC: %s\n' "$asset" >&2
+		failures=$((failures + 1))
+	fi
+	actual_hash=$(sha256sum "$root/$asset")
+	actual_hash=${actual_hash%% *}
+	if [[ $actual_hash != "$expected_asset_hash" ]]; then
+		printf 'packaged sample hash changed: %s\n' "$actual_hash" >&2
+		failures=$((failures + 1))
+	fi
+fi
+
+if (( failures > 255 )); then
+	exit 255
+fi
+exit "$failures"

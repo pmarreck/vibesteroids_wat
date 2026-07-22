@@ -1,6 +1,6 @@
 ;; Vibesteroids behavioral conversion for the gpui-frontplane-v0 ABI.
 ;;
-;; Schema 10 stores every gameplay scalar as an integer. Spatial quantities use
+;; Schema 11 stores every gameplay scalar as an integer. Spatial quantities use
 ;; signed decimal fixed point with SCALE = 1,000,000. IEEE-754 values exist
 ;; only at the host ABI boundary: viewport scalars enter through $from_host,
 ;; and completed draw scalars leave through $to_host. They never feed back.
@@ -39,8 +39,9 @@
 ;; 15568: temporary power kind:i32 (0 laser, 1 doubled fire rate)
 ;; 16384: 192 overflow player bullets x 48 bytes, preserving legacy addresses
 ;; 25600: hazardous blast active/attribution:i32, x/y:i64, elapsed ticks:i32
-;; 25632: derelict satellite: active/direction:i32, x/y/vx/vy/dx/dy/radius:i64,
+;; 26656: derelict satellite: active/direction:i32, x/y/vx/vy/dx/dy/radius:i64,
 ;;        spin/ping/pulse/spawn-countdown:i32
+;; 26736: player-attributed satellite quote countdown:i32
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
@@ -57,6 +58,10 @@
 	(import "aedicule.v0" "AE_text" (func $text (param i32 i32 i32 f32 f32 f32 i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_frame_end" (func $frame_end (result i32)))
 	(import "aedicule.v0" "AE_audio" (func $audio (param i32 f32 f32 i32) (result i32)))
+	(import "aedicule.v0" "AE_sample_asset"
+		(func $sample_asset (param i32 i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_sample_play"
+		(func $sample_play (param i32 f32 f32 i32) (result i32)))
 	(import "aedicule.v0" "AE_synth_voice"
 		(func $synth_voice
 			(param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
@@ -99,8 +104,12 @@
 	(data (i32.const 640) "SCROLL       BLOSSOM")
 	(data (i32.const 672) "LASER  00.0")
 	(data (i32.const 688) "RAPID  00.0")
+	(data (i32.const 704) "assets/audio/satellite-destroyed.flac")
 
 	(global $scale i64 (i64.const 1000000))
+	;; Shared visual and damage extent for UFO/Voyager explosions; target hull
+	;; radii are added at collision sites so the drawn danger area stays honest.
+	(global $hazardous_blast_radius i64 (i64.const 240000000))
 	(global $tick_numerator i64 (i64.const 120))
 	(global $tick_denominator i64 (i64.const 1))
 	(global $player_bullet_capacity i32 (i32.const 256))
@@ -145,6 +154,7 @@
 	(global $state_satellite_ping_countdown_address i32 (i32.const 26724))
 	(global $state_satellite_pulse_ticks_address i32 (i32.const 26728))
 	(global $state_satellite_spawn_countdown_address i32 (i32.const 26732))
+	(global $state_satellite_quote_countdown_address i32 (i32.const 26736))
 	(global $flag_rotate_left i32 (i32.const 1))
 	(global $flag_rotate_right i32 (i32.const 2))
 	(global $flag_thrust i32 (i32.const 4))
@@ -183,7 +193,7 @@
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
 	(func (export "AE_state_ptr") (result i32) global.get $state_base_address)
 	(func (export "AE_state_len") (result i32) i32.const 32768)
-	(func (export "AE_state_schema") (result i32) i32.const 10)
+	(func (export "AE_state_schema") (result i32) i32.const 11)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
@@ -354,6 +364,10 @@
 		i32.const 520000 i32.const 520000 i32.const 520000
 		i32.const 35000 global.get $filter_none i32.const 0 i32.const 0
 		call $declare_swept_voice)
+	;; Binds the packaged digitized quote once during configuration so runtime
+	;; destruction emits only a bounded playback event, never asset I/O.
+	(func $configure_satellite_quote
+		i32.const 1 i32.const 704 i32.const 37 i32.const 0 call $sample_asset drop)
 
 	(func (export "AE_configure") (result i32)
 		call $configure_menu
@@ -370,6 +384,7 @@
 		call $configure_package_loss_sound
 		call $configure_hazardous_blast_sound
 		call $configure_satellite_ping_sound
+		call $configure_satellite_quote
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN
@@ -1562,7 +1577,8 @@
 				local.get $x local.get $y
 				local.get $asteroid i32.const 16 i32.add i64.load
 				local.get $asteroid i32.const 24 i32.add i64.load
-				i64.const 120000000 local.get $asteroid i32.const 48 i32.add i64.load i64.add
+				global.get $hazardous_blast_radius
+				local.get $asteroid i32.const 48 i32.add i64.load i64.add
 				call $distance_lt
 				(if (then
 					local.get $hit_mask i32.const 1 local.get $index i32.shl i32.or local.set $hit_mask))))
@@ -1579,7 +1595,7 @@
 		global.get $state_invulnerability_address i32.load i32.const 0 i32.le_s i32.and
 			(if (then
 				local.get $x local.get $y global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
-				i64.const 130000000 call $distance_lt
+				global.get $hazardous_blast_radius i64.const 10000000 i64.add call $distance_lt
 				(if (then call $begin_ship_destruction))))
 		i32.const 12 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
 
@@ -1615,8 +1631,26 @@
 			global.get $state_satellite_vy_address i64.load call $spawn_particles
 			global.get $state_satellite_x_address i64.load
 			global.get $state_satellite_y_address i64.load local.get $score_hit call $start_hazardous_blast
+			local.get $score_hit
+			(if (then
+				global.get $state_satellite_quote_countdown_address
+				i32.const 60 call $ticks_from_sixty i32.store))
 			global.get $state_satellite_active_address i32.const 0 i32.store
 			global.get $state_satellite_spawn_countdown_address call $random_spawn_ticks i32.store)))
+
+	;; Defers the player-attributed digitized quote by one simulated second;
+	;; collision deaths never arm this schema-backed countdown.
+	(func $update_satellite_quote
+		global.get $state_satellite_quote_countdown_address i32.load i32.const 0 i32.le_s
+		(if (then return))
+		global.get $state_satellite_quote_countdown_address i32.load i32.const 1 i32.le_s
+		(if
+			(then
+				global.get $state_satellite_quote_countdown_address i32.const 0 i32.store
+				i32.const 1 f32.const 1 f32.const 1 i32.const 0 call $sample_play drop)
+			(else
+				global.get $state_satellite_quote_countdown_address
+				global.get $state_satellite_quote_countdown_address i32.load i32.const 1 i32.sub i32.store)))
 
 	;; Creates a slow Voyager-like traversal from a seeded horizontal edge, with
 	;; an independently seeded rotation sign and no appearance notification.
@@ -2072,6 +2106,7 @@
 		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
 		(if (then call $load_flags global.get $flag_fire i32.and (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset)) return))
 		call $update_hazardous_blast
+		call $update_satellite_quote
 		call $update_power_timers
 		global.get $state_lifecycle_address i32.load i32.eqz
 		(if (then
@@ -2705,11 +2740,12 @@
 		i32.const 72 call $ticks_from_sixty local.set $duration
 		local.get $elapsed local.get $half i32.le_u
 		(if (then
-			local.get $elapsed i64.extend_i32_u i64.const 120000000 i64.mul
+			local.get $elapsed i64.extend_i32_u global.get $hazardous_blast_radius i64.mul
 			local.get $half i64.extend_i32_u i64.div_u local.set $radius)
 		(else
 			local.get $duration local.get $elapsed i32.sub i64.extend_i32_u
-			i64.const 120000000 i64.mul local.get $half i64.extend_i32_u i64.div_u local.set $radius))
+			global.get $hazardous_blast_radius i64.mul
+			local.get $half i64.extend_i32_u i64.div_u local.set $radius))
 		local.get $radius i64.const 4000000 i64.lt_u
 		(if (then i64.const 4000000 local.set $radius))
 		local.get $elapsed i32.const 2 i32.div_u i32.const 1 i32.and

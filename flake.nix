@@ -19,25 +19,44 @@
 				let
 					pkgs = pkgsFor system;
 					frontplane = aedicule.packages.${system}.frontplane;
-					application = pkgs.runCommand "vibesteroids_wat_code-0.1.0" {} ''
-						mkdir -p $out/share/vibesteroids_wat
+					application = pkgs.runCommand "vibesteroids_wat_code-0.1.0" {
+						nativeBuildInputs = [ pkgs.gawk ];
+					} ''
+						mkdir -p $out/share/vibesteroids_wat/assets/audio \
+							$out/share/vibesteroids_wat/lib
 						cp ${./code.wat} $out/share/vibesteroids_wat/code.wat
+						cp ${./assets/audio/satellite-destroyed.flac} \
+							$out/share/vibesteroids_wat/assets/audio/satellite-destroyed.flac
+						cp ${./README.md} $out/share/vibesteroids_wat/README.md
+						cp ${./LICENSE} $out/share/vibesteroids_wat/LICENSE
+						mkdir -p $out/share/vibesteroids_wat/tests
+						VIBESTEROIDS_WAT_ROOT=${./.} \
+							bash ${./tests/compose-wast} \
+							>$out/share/vibesteroids_wat/tests/main.wast
+					'';
+					aed = pkgs.runCommand "vibesteroids_wat_aed-0.1.0" {
+						nativeBuildInputs = [ frontplane ];
+					} ''
+						mkdir -p $out
+						gpui-wasm --package \
+							${application}/share/vibesteroids_wat \
+							$out/vibesteroids.aed
 					'';
 				in {
-					inherit application frontplane;
+					inherit aed application frontplane;
 					default = pkgs.runCommand "vibesteroids_wat-0.1.0" {
 						nativeBuildInputs = [ pkgs.makeWrapper ];
 						meta.mainProgram = "vibesteroids-wat";
 					} ''
-						mkdir -p $out/bin $out/share/vibesteroids_wat
-						ln -s ${application}/share/vibesteroids_wat/code.wat \
-							$out/share/vibesteroids_wat/code.wat
+						mkdir -p $out/bin $out/share
+						ln -s ${application}/share/vibesteroids_wat \
+							$out/share/vibesteroids_wat
 						makeWrapper ${frontplane}/bin/gpui-wasm \
 							$out/bin/vibesteroids-wat \
-							--set GPUI_WASM_DEFAULT_PLUGIN $out/share/vibesteroids_wat/code.wat
+							--set GPUI_WASM_DEFAULT_PLUGIN $out/share/vibesteroids_wat
 						makeWrapper ${frontplane}/bin/gpui-wasm-render \
 							$out/bin/vibesteroids-wat-render \
-							--set GPUI_WASM_DEFAULT_PLUGIN $out/share/vibesteroids_wat/code.wat
+							--set GPUI_WASM_DEFAULT_PLUGIN $out/share/vibesteroids_wat
 					'';
 				});
 
@@ -53,7 +72,7 @@
 					} ''
 						mkdir -p $out
 						if ! gpui-wasm-render \
-							${application}/share/vibesteroids_wat/code.wat \
+							${application}/share/vibesteroids_wat \
 							--ticks 1 -o $out/frame.svg 2>$TMPDIR/runtime.stderr; then
 							cat $TMPDIR/runtime.stderr >&2
 							exit 1

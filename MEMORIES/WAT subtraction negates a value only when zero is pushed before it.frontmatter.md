@@ -1,3 +1,8 @@
+---
+description: "WAT subtraction negates a value only when zero is pushed before it."
+datetime: 2026-07-17T08:06:07-04:00 # America/New_York (EDT)
+tags: [wat, wasm, webassembly, subtraction, negates, value, when, zero, pushed]
+---
 WebAssembly text uses stack operand order for noncommutative operations: the
 left-hand operand must be pushed before the right-hand operand. To negate
 `value`, emit `i64.const 0`, then `value`, then `i64.sub`; emitting `value`,

@@ -1,3 +1,8 @@
+---
+description: "Port per second browser physics to fixed ticks by converting dimensions exactly once."
+datetime: 2026-07-17T08:06:07-04:00 # America/New_York (EDT)
+tags: [port, second, browser, physics, fixed, ticks, converting, dimensions, exactly, once]
+---
 When a browser game integrates per-second acceleration and velocity with
 `deltaTime`, a 60-Hz port whose stored velocity is distance-per-tick must
 convert each quantity according to its dimension: divide velocity and angular

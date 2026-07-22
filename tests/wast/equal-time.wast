@@ -73,6 +73,13 @@
 		i32.const 26724 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26724 i32.load)
+	(func (export "satellite_quote_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26736 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26736 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26736 i32.load)
 )
 (register "rate_60_probe" $rate_60_probe)
 (module $rate_120_probe
@@ -148,6 +155,13 @@
 		i32.const 26724 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26724 i32.load)
+	(func (export "satellite_quote_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26736 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26736 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26736 i32.load)
 )
 (register "rate_120_probe" $rate_120_probe)
 (module $rate_60000_1001_probe
@@ -218,6 +232,13 @@
 		i32.const 26724 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26724 i32.load)
+	(func (export "satellite_quote_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26736 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26736 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26736 i32.load)
 )
 (module $rate_120000_1001_probe
 	(import "sut_120000_1001" "memory" (memory $state 1))
@@ -287,6 +308,13 @@
 		i32.const 26724 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26724 i32.load)
+	(func (export "satellite_quote_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26736 local.get $due i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26736 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26736 i32.load)
 )
 
 (assert_return (invoke $rate_60_probe "run") (i64.const 160000000))
@@ -323,6 +351,13 @@
 (assert_return (invoke $rate_120_probe "satellite_ping_boundary" (i32.const 180)) (i32.const 1) (i32.const 360))
 (assert_return (invoke $rate_60000_1001_probe "satellite_ping_boundary" (i32.const 89)) (i32.const 1) (i32.const 179))
 (assert_return (invoke $rate_120000_1001_probe "satellite_ping_boundary" (i32.const 179)) (i32.const 1) (i32.const 359))
+
+;; The player-attributed quote begins on the same one simulated-second boundary
+;; at integral and NTSC-derived rates, independently of host audio duration.
+(assert_return (invoke $rate_60_probe "satellite_quote_boundary" (i32.const 60)) (i32.const 1) (i32.const 0))
+(assert_return (invoke $rate_120_probe "satellite_quote_boundary" (i32.const 120)) (i32.const 1) (i32.const 0))
+(assert_return (invoke $rate_60000_1001_probe "satellite_quote_boundary" (i32.const 59)) (i32.const 1) (i32.const 0))
+(assert_return (invoke $rate_120000_1001_probe "satellite_quote_boundary" (i32.const 119)) (i32.const 1) (i32.const 0))
 
 ;; Linearized retention factors keep one-second damping perceptually equal
 ;; even though integer rounding differs across simulation step counts.

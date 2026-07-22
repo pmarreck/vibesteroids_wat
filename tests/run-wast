@@ -13,64 +13,8 @@ cleanup_suite() {
 }
 trap cleanup_suite EXIT
 
-append_rate_variant() {
-	local label=$1
-	local numerator=$2
-	local denominator=$3
-
-	awk -v numerator="$numerator" -v denominator="$denominator" '
-		$0 ~ /^\t\(global \$tick_numerator i64 \(i64.const [0-9]+\)\)$/ {
-			print "\t(global $tick_numerator i64 (i64.const " numerator "))"
-			next
-		}
-		$0 ~ /^\t\(global \$tick_denominator i64 \(i64.const [0-9]+\)\)$/ {
-			print "\t(global $tick_denominator i64 (i64.const " denominator "))"
-			next
-		}
-		{ print }
-	' "$root/code.wat"
-	status=$?
-	if (( status != 0 )); then
-		return "$status"
-	fi
-	printf '(register "%s")\n' "$label"
-}
-
-composition_status=0
-awk '1' "$root/tests/wast/aedicule-v0.wast" "$root/code.wat" >"$suite"
+"$root/tests/compose-wast" >"$suite"
 composition_status=$?
-
-if (( composition_status == 0 )); then
-	printf '%s\n' '(register "sut")' >>"$suite"
-	composition_status=$?
-fi
-if (( composition_status == 0 )); then
-	append_rate_variant sut_60 60 1 >>"$suite"
-	composition_status=$?
-fi
-if (( composition_status == 0 )); then
-	append_rate_variant sut_120 120 1 >>"$suite"
-	composition_status=$?
-fi
-if (( composition_status == 0 )); then
-	append_rate_variant sut_60000_1001 60000 1001 >>"$suite"
-	composition_status=$?
-fi
-if (( composition_status == 0 )); then
-	append_rate_variant sut_120000_1001 120000 1001 >>"$suite"
-	composition_status=$?
-fi
-if (( composition_status == 0 )); then
-	awk '1' \
-		"$root/tests/wast/aedicule-contract.wast" \
-		"$root/tests/wast/vibesteroids.wast" \
-		"$root/tests/wast/gameplay.wast" \
-		"$root/tests/wast/enemy-and-powerup.wast" \
-		"$root/tests/wast/satellite.wast" \
-		"$root/tests/wast/rational-timing.wast" \
-		"$root/tests/wast/equal-time.wast" >>"$suite"
-	composition_status=$?
-fi
 
 if (( composition_status != 0 )); then
 	retain_suite=1

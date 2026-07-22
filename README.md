@@ -25,10 +25,11 @@ The GPUI/Zed Rust graph is large. Treating `code.wat` as native package source
 would make every physics or tuning edit relink the frontplane and would invite
 future agents to move game rules into Rust.
 
-The flake therefore has three outputs:
+The flake therefore has four delivery outputs:
 
 - `packages.frontplane`: the exact Mecha Aedicule input pinned in `flake.lock`;
-- `packages.application`: a tiny data derivation containing only `code.wat`;
+- `packages.application`: the guest directory containing WAT, tests, and assets;
+- `packages.aed`: the deterministic, directly shareable `vibesteroids.aed`;
 - `packages.default`: a thin wrapper composing the two at launch.
 
 Changing game code rebuilds and retests the small application artifact, not the
@@ -59,6 +60,16 @@ The built result contains one composed game package:
 result/bin/vibesteroids-wat
 result/bin/vibesteroids-wat-render
 result/share/vibesteroids_wat/code.wat
+result/share/vibesteroids_wat/assets/audio/satellite-destroyed.flac
+```
+
+Build the portable guest archive separately, then run or test it with any
+compatible Aedicule delivery:
+
+```console
+nix build .#aed -o result-aed
+result/bin/vibesteroids-wat result-aed/vibesteroids.aed
+result/bin/vibesteroids-wat --test result-aed/vibesteroids.aed
 ```
 
 Controls:
@@ -113,7 +124,7 @@ On July 16, 2026, Peter flew the ship while we removed its per-tick drag from
 WAT. In the next simulation tick the already-running ship coasted indefinitely:
 the process did not restart, Rust did not rebuild, and score, lives, wave,
 bullets, and rocks remained intact. We then restored gentler `0.995` drag and
-saw that change live too. The schema-10 implementation expresses it as
+saw that change live too. The current schema-11 implementation expresses it as
 exact decimal-fixed `velocity * 995000 / 1000000`; the WAT policy test forbids
 IEEE-754 gameplay arithmetic outside the sealed host-scalar adapter.
 
@@ -132,17 +143,19 @@ Implemented:
   debris, particles, safe respawn, and extra lives;
 - auto-fire, Kid Mode, and the semi-secret Death Blossom;
 - independently scheduled disc UFOs with predictive, random, and defensive
-  fire, physical collisions, a 2,000-point bounty, and hazardous expanding
-  blasts whose asteroid score follows player-kill attribution;
+  fire, physical collisions, a 2,000-point bounty, and hazardous 240-pixel
+  expanding blasts whose asteroid score follows player-kill attribution;
 - destructible drifting packages that randomly grant either 20 seconds of
   finite, non-wrapping multi-target laser fire or doubled bounded fire rate,
   with an icon-and-text tenths countdown for the active reward;
 - a compact, slowly rotating derelict Voyager that defers arrival during dense
   waves, pings faintly, pulses cyan, and turns deliberate player fire into an
-  asteroid-scoring reactor blast while accidental rock contact scores nothing;
+  asteroid-scoring multi-rock reactor blast while accidental contact scores
+  nothing;
 - guest-declared shot, laser, thrust, explosion, extra-life, Death Blossom,
   alert, notification, phone-home ping, and layered 1.2-second-or-longer BOOM
-  synths;
+  synths, plus bounded packaged FLAC playback after player-triggered Voyager
+  destruction;
 - signed decimal-fixed internal state and physics, with one sealed float adapter
   for the host ABI;
 - deterministic seeds, snapshots, WAST behavior tests, and headless SVG; and

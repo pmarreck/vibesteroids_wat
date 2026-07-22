@@ -1,3 +1,8 @@
+---
+description: "Snapshot mutable target pools before piercing attacks so spawned children survive the same beam."
+datetime: 2026-07-18T20:21:25-04:00 # America/New_York (EDT)
+tags: [snapshot, mutable, target, pools, piercing, attacks, spawned, children, survive, same, beam]
+---
 The laser resolves against an asteroid pool where a hit can mutate the current
 record into one child and activate another formerly free slot. Iterating the
 live pool directly would therefore let a single beam recursively hit children

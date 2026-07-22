@@ -5,6 +5,58 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [x] Double the shared UFO/Voyager hazardous-blast radius so it supports the
+  intended strategic multi-asteroid clear and remains genuinely dangerous.
+	- [x] TDD a 240-pixel visual/damage radius, including asteroid/hull radii:
+	  clustered rocks and a ship 240 pixels away are hit, while an asteroid just
+	  beyond the expanded boundary survives. (2026-07-22 13:42 EDT)
+	- [x] Keep player attribution unchanged: collateral rocks score only when the
+	  player caused the originating UFO/Voyager explosion. (2026-07-22 13:42 EDT)
+	- Curiosity poke: chain reactions between two hazardous foreign objects remain
+	  a separate rule; a larger blast must not introduce them accidentally.
+- [x] Play Peter's 1.381604-second Greta "How Dare You" digitized-audio clip
+  one simulated second after player-attributed Voyager destruction.
+	- [x] Inspect the untouched source asset: 13,172-byte MP3, 48 kHz stereo,
+	  SHA-256 `084b45085a03def28987c6d3cf80907c88630b4573e65fa73d0b4cf6a4e5be53`.
+	  (2026-07-22 12:23 EDT)
+	- [x] Produce a RAM-only FFmpeg FLAC candidate preserving 48 kHz stereo and
+	  1.381604-second duration: 56,711 bytes, SHA-256
+	  `d8aa38ecf43e5933abd0d5738b3f2ae2e7b3a5885353b00b6790379b8107aa5c`.
+	  (2026-07-22 12:30 EDT)
+	- [x] Agree with Aedicule on one virtual-root layout runnable directly as a
+	  directory or as a deterministic stored ZIP with the `.aed` extension;
+	  `code.wat` is the entry point, `assets/` is the declared-asset namespace,
+	  and `tests/` carries the portable WAST behavior suite.
+	  (2026-07-22 12:48 EDT)
+	- [x] TDD the source-directory layout and exact high-compression, 16-bit FLAC
+	  bytes; keep the local asset uncommitted until Peter's working audition.
+	  (2026-07-22 12:53 EDT)
+	- [x] TDD a clean application derivation containing `code.wat`, the declared
+	  asset, a generated portable `tests/main.wast`, `README.md`, and `LICENSE`,
+	  without leaking
+	  `.git`, inbox notes, memories, or CI-only worktree files.
+	  The built directory runs its own WAST entry point cleanly without executing
+	  packaged shell code. (2026-07-22 13:11 EDT)
+	- [x] Pin Aedicule `d6028b396bca5b1777f894d97a0a5606f9ac7b76`
+	  with its generic sampled-audio declarations, bounded FLAC decoding, native
+	  playback, asset-aware headless renderer, and capturable diagnostics.
+	  (2026-07-22 16:44 EDT)
+	- [x] TDD schema-11 fixed-tick one-second deferred playback at 60, 120, and
+	  NTSC-derived rational rates; arm it only for player-attributed destruction,
+	  never asteroid collision. (2026-07-22 12:27 EDT)
+	- [x] TDD the pinned host's digitized-audio declaration and exact packaged
+	  asset bytes across direct-directory and `.aed` launch without changing the
+	  guest-owned timing/attribution path. (2026-07-22 16:18 EDT)
+	- [x] Prove the packaged guest runs through the pinned real Aedicule runtime;
+	  Peter confirmed that the sampled quote plays successfully.
+	  (2026-07-22 16:18 EDT)
+	- [x] Make both the normal native wrapper and a first-class deterministic
+	  `packages.aed` output carry the entire virtual application root; execute
+	  the wrapper renderer and the archive's bundled WAST through the pinned
+	  runtime. (2026-07-22 16:44 EDT)
+	- Curiosity poke: should a second player-attributed reactor blast replace,
+	  queue, or overlap a still-pending/playing quote if later gameplay permits
+	  multiple derelicts at once?
 - [x] Fix Peter's playtest finding that Help inputs/actions drift horizontally
   instead of matching the mockup's four explicit left-aligned columns.
 	- [x] Reproduce centered combined rows with a failing fake-host alignment and

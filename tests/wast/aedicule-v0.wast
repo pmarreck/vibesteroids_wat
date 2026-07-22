@@ -37,6 +37,10 @@
 	(global $transform_depth (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
+	(global $sample_asset_count (mut i32) (i32.const 0))
+	(global $sample_asset_valid (mut i32) (i32.const 0))
+	(global $sample_play_count (mut i32) (i32.const 0))
+	(global $sample_play_valid (mut i32) (i32.const 0))
 	(global $effect_mask (mut i32) (i32.const 0))
 	(global $asteroid_paths (mut i32) (i32.const 0))
 	(global $bad_asteroid_vertices (mut i32) (i32.const 0))
@@ -100,6 +104,8 @@
 		i32.const 0 global.set $satellite_ping_errors
 		i32.const 0 global.set $short_boom_voices
 		i32.const 0 global.set $invalid_synth_voices
+		i32.const 0 global.set $sample_asset_count
+		i32.const 0 global.set $sample_asset_valid
 		i64.const -3750763034362895579 global.set $synth_signature)
 	(func (export "test_reset_frame")
 		i32.const 0 global.set $frame_count
@@ -154,6 +160,8 @@
 		f32.const 0 global.set $flame_min_x)
 	(func (export "test_reset_effects")
 		i32.const 0 global.set $audio_mask
+		i32.const 0 global.set $sample_play_count
+		i32.const 0 global.set $sample_play_valid
 		i32.const 0 global.set $effect_mask)
 
 	(func (export "test_title_ptr") (result i32) global.get $title_ptr)
@@ -197,6 +205,11 @@
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
 	(func (export "test_audio_seen") (param $id i32) (result i32)
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.and i32.eqz i32.eqz)
+	(func (export "test_sample_asset_valid") (result i32)
+		global.get $sample_asset_count i32.const 1 i32.eq
+		global.get $sample_asset_valid i32.and)
+	(func (export "test_sample_play_count") (result i32) global.get $sample_play_count)
+	(func (export "test_sample_play_valid") (result i32) global.get $sample_play_valid)
 	(func (export "test_effect_seen") (param $id i32) (result i32)
 		global.get $effect_mask i32.const 1 local.get $id i32.shl i32.and i32.eqz i32.eqz)
 	(func (export "test_asteroid_paths") (result i32) global.get $asteroid_paths)
@@ -546,6 +559,24 @@
 		i32.const 0)
 	(func (export "AE_audio") (param $id i32) (param f32 f32 i32) (result i32)
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.or global.set $audio_mask
+		i32.const 0)
+	(func (export "AE_sample_asset")
+		(param $id i32) (param $ptr i32) (param $len i32) (param $flags i32) (result i32)
+		global.get $sample_asset_count i32.const 1 i32.add global.set $sample_asset_count
+		local.get $id i32.const 1 i32.eq
+		local.get $ptr i32.const 704 i32.eq i32.and
+		local.get $len i32.const 37 i32.eq i32.and
+		local.get $flags i32.eqz i32.and
+		global.set $sample_asset_valid
+		i32.const 0)
+	(func (export "AE_sample_play")
+		(param $id i32) (param $volume f32) (param $pitch f32) (param $flags i32) (result i32)
+		global.get $sample_play_count i32.const 1 i32.add global.set $sample_play_count
+		local.get $id i32.const 1 i32.eq
+		local.get $volume f32.const 1 f32.eq i32.and
+		local.get $pitch f32.const 1 f32.eq i32.and
+		local.get $flags i32.eqz i32.and
+		global.set $sample_play_valid
 		i32.const 0)
 	(func (export "AE_synth_voice")
 		(param $id i32) (param $waveform i32) (param $delay i32) (param $duration i32)
