@@ -58,7 +58,8 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 10)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 
-;; Held fire repeats, carries exact distance, and expires at half the viewport diagonal.
+;; Held fire repeats, carries a precomputed lifetime, and expires at the same
+;; half-viewport-diagonal boundary without per-tick square roots.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 45)) (i32.const 0))
@@ -68,14 +69,14 @@
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 5625000))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 226))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 1)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 112)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 635625000))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 2))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))

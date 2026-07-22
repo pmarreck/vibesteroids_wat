@@ -1,6 +1,6 @@
 ;; Vibesteroids behavioral conversion for the gpui-frontplane-v0 ABI.
 ;;
-;; Schema 8 stores every gameplay scalar as an integer. Spatial quantities use
+;; Schema 9 stores every gameplay scalar as an integer. Spatial quantities use
 ;; signed decimal fixed point with SCALE = 1,000,000. IEEE-754 values exist
 ;; only at the host ABI boundary: viewport scalars enter through $from_host,
 ;; and completed draw scalars leave through $to_host. They never feed back.
@@ -19,7 +19,7 @@
 ;;
 ;; Pools, relative to AE_state_ptr:
 ;;   256: 64 legacy bullets x 48 bytes
-;;        active:i32, pad:i32, x/y/vx/vy/distance-traveled:i64
+;;        active:i32, pad:i32, x/y/vx/vy/lifetime-ticks:i64
 ;;  3328: 32 asteroids x 80 bytes
 ;;        active/generation/shape/pad:i32, x/y/vx/vy/radius/dx/dy:i64,
 ;;        spin:i32, points:i32
@@ -100,6 +100,7 @@
 	(global $filter_none i32 (i32.const 0))
 	(global $filter_low_pass i32 (i32.const 1))
 	(global $state_flags_address i32 (i32.const 1108))
+	(global $state_bullet_maximum_distance_address i32 (i32.const 1152))
 	(global $flag_rotate_left i32 (i32.const 1))
 	(global $flag_rotate_right i32 (i32.const 2))
 	(global $flag_thrust i32 (i32.const 4))
@@ -138,7 +139,7 @@
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
 	(func (export "AE_state_ptr") (result i32) i32.const 1024)
 	(func (export "AE_state_len") (result i32) i32.const 32768)
-	(func (export "AE_state_schema") (result i32) i32.const 8)
+	(func (export "AE_state_schema") (result i32) i32.const 9)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
@@ -446,6 +447,23 @@
 		local.get $milli_y local.get $milli_y i64.mul i64.add
 		call $integer_sqrt i64.const 1000 i64.mul)
 
+	;; Caches the viewport-dependent projectile range at lifecycle boundaries;
+	;; bullets then need no invariant square root during their tick updates.
+	(func $refresh_bullet_maximum_distance
+		global.get $state_bullet_maximum_distance_address
+		i32.const 1032 i64.load i32.const 1040 i64.load
+		call $fixed_hypot i64.const 2 i64.div_u i64.store)
+
+	;; Converts a newly fired bullet's constant speed and cached range into one
+	;; deterministic countdown, using ceiling division to retain the old expiry tick.
+	(func $bullet_lifetime_ticks (param $vx i64) (param $vy i64) (result i64)
+		(local $distance_per_tick i64) (local $maximum_distance i64)
+		local.get $vx local.get $vy call $fixed_hypot call $per_tick local.set $distance_per_tick
+		global.get $state_bullet_maximum_distance_address i64.load local.set $maximum_distance
+		local.get $distance_per_tick i64.const 0 i64.le_s (if (then i64.const 1 return))
+		local.get $maximum_distance local.get $distance_per_tick i64.add i64.const 1 i64.sub
+		local.get $distance_per_tick i64.div_u)
+
 	;; Leads a moving target with two deterministic fixed-point time-of-flight
 	;; refinements, then adds the shooter's velocity to projectile world motion.
 	(func $aim_projectile_velocity
@@ -658,6 +676,7 @@
 		i32.const 1028 local.get $normalized_seed i32.store
 		i32.const 1032 local.get $width i64.store
 		i32.const 1040 local.get $height i64.store
+		call $refresh_bullet_maximum_distance
 		i32.const 1048 local.get $width i64.const 2 i64.div_s i64.store
 		i32.const 1056 local.get $height i64.const 2 i64.div_s i64.store
 		i32.const 1064 i64.const 0 i64.store
@@ -751,7 +770,9 @@
 								i32.const 1064 i64.load i32.const 1080 i64.load local.get $speed call $fixed_mul i64.add i64.store
 								local.get $address i32.const 32 i32.add
 								i32.const 1072 i64.load i32.const 1088 i64.load local.get $speed call $fixed_mul i64.add i64.store
-								local.get $address i32.const 40 i32.add i64.const 0 i64.store
+								local.get $address i32.const 40 i32.add
+								local.get $address i32.const 24 i32.add i64.load
+								local.get $address i32.const 32 i32.add i64.load call $bullet_lifetime_ticks i64.store
 								i32.const 1112 i32.const 1024 i32.load i32.store
 								i32.const 1 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))))
 
@@ -1266,11 +1287,13 @@
 				local.get $address i32.const 16 i32.add
 				local.get $address i32.const 16 i32.add i64.load local.get $vy call $per_tick i64.add
 				i64.const -25000000 i32.const 1040 i64.load i64.const 25000000 i64.add call $wrap i64.store
-				local.get $address i32.const 40 i32.add
-				local.get $address i32.const 40 i32.add i64.load local.get $vx local.get $vy call $fixed_hypot call $per_tick i64.add i64.store
-				local.get $address i32.const 40 i32.add i64.load
-				i32.const 1032 i64.load i32.const 1040 i64.load call $fixed_hypot i64.const 2 i64.div_u i64.ge_u
-				(if (then local.get $address i32.const 0 i32.store))))
+				local.get $address i32.const 40 i32.add i64.load local.set $vx
+				;; A zero lifetime is reserved for hand-built fixtures and inert restored
+				;; records; production fire always installs a positive countdown.
+				local.get $vx i64.const 0 i64.gt_s
+				(if (then
+					local.get $address i32.const 40 i32.add local.get $vx i64.const 1 i64.sub local.tee $vx i64.store
+					local.get $vx i64.eqz (if (then local.get $address i32.const 0 i32.store))))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
 	(func $update_particles
@@ -1929,6 +1952,7 @@
 		i32.const 1056 i32.const 1056 i64.load local.get $dy i64.add i64.store
 		local.get $dx local.get $dy call $translate_entities
 		i32.const 1032 local.get $new_width i64.store i32.const 1040 local.get $new_height i64.store
+		call $refresh_bullet_maximum_distance
 		call $regenerate_stars)
 
 	(func (export "AE_event") (param $kind i32) (param $code i32)

@@ -511,7 +511,7 @@
 		i32.const 1)
 )
 
-(assert_return (invoke $vibesteroids_tests "schema") (i32.const 8))
+(assert_return (invoke $vibesteroids_tests "schema") (i32.const 9))
 (assert_return (invoke $vibesteroids_tests "state_len") (i32.const 32768))
 (assert_return
 	(invoke $vibesteroids_tests "tick_rate" (i32.const 120) (i32.const 1))
@@ -522,13 +522,14 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 8 stores canonical per-second velocities while integrating at 120 Hz.
+;; Schema 9 stores canonical per-second velocities and precomputed projectile
+;; lifetimes while integrating at 120 Hz.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -2493750))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383979219))
 (assert_return (invoke $vibesteroids_tests "fire_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -337500000))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 2812500))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 227))
 (assert_return (invoke $vibesteroids_tests "drag_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 40)) (i64.const 2493750))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -1246875))

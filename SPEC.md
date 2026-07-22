@@ -55,16 +55,16 @@ AE_tick_rate(current_numerator, current_denominator) -> (120, 1)
 AE_render()
 AE_state_ptr()
 AE_state_len()
-AE_state_schema() -> 8
+AE_state_schema() -> 9
 ~~~
 
-Schema 8 is 32,768 bytes. The behavior specification documents the address map.
+Schema 9 is 32,768 bytes. The behavior specification documents the address map.
 All mutable seeded values required for replay live inside that region. Render
 does not mutate it.
 
 Any layout or semantic change incompatible with the existing 32,768-byte snapshot
 increments the schema, even if byte length remains equal. Compatible code-only
-tuning retains schema 8 so a live reload preserves the current game.
+tuning retains schema 9 so a live reload preserves the current game.
 
 ## 4. Numeric and timing model
 
