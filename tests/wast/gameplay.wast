@@ -361,6 +361,26 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
 
+;; A wrap snaps the new endpoint to the opposite margin. The reconstructed
+;; prior point therefore lies outside the extended viewport and must not form a
+;; swept segment through an asteroid waiting in that off-screen margin.
+(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
+	(i64.const -50000000) (i64.const 200000000)
+	(i64.const 1040000000) (i64.const 200000000)
+	(i64.const 12000000000) (i64.const 0)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
+	(i64.const 1074000000) (i64.const 200000000)
+	(i64.const -20000000) (i64.const 200000000)
+	(i64.const -12000000000) (i64.const 0)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
+	(i64.const 200000000) (i64.const -50000000)
+	(i64.const 200000000) (i64.const 780000000)
+	(i64.const 0) (i64.const 12000000000)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
+	(i64.const 200000000) (i64.const 818000000)
+	(i64.const 200000000) (i64.const -20000000)
+	(i64.const 0) (i64.const -12000000000)) (i32.const 1))
+
 ;; A full bullet pool fails closed and focus loss releases held controls.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "fill_active" (i32.const 256) (i32.const 48) (i32.const 64)))

@@ -163,6 +163,33 @@
 			(if (then local.get $count i32.const 1 i32.add local.set $count))
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		local.get $count)
+	;; Parameterizes the four toroidal margins without duplicating snapshot setup;
+	;; one scalar means the rock, projectile, and zero score all survived.
+	(func (export "wrapped_sweep_survives")
+		(param $asteroid_x i64) (param $asteroid_y i64)
+		(param $bullet_x i64) (param $bullet_y i64)
+		(param $bullet_vx i64) (param $bullet_vy i64) (result i32)
+		(local $index i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		(block $cleared (loop $clear
+			local.get $index i32.const 32 i32.ge_u br_if $cleared
+			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
+			local.get $index i32.const 1 i32.add local.set $index br $clear))
+		i32.const 4352 i32.const 1 i32.store
+		i32.const 4368 local.get $asteroid_x i64.store
+		i32.const 4376 local.get $asteroid_y i64.store
+		i32.const 4384 i64.const 0 i64.store i32.const 4392 i64.const 0 i64.store
+		i32.const 4400 i64.const 5000000 i64.store
+		i32.const 1280 i32.const 1 i32.store
+		i32.const 1288 local.get $bullet_x i64.store
+		i32.const 1296 local.get $bullet_y i64.store
+		i32.const 1304 local.get $bullet_vx i64.store
+		i32.const 1312 local.get $bullet_vy i64.store
+		i32.const 1 call $tick drop
+		i32.const 4352 i32.load i32.const 1 i32.eq
+		i32.const 1280 i32.load i32.const 1 i32.eq i32.and
+		i32.const 1096 i32.load i32.eqz i32.and)
 	(func (export "active_at_least") (param $base i32) (param $stride i32) (param $capacity i32) (param $minimum i32) (result i32)
 		(local $index i32) (local $count i32)
 		(block $done (loop $again
