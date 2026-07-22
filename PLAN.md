@@ -60,8 +60,9 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- [x] Replace raw scalar snapshot addresses and opaque lifecycle/input flag
 	  masks with named globals/operations and structural regression guards.
 	- [x] Hoist swept bullet segments/AABB rejection and replace per-tick projectile
-	  square roots with schema-9 precomputed lifetimes; the compilation-heavy WAST
-	  mean moved from 243.6 ms to 222.1 ms across matched 20-run samples.
+	  square roots with schema-9 precomputed lifetimes; exact expiry is proved at
+	  all four rational rates, and the compilation-heavy WAST mean moved from
+	  243.6 ms to 222.1 ms across matched 20-run samples.
 	- [x] Reconcile README, SPEC, and the fidelity ledger with current behavior.
 	- Curiosity poke: which remaining cleanup would add an independent control or
 	  measured maintenance win rather than churn?

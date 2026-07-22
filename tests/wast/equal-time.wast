@@ -4,6 +4,7 @@
 	(import "sut_60" "memory" (memory $state 1))
 	(import "sut_60" "AE_configure" (func $configure (result i32)))
 	(import "sut_60" "AE_init" (func $init (param i32 i32 f32 f32) (result i32)))
+	(import "sut_60" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
 	(import "sut_60" "AE_tick" (func $tick (param i32) (result i32)))
 	(func $prepare
 		(local $index i32)
@@ -50,12 +51,23 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
+	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
+		(local $remaining i64)
+		call $prepare i32.const 1280 i32.const 0 i32.store
+		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1 call $tick drop
+		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
+		i32.const 1280 i32.load
+		i32.const 1 call $tick drop
+		i32.const 1280 i32.load local.get $remaining)
 )
 (register "rate_60_probe" $rate_60_probe)
 (module $rate_120_probe
 	(import "sut_120" "memory" (memory $state 1))
 	(import "sut_120" "AE_configure" (func $configure (result i32)))
 	(import "sut_120" "AE_init" (func $init (param i32 i32 f32 f32) (result i32)))
+	(import "sut_120" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
 	(import "sut_120" "AE_tick" (func $tick (param i32) (result i32)))
 	(func $prepare
 		(local $index i32)
@@ -102,12 +114,23 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
+	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
+		(local $remaining i64)
+		call $prepare i32.const 1280 i32.const 0 i32.store
+		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1 call $tick drop
+		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
+		i32.const 1280 i32.load
+		i32.const 1 call $tick drop
+		i32.const 1280 i32.load local.get $remaining)
 )
 (register "rate_120_probe" $rate_120_probe)
 (module $rate_60000_1001_probe
 	(import "sut_60000_1001" "memory" (memory $state 1))
 	(import "sut_60000_1001" "AE_configure" (func $configure (result i32)))
 	(import "sut_60000_1001" "AE_init" (func $init (param i32 i32 f32 f32) (result i32)))
+	(import "sut_60000_1001" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
 	(import "sut_60000_1001" "AE_tick" (func $tick (param i32) (result i32)))
 	(func $prepare
 		(local $index i32)
@@ -149,11 +172,22 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
+	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
+		(local $remaining i64)
+		call $prepare i32.const 1280 i32.const 0 i32.store
+		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1 call $tick drop
+		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
+		i32.const 1280 i32.load
+		i32.const 1 call $tick drop
+		i32.const 1280 i32.load local.get $remaining)
 )
 (module $rate_120000_1001_probe
 	(import "sut_120000_1001" "memory" (memory $state 1))
 	(import "sut_120000_1001" "AE_configure" (func $configure (result i32)))
 	(import "sut_120000_1001" "AE_init" (func $init (param i32 i32 f32 f32) (result i32)))
+	(import "sut_120000_1001" "AE_event" (func $event (param i32 i32 f32 f32) (result i32)))
 	(import "sut_120000_1001" "AE_tick" (func $tick (param i32) (result i32)))
 	(func $prepare
 		(local $index i32)
@@ -195,6 +229,16 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
+	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
+		(local $remaining i64)
+		call $prepare i32.const 1280 i32.const 0 i32.store
+		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1 call $tick drop
+		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
+		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
+		i32.const 1280 i32.load
+		i32.const 1 call $tick drop
+		i32.const 1280 i32.load local.get $remaining)
 )
 
 (assert_return (invoke $rate_60_probe "run") (i64.const 160000000))
@@ -217,6 +261,13 @@
 (assert_return (invoke $rate_120_probe "blast_boundary" (i32.const 144)) (i32.const 1) (i32.const 0))
 (assert_return (invoke $rate_60000_1001_probe "blast_boundary" (i32.const 71)) (i32.const 1) (i32.const 0))
 (assert_return (invoke $rate_120000_1001_probe "blast_boundary" (i32.const 143)) (i32.const 1) (i32.const 0))
+
+;; Per-shot countdowns preserve the half-diagonal expiry boundary while their
+;; exact tick counts scale with each integral or rational simulation rate.
+(assert_return (invoke $rate_60_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 113))
+(assert_return (invoke $rate_120_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 227))
+(assert_return (invoke $rate_60000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 113))
+(assert_return (invoke $rate_120000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 227))
 
 ;; Linearized retention factors keep one-second damping perceptually equal
 ;; even though integer rounding differs across simulation step counts.
