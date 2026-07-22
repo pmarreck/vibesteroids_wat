@@ -1898,7 +1898,9 @@
 			local.get $code i32.const 7 i32.eq (if (then i32.const 1108 i32.const 1108 i32.load i32.const 512 i32.xor i32.store))
 			local.get $code i32.const 6 i32.eq (if (then i32.const 2 i32.const 0 i32.const 0 call $effect drop))))
 		local.get $kind i32.const 8 i32.eq local.get $code i32.eqz i32.and
-		(if (then i32.const 1108 i32.const 1108 i32.load i32.const 16 i32.and i32.store))
+		;; Losing focus can strand held edges, but must not rewrite persistent
+		;; player modes, overlays, pause, or the once-per-life weapon charge.
+		(if (then i32.const 1108 i32.const 1108 i32.load i32.const -16 i32.and i32.store))
 		i32.const 0)
 
 	(func $rock_scale (param $address i32) (param $vertex i32) (result i64)

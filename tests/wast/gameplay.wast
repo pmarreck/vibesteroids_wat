@@ -386,9 +386,13 @@
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 140))
+
+;; Focus loss clears the complete set of held controls without silently
+;; changing pause, Auto-fire, Kid Mode, Help, or either Death Blossom bit.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 84) (i32.const 1023)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 8) (i32.const 0)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 84)) (i32.const 1008))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const 0))
 
