@@ -28,13 +28,15 @@ run_check ./tests/cli/aedicule_abi_contract
 run_check ./tests/cli/flake_composition
 run_check ./tests/cli/run_from_any_directory
 run_check ./tests/cli/aedicule_runtime
+run_check ./tests/cli/aedicule_runtime_portability
 run_check ./tests/run-wast
 run_check ./tests/lint-wat
 run_check shellcheck build run test tests/cli/development_dependencies \
 	tests/cli/repository_boundary tests/cli/naming_conventions \
 	tests/cli/abi_namespace tests/cli/aedicule_abi_contract \
 	tests/cli/flake_composition tests/cli/run_from_any_directory \
-	tests/cli/aedicule_runtime tests/fixtures/run-bin/nix tests/run-wast \
+	tests/cli/aedicule_runtime tests/cli/aedicule_runtime_portability \
+	tests/fixtures/run-bin/nix tests/fixtures/runtime-bin/nix tests/run-wast \
 	tests/lint-wat
 
 if (( failures > 255 )); then

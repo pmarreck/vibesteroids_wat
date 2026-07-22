@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -u
+
+printf '%s\n' "$*" >>"$NIX_CALLS"
+
+case ${1:-} in
+	eval)
+		printf '%s' x86_64-linux
+		;;
+	build)
+		if (( ${FAKE_NIX_BUILD_STATUS:-0} != 0 )); then
+			printf 'synthetic locked-host failure\n' >&2
+			exit "$FAKE_NIX_BUILD_STATUS"
+		fi
+		;;
+	*)
+		printf 'unexpected fake nix command: %s\n' "$*" >&2
+		exit 64
+		;;
+esac

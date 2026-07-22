@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+sandbox=$(mktemp -d "$TMPDIR/vibesteroids-runtime-portability.XXXXXX")
+trap 'rm -rf "$sandbox"' EXIT
+mkdir -p "$sandbox/home" "$sandbox/tmp"
+
+failures=0
+
+run_runtime_gate() {
+	local build_status=$1
+	local expected_status=$2
+	local label=$3
+	local status
+
+	: >"$sandbox/calls"
+	HOME="$sandbox/home" \
+	TMPDIR="$sandbox/tmp" \
+	PATH="$root/tests/fixtures/runtime-bin:$PATH" \
+	NIX_CALLS="$sandbox/calls" \
+	FAKE_NIX_BUILD_STATUS="$build_status" \
+		"$root/tests/cli/aedicule_runtime" \
+		>"$sandbox/$label.stdout" 2>"$sandbox/$label.stderr"
+	status=$?
+
+	if (( status != expected_status )); then
+		printf '%s returned %d; expected %d\n' "$label" "$status" "$expected_status" >&2
+		failures=$((failures + 1))
+	fi
+	if ! rg --quiet '^build --no-link \.#checks\.x86_64-linux\.runtime$' "$sandbox/calls"; then
+		printf '%s did not execute the locked-host build\n' "$label" >&2
+		failures=$((failures + 1))
+	fi
+}
+
+# A clean checkout has no dependency on Peter's private dotfiles, but still
+# must execute the real gate rather than inheriting a preinitialized status.
+run_runtime_gate 0 0 success
+if [[ -s "$sandbox/success.stdout" || -s "$sandbox/success.stderr" ]]; then
+	printf 'successful portable runtime gate emitted output\n' >&2
+	failures=$((failures + 1))
+fi
+
+# The command's failure and diagnostic must survive the capture boundary.
+run_runtime_gate 23 1 failure
+if ! rg --quiet '^synthetic locked-host failure$' "$sandbox/failure.stderr"; then
+	printf 'failed runtime gate did not replay its diagnostic\n' >&2
+	failures=$((failures + 1))
+fi
+
+exit "$failures"
