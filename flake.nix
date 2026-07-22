@@ -97,13 +97,14 @@
 									|| relative == "/tests/wast"
 									|| relative == "/code.wat"
 									|| relative == "/tests/run-wast"
+									|| relative == "/tests/compose-wast"
 									|| relative == "/tests/lint-wat"
 									|| pkgs.lib.hasPrefix "/tests/wast/" relative;
 						};
 						nativeBuildInputs = with pkgs; [ bash gawk wasmtime ];
 						buildPhase = ''
 							export HOME=$TMPDIR
-							patchShebangs tests/run-wast tests/lint-wat
+							patchShebangs tests/run-wast tests/compose-wast tests/lint-wat
 							./tests/run-wast
 							./tests/lint-wat
 						'';
