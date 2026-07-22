@@ -1014,47 +1014,63 @@
 		 i32.const 1112 i32.const 1024 i32.load i32.store
 		i32.const 7 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
 
-	;; Reconstructs the unwrapped prior bullet endpoint from canonical velocity
-	;; and tests the finite tick segment. On a toroidal wrap tick, the reconstructed
-	;; point falls outside the expanded viewport, so point sampling avoids drawing
-	;; a false segment across the entire screen.
-	(func $bullet_hits_asteroid (param $bullet i32) (param $asteroid i32) (result i32)
-		(local $start_x i64) (local $start_y i64) (local $end_x i64) (local $end_y i64)
-		local.get $bullet i32.const 8 i32.add i64.load local.set $end_x
-		local.get $bullet i32.const 16 i32.add i64.load local.set $end_y
-		local.get $end_x local.get $bullet i32.const 24 i32.add i64.load call $per_tick i64.sub local.set $start_x
-		local.get $end_y local.get $bullet i32.const 32 i32.add i64.load call $per_tick i64.sub local.set $start_y
-		local.get $start_x i64.const -25000000 i64.lt_s
-		local.get $start_x i32.const 1032 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
-		local.get $start_y i64.const -25000000 i64.lt_s i32.or
-		local.get $start_y i32.const 1040 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
-		local.get $start_x local.get $end_x i64.eq
-		local.get $start_y local.get $end_y i64.eq i32.and i32.or
-		(if (result i32)
-			(then
-				local.get $end_x local.get $end_y
-				local.get $asteroid i32.const 16 i32.add i64.load
-				local.get $asteroid i32.const 24 i32.add i64.load
-				local.get $asteroid i32.const 48 i32.add i64.load i64.const 5000000 i64.add
-				call $distance_lt)
-			(else
-				local.get $start_x local.get $start_y local.get $end_x local.get $end_y
-				local.get $asteroid i32.const 16 i32.add i64.load
-				local.get $asteroid i32.const 24 i32.add i64.load
-				;; $segment_circle_hit adds two pixels for whole-pixel projection.
-				local.get $asteroid i32.const 48 i32.add i64.load i64.const 3000000 i64.add
-				call $segment_circle_hit)))
+	;; Tests a precomputed bullet segment against one asteroid. The expanded-AABB
+	;; classifier rejects most pairs before the projection's divisions; its five-
+	;; pixel margin exactly includes the three-pixel bullet allowance and the
+	;; two-pixel whole-coordinate allowance inside $segment_circle_hit.
+	(func $bullet_segment_hits_asteroid
+		(param $start_x i64) (param $start_y i64) (param $end_x i64) (param $end_y i64)
+		(param $use_segment i32) (param $asteroid i32) (result i32)
+		(local $center_x i64) (local $center_y i64) (local $radius i64)
+		(local $minimum i64) (local $maximum i64)
+		local.get $asteroid i32.const 16 i32.add i64.load local.set $center_x
+		local.get $asteroid i32.const 24 i32.add i64.load local.set $center_y
+		local.get $asteroid i32.const 48 i32.add i64.load i64.const 5000000 i64.add local.set $radius
+		local.get $use_segment i32.eqz
+		(if (then
+			local.get $end_x local.get $end_y
+			local.get $center_x local.get $center_y local.get $radius call $distance_lt return))
+		local.get $start_x local.get $end_x i64.lt_s
+		(if (result i64) (then local.get $start_x) (else local.get $end_x)) local.set $minimum
+		local.get $start_x local.get $end_x i64.gt_s
+		(if (result i64) (then local.get $start_x) (else local.get $end_x)) local.set $maximum
+		local.get $center_x local.get $radius i64.add local.get $minimum i64.lt_s (if (then i32.const 0 return))
+		local.get $center_x local.get $radius i64.sub local.get $maximum i64.gt_s (if (then i32.const 0 return))
+		local.get $start_y local.get $end_y i64.lt_s
+		(if (result i64) (then local.get $start_y) (else local.get $end_y)) local.set $minimum
+		local.get $start_y local.get $end_y i64.gt_s
+		(if (result i64) (then local.get $start_y) (else local.get $end_y)) local.set $maximum
+		local.get $center_y local.get $radius i64.add local.get $minimum i64.lt_s (if (then i32.const 0 return))
+		local.get $center_y local.get $radius i64.sub local.get $maximum i64.gt_s (if (then i32.const 0 return))
+		local.get $start_x local.get $start_y local.get $end_x local.get $end_y
+		local.get $center_x local.get $center_y
+		;; The projection helper adds the remaining two pixels after rescaling.
+		local.get $radius i64.const 2000000 i64.sub call $segment_circle_hit)
 
 	(func $check_bullet_collisions
 		(local $bullet_index i32) (local $asteroid_index i32)
 		(local $bullet i32) (local $asteroid i32) (local $factor i64)
 		(local $impulse_x i64) (local $impulse_y i64)
+		(local $start_x i64) (local $start_y i64) (local $end_x i64) (local $end_y i64)
+		(local $use_segment i32)
 		(block $bullets_done (loop $next_bullet
 			local.get $bullet_index global.get $player_bullet_capacity i32.ge_u br_if $bullets_done
 			local.get $bullet_index call $bullet_address local.set $bullet
 			local.get $bullet i32.load
 			(if
 				(then
+					local.get $bullet i32.const 8 i32.add i64.load local.set $end_x
+					local.get $bullet i32.const 16 i32.add i64.load local.set $end_y
+					local.get $end_x local.get $bullet i32.const 24 i32.add i64.load call $per_tick i64.sub local.set $start_x
+					local.get $end_y local.get $bullet i32.const 32 i32.add i64.load call $per_tick i64.sub local.set $start_y
+					i32.const 1 local.set $use_segment
+					local.get $start_x i64.const -25000000 i64.lt_s
+					local.get $start_x i32.const 1032 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+					local.get $start_y i64.const -25000000 i64.lt_s i32.or
+					local.get $start_y i32.const 1040 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+					local.get $start_x local.get $end_x i64.eq
+					local.get $start_y local.get $end_y i64.eq i32.and i32.or
+					(if (then i32.const 0 local.set $use_segment))
 					i32.const 0 local.set $asteroid_index
 					(block $asteroids_done (loop $next_asteroid
 						local.get $asteroid_index i32.const 32 i32.ge_u br_if $asteroids_done
@@ -1062,7 +1078,8 @@
 						local.get $asteroid i32.load
 						(if
 							(then
-								local.get $bullet local.get $asteroid call $bullet_hits_asteroid
+								local.get $start_x local.get $start_y local.get $end_x local.get $end_y
+								local.get $use_segment local.get $asteroid call $bullet_segment_hits_asteroid
 								(if
 									(then
 										local.get $bullet i32.const 0 i32.store
