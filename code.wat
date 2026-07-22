@@ -109,6 +109,19 @@
 		global.get $tick_numerator i32.wrap_i64
 		global.get $tick_denominator i32.wrap_i64)
 
+	;; Centralizes the host's positional voice ABI behind semantic parameter
+	;; names, so call sites cannot silently drift when new cues are added.
+	(func $declare_voice
+		(param $program i32) (param $waveform i32) (param $delay_ms i32) (param $duration_ms i32)
+		(param $frequency_start i32) (param $frequency_mid i32) (param $frequency_end i32)
+		(param $gain_start i32) (param $gain_peak i32) (param $gain_end i32)
+		(param $filter i32) (param $filter_start i32) (param $filter_end i32) (param $cooldown_ms i32)
+		local.get $program local.get $waveform local.get $delay_ms local.get $duration_ms
+		local.get $frequency_start local.get $frequency_mid local.get $frequency_end
+		local.get $gain_start local.get $gain_peak local.get $gain_end
+		local.get $filter local.get $filter_start local.get $filter_end local.get $cooldown_ms
+		call $synth_voice drop)
+
 	;; Declares a swept tone with a 0 -> peak -> 0 envelope. Naming
 	;; the reduced parameter surface prevents filter enums from being mistaken
 	;; for gain or cooldown values in the host's 14-scalar ABI call.
@@ -121,56 +134,63 @@
 		local.get $frequency_start local.get $frequency_mid local.get $frequency_end
 		i32.const 0 local.get $gain_peak i32.const 0
 		local.get $filter local.get $filter_start local.get $filter_end i32.const 0
-		call $synth_voice drop)
+		call $declare_voice)
 
-	(func (export "AE_configure") (result i32)
+	(func $configure_menu
 		i32.const 0 i32.const 20 call $title drop
 		i32.const 1 i32.const 32 i32.const 8 i32.const 1 i32.const 0 call $menu_item drop
 		i32.const 0 i32.const 0 i32.const 0 i32.const 0 i32.const 1 call $menu_item drop
 		i32.const 7 i32.const 200 i32.const 15 i32.const 7 i32.const 0 call $menu_item drop
-		i32.const 6 i32.const 48 i32.const 4 i32.const 6 i32.const 0 call $menu_item drop
+		i32.const 6 i32.const 48 i32.const 4 i32.const 6 i32.const 0 call $menu_item drop)
+	(func $configure_shot_sound
 		;; Shot: 800 -> 400 -> 200 Hz sine, 0.3 -> 0.01 gain.
 		i32.const 1 i32.const 1 i32.const 0 i32.const 100
 		i32.const 800000 i32.const 400000 i32.const 200000
 		i32.const 300000 i32.const 300000 i32.const 10000
-		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
+		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice)
+	(func $configure_asteroid_explosion_sound
 		;; Asteroid explosion: swept low-pass noise plus a restrained bass layer.
 		i32.const 2 i32.const 3 i32.const 0 i32.const 500
 		i32.const 0 i32.const 0 i32.const 0
 		i32.const 500000 i32.const 500000 i32.const 10000
-		i32.const 1 i32.const 1500000 i32.const 80000 i32.const 0 call $synth_voice drop
+		i32.const 1 i32.const 1500000 i32.const 80000 i32.const 0 call $declare_voice
 		i32.const 2 i32.const 1 i32.const 0 i32.const 500
 		i32.const 120000 i32.const 120000 i32.const 80000
 		i32.const 80000 i32.const 80000 i32.const 1000
-		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
+		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice)
+	(func $configure_ship_explosion_sound
 		;; Ship explosion: white/brown noise layers and a short low impulse.
 		i32.const 3 i32.const 3 i32.const 0 i32.const 1200
 		i32.const 0 i32.const 0 i32.const 0
 		i32.const 700000 i32.const 700000 i32.const 1000
-		i32.const 1 i32.const 3000000 i32.const 100000 i32.const 0 call $synth_voice drop
+		i32.const 1 i32.const 3000000 i32.const 100000 i32.const 0 call $declare_voice
 		i32.const 3 i32.const 4 i32.const 0 i32.const 1200
 		i32.const 0 i32.const 0 i32.const 0
 		i32.const 300000 i32.const 300000 i32.const 1000
-		i32.const 2 i32.const 300000 i32.const 300000 i32.const 0 call $synth_voice drop
+		i32.const 2 i32.const 300000 i32.const 300000 i32.const 0 call $declare_voice
 		i32.const 3 i32.const 1 i32.const 0 i32.const 200
 		i32.const 120000 i32.const 60000 i32.const 40000
 		i32.const 500000 i32.const 500000 i32.const 0
-		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
+		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice)
+	(func $configure_thrust_sound
 		;; Thrust: rate-limited 60 Hz saw through a 200 Hz low-pass.
 		i32.const 4 i32.const 2 i32.const 0 i32.const 50
 		i32.const 60000 i32.const 60000 i32.const 60000
 		i32.const 100000 i32.const 100000 i32.const 10000
-		i32.const 1 i32.const 200000 i32.const 200000 i32.const 55 call $synth_voice drop
+		i32.const 1 i32.const 200000 i32.const 200000 i32.const 55 call $declare_voice)
+	(func $configure_death_blossom_sound
 		;; Death Blossom: three scheduled 400 -> 800 -> 400 Hz whoops.
-		i32.const 5 i32.const 1 i32.const 0 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
-		i32.const 5 i32.const 1 i32.const 400 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
-		i32.const 5 i32.const 1 i32.const 800 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $synth_voice drop
+		i32.const 5 i32.const 1 i32.const 0 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice
+		i32.const 5 i32.const 1 i32.const 400 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice
+		i32.const 5 i32.const 1 i32.const 800 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice)
+	(func $configure_extra_life_sound
 		;; Extra life: five delayed sawtooth chimes with note-relative filters.
-		i32.const 6 i32.const 2 i32.const 0 i32.const 400 i32.const 523250 i32.const 523250 i32.const 523250 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1569750 i32.const 1569750 i32.const 0 call $synth_voice drop
-		i32.const 6 i32.const 2 i32.const 150 i32.const 400 i32.const 588656 i32.const 588656 i32.const 588656 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1765968 i32.const 1765968 i32.const 0 call $synth_voice drop
-		i32.const 6 i32.const 2 i32.const 300 i32.const 400 i32.const 654063 i32.const 654063 i32.const 654063 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1962189 i32.const 1962189 i32.const 0 call $synth_voice drop
-		i32.const 6 i32.const 2 i32.const 450 i32.const 400 i32.const 784875 i32.const 784875 i32.const 784875 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 2354625 i32.const 2354625 i32.const 0 call $synth_voice drop
-		i32.const 6 i32.const 2 i32.const 600 i32.const 400 i32.const 1046500 i32.const 1046500 i32.const 1046500 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 3139500 i32.const 3139500 i32.const 0 call $synth_voice drop
+		i32.const 6 i32.const 2 i32.const 0 i32.const 400 i32.const 523250 i32.const 523250 i32.const 523250 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1569750 i32.const 1569750 i32.const 0 call $declare_voice
+		i32.const 6 i32.const 2 i32.const 150 i32.const 400 i32.const 588656 i32.const 588656 i32.const 588656 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1765968 i32.const 1765968 i32.const 0 call $declare_voice
+		i32.const 6 i32.const 2 i32.const 300 i32.const 400 i32.const 654063 i32.const 654063 i32.const 654063 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 1962189 i32.const 1962189 i32.const 0 call $declare_voice
+		i32.const 6 i32.const 2 i32.const 450 i32.const 400 i32.const 784875 i32.const 784875 i32.const 784875 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 2354625 i32.const 2354625 i32.const 0 call $declare_voice
+		i32.const 6 i32.const 2 i32.const 600 i32.const 400 i32.const 1046500 i32.const 1046500 i32.const 1046500 i32.const 0 i32.const 300000 i32.const 1000 i32.const 1 i32.const 3139500 i32.const 3139500 i32.const 0 call $declare_voice)
+	(func $configure_laser_sound
 		;; Laser: sfxr-style descending saw/sine sweep with a zero attack and
 		;; short envelope, layered behind a fast high-frequency transient.
 		i32.const 7 global.get $wave_saw i32.const 0 i32.const 180
@@ -180,7 +200,8 @@
 		i32.const 7 global.get $wave_sine i32.const 0 i32.const 120
 		i32.const 900000 i32.const 450000 i32.const 160000
 		i32.const 350000 global.get $filter_none i32.const 0 i32.const 0
-		call $declare_swept_voice
+		call $declare_swept_voice)
+	(func $configure_ufo_alert_sound
 		;; Red alert: two filtered saw sweeps form a compact oscillating siren.
 		i32.const 8 global.get $wave_saw i32.const 0 i32.const 220
 		i32.const 900000 i32.const 560000 i32.const 900000
@@ -189,7 +210,8 @@
 		i32.const 8 global.get $wave_saw i32.const 260 i32.const 220
 		i32.const 900000 i32.const 560000 i32.const 900000
 		i32.const 350000 global.get $filter_low_pass i32.const 1800000 i32.const 1100000
-		call $declare_swept_voice
+		call $declare_swept_voice)
+	(func $configure_package_notification_sound
 		;; Package notification: a quick ascending two-note sine chime.
 		i32.const 9 global.get $wave_sine i32.const 0 i32.const 150
 		i32.const 659255 i32.const 659255 i32.const 659255
@@ -198,7 +220,8 @@
 		i32.const 9 global.get $wave_sine i32.const 110 i32.const 180
 		i32.const 987767 i32.const 987767 i32.const 987767
 		i32.const 280000 global.get $filter_none i32.const 0 i32.const 0
-		call $declare_swept_voice
+		call $declare_swept_voice)
+	(func $configure_package_collection_sound
 		;; Package collection: an ascending major arpeggio rewards the risky pickup.
 		i32.const 10 global.get $wave_sine i32.const 0 i32.const 180
 		i32.const 523251 i32.const 523251 i32.const 523251
@@ -211,7 +234,8 @@
 		i32.const 10 global.get $wave_sine i32.const 180 i32.const 240
 		i32.const 783991 i32.const 783991 i32.const 783991
 		i32.const 320000 global.get $filter_none i32.const 0 i32.const 0
-		call $declare_swept_voice
+		call $declare_swept_voice)
+	(func $configure_package_loss_sound
 		;; Package loss: layered descending tones make a compact negative buzzer.
 		i32.const 11 global.get $wave_saw i32.const 0 i32.const 360
 		i32.const 440000 i32.const 220000 i32.const 110000
@@ -220,7 +244,8 @@
 		i32.const 11 global.get $wave_sine i32.const 80 i32.const 300
 		i32.const 311127 i32.const 207652 i32.const 155563
 		i32.const 220000 global.get $filter_none i32.const 0 i32.const 0
-		call $declare_swept_voice
+		call $declare_swept_voice)
+	(func $configure_hazardous_blast_sound
 		;; Hazardous blast: three full-length layers make a broad, loud BOOM whose
 		;; audible envelope cannot finish before one second has elapsed.
 		i32.const 12 i32.const 3 i32.const 0 i32.const 1500
@@ -234,7 +259,22 @@
 		i32.const 12 global.get $wave_sine i32.const 0 i32.const 1200
 		i32.const 110000 i32.const 65000 i32.const 35000
 		i32.const 850000 global.get $filter_none i32.const 0 i32.const 0
-		call $declare_swept_voice
+		call $declare_swept_voice)
+
+	(func (export "AE_configure") (result i32)
+		call $configure_menu
+		call $configure_shot_sound
+		call $configure_asteroid_explosion_sound
+		call $configure_ship_explosion_sound
+		call $configure_thrust_sound
+		call $configure_death_blossom_sound
+		call $configure_extra_life_sound
+		call $configure_laser_sound
+		call $configure_ufo_alert_sound
+		call $configure_package_notification_sound
+		call $configure_package_collection_sound
+		call $configure_package_loss_sound
+		call $configure_hazardous_blast_sound
 		i32.const 0)
 
 	;; FLOAT ADAPTER BEGIN
