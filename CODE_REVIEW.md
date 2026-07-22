@@ -40,7 +40,7 @@ decisions and Aedicule's accepted host-owned tranche.
 | Portable runtime gate and failure diagnostics | Fixed with repository-contained adapters and explicit failure propagation |
 | Duplicate CI/Nix work | Fixed with one manifest, one flake evaluation, and a post-flake mode that skips only already-proved checks |
 | Positional synth configuration | Full 14-scalar signature locked; host call centralized; each cue isolated behind an intent-named declaration function |
-| Opaque lifecycle/input flags | Named address, bits, composites, and mutations; structural lint rejects reintroduction of the raw address/composites |
+| Raw scalar addresses and opaque lifecycle/input flags | Every scalar snapshot address plus every flag bit/composite/mutation is named; structural lint rejects raw scalar load/store addresses and opaque flag composites |
 | Bullet collision/expiry hot paths | Segment setup hoisted per bullet with AABB rejection; schema 9 uses cached-range, per-shot lifetime countdowns instead of per-tick square roots |
 | Stale public documentation and PLAN history | README/SPEC/fidelity ledger reconciled; active plan pruned while Git preserves history |
 | Mouse Help rows and active gift identity | Concept sheet awaiting Peter's required visual approval before production geometry/assertions |

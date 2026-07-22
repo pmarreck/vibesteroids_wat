@@ -57,8 +57,8 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  actor entry edges as set classifiers.
 	- [x] Retain actionable WAST diagnostics and eliminate duplicate CI/Nix work.
 	- [x] Lock the full synth signature and isolate intent-named cue declarations.
-	- [x] Replace opaque lifecycle/input flag masks with named operations and a
-	  structural regression guard.
+	- [x] Replace raw scalar snapshot addresses and opaque lifecycle/input flag
+	  masks with named globals/operations and structural regression guards.
 	- [x] Hoist swept bullet segments/AABB rejection and replace per-tick projectile
 	  square roots with schema-9 precomputed lifetimes; the compilation-heavy WAST
 	  mean moved from 243.6 ms to 222.1 ms across matched 20-run samples.

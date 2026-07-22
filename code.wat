@@ -98,7 +98,29 @@
 	(global $wave_saw i32 (i32.const 2))
 	(global $filter_none i32 (i32.const 0))
 	(global $filter_low_pass i32 (i32.const 1))
+	(global $state_base_address i32 (i32.const 1024))
+	(global $state_tick_address i32 (i32.const 1024))
+	(global $state_rng_address i32 (i32.const 1028))
+	(global $state_width_address i32 (i32.const 1032))
+	(global $state_height_address i32 (i32.const 1040))
+	(global $state_ship_x_address i32 (i32.const 1048))
+	(global $state_ship_y_address i32 (i32.const 1056))
+	(global $state_ship_vx_address i32 (i32.const 1064))
+	(global $state_ship_vy_address i32 (i32.const 1072))
+	(global $state_ship_dx_address i32 (i32.const 1080))
+	(global $state_ship_dy_address i32 (i32.const 1088))
+	(global $state_score_address i32 (i32.const 1096))
+	(global $state_lives_address i32 (i32.const 1100))
+	(global $state_level_address i32 (i32.const 1104))
 	(global $state_flags_address i32 (i32.const 1108))
+	(global $state_last_fire_address i32 (i32.const 1112))
+	(global $state_invulnerability_address i32 (i32.const 1116))
+	(global $state_next_life_address i32 (i32.const 1120))
+	(global $state_lifecycle_address i32 (i32.const 1124))
+	(global $state_lifecycle_ticks_address i32 (i32.const 1128))
+	(global $state_banner_ticks_address i32 (i32.const 1132))
+	(global $state_seed_address i32 (i32.const 1136))
+	(global $state_blossom_rotation_address i32 (i32.const 1144))
 	(global $state_bullet_maximum_distance_address i32 (i32.const 1152))
 	(global $flag_rotate_left i32 (i32.const 1))
 	(global $flag_rotate_right i32 (i32.const 2))
@@ -136,7 +158,7 @@
 
 	(func (export "AE_abi_major") (result i32) i32.const 0)
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
-	(func (export "AE_state_ptr") (result i32) i32.const 1024)
+	(func (export "AE_state_ptr") (result i32) global.get $state_base_address)
 	(func (export "AE_state_len") (result i32) i32.const 32768)
 	(func (export "AE_state_schema") (result i32) i32.const 9)
 	(func (export "AE_tick_rate") (param i32 i32) (result i32 i32)
@@ -342,10 +364,10 @@
 		(if (result i64) (then i64.const 0 local.get $value i64.sub) (else local.get $value)))
 
 	(func $difficulty_index (result i64)
-		i32.const 1104 i32.load i32.const 1 i32.sub
+		global.get $state_level_address i32.load i32.const 1 i32.sub
 		i32.const 0 i32.lt_s (if (then i64.const 0 return))
-		i32.const 1104 i32.load i32.const 20 i32.ge_s (if (then i64.const 19 return))
-		i32.const 1104 i32.load i32.const 1 i32.sub i64.extend_i32_s)
+		global.get $state_level_address i32.load i32.const 20 i32.ge_s (if (then i64.const 19 return))
+		global.get $state_level_address i32.load i32.const 1 i32.sub i64.extend_i32_s)
 
 	(func $difficulty_value (param $base i64) (param $delta i64) (result i64)
 		local.get $base local.get $delta call $difficulty_index i64.mul i64.const 19 i64.div_s i64.add)
@@ -450,7 +472,7 @@
 	;; bullets then need no invariant square root during their tick updates.
 	(func $refresh_bullet_maximum_distance
 		global.get $state_bullet_maximum_distance_address
-		i32.const 1032 i64.load i32.const 1040 i64.load
+		global.get $state_width_address i64.load global.get $state_height_address i64.load
 		call $fixed_hypot i64.const 2 i64.div_u i64.store)
 
 	;; Converts a newly fired bullet's constant speed and cached range into one
@@ -522,8 +544,8 @@
 	;; Mulberry32 keeps gameplay randomness deterministic and render-independent.
 	(func $rand_u32 (result i32)
 		(local $state i32) (local $t i32)
-		i32.const 1028 i32.load i32.const 0x6d2b79f5 i32.add local.set $state
-		i32.const 1028 local.get $state i32.store
+		global.get $state_rng_address i32.load i32.const 0x6d2b79f5 i32.add local.set $state
+		global.get $state_rng_address local.get $state i32.store
 		local.get $state local.set $t
 		local.get $t local.get $t i32.const 15 i32.shr_u i32.xor
 		local.get $t i32.const 1 i32.or i32.mul local.set $t
@@ -587,7 +609,7 @@
 
 	(func $splash_alpha (result i32)
 		(local $remaining i32) (local $elapsed i32) (local $one_second i32) (local $three_seconds i32)
-		i32.const 1132 i32.load local.set $remaining
+		global.get $state_banner_ticks_address i32.load local.set $remaining
 		i32.const 60 call $ticks_from_sixty local.set $one_second
 		i32.const 180 call $ticks_from_sixty local.set $three_seconds
 		i32.const 240 call $ticks_from_sixty local.get $remaining i32.sub local.set $elapsed
@@ -614,10 +636,10 @@
 				local.get $index call $star_address local.set $address
 				local.get $address
 				local.get $index i32.const 83 i32.mul i32.const 47 i32.add i32.const 1000 i32.rem_u
-				i64.extend_i32_u i32.const 1032 i64.load i64.mul i64.const 1000 i64.div_u i64.store
+				i64.extend_i32_u global.get $state_width_address i64.load i64.mul i64.const 1000 i64.div_u i64.store
 				local.get $address i32.const 8 i32.add
 				local.get $index i32.const 47 i32.mul i32.const 29 i32.add i32.const 1000 i32.rem_u
-				i64.extend_i32_u i32.const 1040 i64.load i64.mul i64.const 1000 i64.div_u i64.store
+				i64.extend_i32_u global.get $state_height_address i64.load i64.mul i64.const 1000 i64.div_u i64.store
 				local.get $index i32.const 1 i32.add local.set $index br $again)))
 
 	(func $spawn_asteroid_at (param $address i32) (param $x i64) (param $y i64)
@@ -646,20 +668,20 @@
 	(func $spawn_wave
 		(local $index i32) (local $count i32) (local $address i32)
 		(local $edge i32) (local $x i64) (local $y i64) (local $radius i64)
-		i32.const 1104 i32.load i32.const 4 i32.add local.set $count
+		global.get $state_level_address i32.load i32.const 4 i32.add local.set $count
 		local.get $count i32.const 32 i32.gt_u (if (then i32.const 32 local.set $count))
 		(block $done
 			(loop $again
 				local.get $index local.get $count i32.ge_u br_if $done
 				local.get $index call $asteroid_address local.set $address
 				call $rand_u32 i32.const 4 i32.rem_u local.set $edge
-				call $rand_unit i32.const 1032 i64.load call $fixed_mul local.set $x
-				call $rand_unit i32.const 1040 i64.load call $fixed_mul local.set $y
+				call $rand_unit global.get $state_width_address i64.load call $fixed_mul local.set $x
+				call $rand_unit global.get $state_height_address i64.load call $fixed_mul local.set $y
 				local.get $edge i32.eqz (if (then i64.const 100000000 local.set $y))
 				local.get $edge i32.const 1 i32.eq
-				(if (then i32.const 1032 i64.load i64.const 100000000 i64.sub local.set $x))
+				(if (then global.get $state_width_address i64.load i64.const 100000000 i64.sub local.set $x))
 				local.get $edge i32.const 2 i32.eq
-				(if (then i32.const 1040 i64.load i64.const 100000000 i64.sub local.set $y))
+				(if (then global.get $state_height_address i64.load i64.const 100000000 i64.sub local.set $y))
 				local.get $edge i32.const 3 i32.eq (if (then i64.const 100000000 local.set $x))
 				call $rand_unit i64.const 30000000 call $fixed_mul i64.const 20000000 i64.add local.set $radius
 				local.get $address local.get $x local.get $y local.get $radius i32.const 0
@@ -671,29 +693,29 @@
 		(local $normalized_seed i32)
 		local.get $seed local.set $normalized_seed
 		local.get $normalized_seed i32.eqz (if (then i32.const 1 local.set $normalized_seed))
-		i32.const 1024 i32.const 0 i32.const 32768 memory.fill
-		i32.const 1028 local.get $normalized_seed i32.store
-		i32.const 1032 local.get $width i64.store
-		i32.const 1040 local.get $height i64.store
+		global.get $state_tick_address i32.const 0 i32.const 32768 memory.fill
+		global.get $state_rng_address local.get $normalized_seed i32.store
+		global.get $state_width_address local.get $width i64.store
+		global.get $state_height_address local.get $height i64.store
 		call $refresh_bullet_maximum_distance
-		i32.const 1048 local.get $width i64.const 2 i64.div_s i64.store
-		i32.const 1056 local.get $height i64.const 2 i64.div_s i64.store
-		i32.const 1064 i64.const 0 i64.store
-		i32.const 1072 i64.const 0 i64.store
-		i32.const 1080 i64.const 0 i64.store
-		i32.const 1088 i64.const -1000000 i64.store
-		i32.const 1096 i32.const 0 i32.store
-		i32.const 1100 i32.const 3 i32.store
-		i32.const 1104 i32.const 1 i32.store
+		global.get $state_ship_x_address local.get $width i64.const 2 i64.div_s i64.store
+		global.get $state_ship_y_address local.get $height i64.const 2 i64.div_s i64.store
+		global.get $state_ship_vx_address i64.const 0 i64.store
+		global.get $state_ship_vy_address i64.const 0 i64.store
+		global.get $state_ship_dx_address i64.const 0 i64.store
+		global.get $state_ship_dy_address i64.const -1000000 i64.store
+		global.get $state_score_address i32.const 0 i32.store
+		global.get $state_lives_address i32.const 3 i32.store
+		global.get $state_level_address i32.const 1 i32.store
 		global.get $flag_blossom_available call $store_flags
-		i32.const 1112 i32.const -100 i32.store
-		i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store
-		i32.const 1120 i32.const 30000 i32.store
-		i32.const 1124 i32.const 0 i32.store
-		i32.const 1128 i32.const 0 i32.store
-		i32.const 1136 local.get $normalized_seed i32.store
-		i32.const 1144 i64.const 0 i64.store
-		i32.const 1132 i32.const 240 call $ticks_from_sixty i32.store
+		global.get $state_last_fire_address i32.const -100 i32.store
+		global.get $state_invulnerability_address i32.const 120 call $ticks_from_sixty i32.store
+		global.get $state_next_life_address i32.const 30000 i32.store
+		global.get $state_lifecycle_address i32.const 0 i32.store
+		global.get $state_lifecycle_ticks_address i32.const 0 i32.store
+		global.get $state_seed_address local.get $normalized_seed i32.store
+		global.get $state_blossom_rotation_address i64.const 0 i64.store
+		global.get $state_banner_ticks_address i32.const 240 call $ticks_from_sixty i32.store
 		call $regenerate_stars
 		call $spawn_wave
 		i32.const 16512 call $random_spawn_ticks i32.store
@@ -742,9 +764,9 @@
 		i32.const 16520 i32.load i32.const 0 i32.gt_s
 		i32.const 16592 i32.load i32.const 1 i32.eq i32.and
 		(if (then local.get $interval i32.const 1 i32.add i32.const 2 i32.div_u local.set $interval))
-		i32.const 1124 i32.load i32.eqz
+		global.get $state_lifecycle_address i32.load i32.eqz
 		call $load_flags global.get $flag_paused i32.and i32.eqz i32.and
-		i32.const 1024 i32.load i32.const 1112 i32.load i32.sub local.get $interval i32.ge_s i32.and
+		global.get $state_tick_address i32.load global.get $state_last_fire_address i32.load i32.sub local.get $interval i32.ge_s i32.and
 		(if
 			(then
 				i32.const 16520 i32.load i32.const 0 i32.gt_s
@@ -762,17 +784,17 @@
 								local.set $speed
 								local.get $address i32.const 1 i32.store
 								local.get $address i32.const 8 i32.add
-								i32.const 1048 i64.load i32.const 1080 i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
+								global.get $state_ship_x_address i64.load global.get $state_ship_dx_address i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
 								local.get $address i32.const 16 i32.add
-								i32.const 1056 i64.load i32.const 1088 i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
+								global.get $state_ship_y_address i64.load global.get $state_ship_dy_address i64.load i64.const 20000000 call $fixed_mul i64.add i64.store
 								local.get $address i32.const 24 i32.add
-								i32.const 1064 i64.load i32.const 1080 i64.load local.get $speed call $fixed_mul i64.add i64.store
+								global.get $state_ship_vx_address i64.load global.get $state_ship_dx_address i64.load local.get $speed call $fixed_mul i64.add i64.store
 								local.get $address i32.const 32 i32.add
-								i32.const 1072 i64.load i32.const 1088 i64.load local.get $speed call $fixed_mul i64.add i64.store
+								global.get $state_ship_vy_address i64.load global.get $state_ship_dy_address i64.load local.get $speed call $fixed_mul i64.add i64.store
 								local.get $address i32.const 40 i32.add
 								local.get $address i32.const 24 i32.add i64.load
 								local.get $address i32.const 32 i32.add i64.load call $bullet_lifetime_ticks i64.store
-								i32.const 1112 i32.const 1024 i32.load i32.store
+								global.get $state_last_fire_address global.get $state_tick_address i32.load i32.store
 								i32.const 1 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))))
 
 	(func $spawn_particles (param $x i64) (param $y i64) (param $count i32)
@@ -878,11 +900,11 @@
 		call $load_flags global.get $flag_kid_mode i32.and i32.eqz
 		(if
 			(then
-				i32.const 1096 i32.const 1096 i32.load local.get $points i32.add i32.store
-				i32.const 1096 i32.load i32.const 1120 i32.load i32.ge_u
+				global.get $state_score_address global.get $state_score_address i32.load local.get $points i32.add i32.store
+				global.get $state_score_address i32.load global.get $state_next_life_address i32.load i32.ge_u
 				(if (then
-					i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.add i32.store
-					i32.const 1120 i32.const 1120 i32.load call $next_free_ship_threshold i32.store
+					global.get $state_lives_address global.get $state_lives_address i32.load i32.const 1 i32.add i32.store
+					global.get $state_next_life_address global.get $state_next_life_address i32.load call $next_free_ship_threshold i32.store
 					i32.const 6 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))
 
 	(func $hit_asteroid (param $address i32) (param $impulse_x i64) (param $impulse_y i64)
@@ -934,20 +956,20 @@
 	;; is finite by construction, so laser fire can never wrap across an edge.
 	(func $compute_laser_end (result i64 i64)
 		(local $dx i64) (local $dy i64) (local $tx i64) (local $ty i64) (local $time i64)
-		i32.const 1080 i64.load local.set $dx i32.const 1088 i64.load local.set $dy
+		global.get $state_ship_dx_address i64.load local.set $dx global.get $state_ship_dy_address i64.load local.set $dy
 		i64.const 9000000000000 local.set $tx i64.const 9000000000000 local.set $ty
 		local.get $dx i64.const 0 i64.gt_s
-		(if (then i32.const 1032 i64.load i32.const 1048 i64.load i64.sub global.get $scale i64.mul local.get $dx i64.div_s local.set $tx))
+		(if (then global.get $state_width_address i64.load global.get $state_ship_x_address i64.load i64.sub global.get $scale i64.mul local.get $dx i64.div_s local.set $tx))
 		local.get $dx i64.const 0 i64.lt_s
-		(if (then i64.const 0 i32.const 1048 i64.load i64.sub global.get $scale i64.mul local.get $dx i64.div_s local.set $tx))
+		(if (then i64.const 0 global.get $state_ship_x_address i64.load i64.sub global.get $scale i64.mul local.get $dx i64.div_s local.set $tx))
 		local.get $dy i64.const 0 i64.gt_s
-		(if (then i32.const 1040 i64.load i32.const 1056 i64.load i64.sub global.get $scale i64.mul local.get $dy i64.div_s local.set $ty))
+		(if (then global.get $state_height_address i64.load global.get $state_ship_y_address i64.load i64.sub global.get $scale i64.mul local.get $dy i64.div_s local.set $ty))
 		local.get $dy i64.const 0 i64.lt_s
-		(if (then i64.const 0 i32.const 1056 i64.load i64.sub global.get $scale i64.mul local.get $dy i64.div_s local.set $ty))
+		(if (then i64.const 0 global.get $state_ship_y_address i64.load i64.sub global.get $scale i64.mul local.get $dy i64.div_s local.set $ty))
 		local.get $tx local.get $ty i64.lt_s
 		(if (result i64) (then local.get $tx) (else local.get $ty)) local.set $time
-		i32.const 1048 i64.load local.get $dx local.get $time call $fixed_mul i64.add
-		i32.const 1056 i64.load local.get $dy local.get $time call $fixed_mul i64.add)
+		global.get $state_ship_x_address i64.load local.get $dx local.get $time call $fixed_mul i64.add
+		global.get $state_ship_y_address i64.load local.get $dy local.get $time call $fixed_mul i64.add)
 
 	;; Tests a rock against the finite beam using whole-pixel projection; this
 	;; avoids fixed-point cross-product overflow while retaining ample precision.
@@ -991,8 +1013,8 @@
 	(func $fire_laser
 		(local $index i32) (local $address i32) (local $snapshot i32) (local $package_snapshot i32)
 		(local $end_x i64) (local $end_y i64)
-		i32.const 16528 i32.const 1048 i64.load i64.store
-		i32.const 16536 i32.const 1056 i64.load i64.store
+		i32.const 16528 global.get $state_ship_x_address i64.load i64.store
+		i32.const 16536 global.get $state_ship_y_address i64.load i64.store
 		call $compute_laser_end local.set $end_y local.set $end_x
 		i32.const 16544 local.get $end_x i64.store i32.const 16552 local.get $end_y i64.store
 		i32.const 16524 i32.const 4 call $ticks_from_sixty i32.store
@@ -1031,7 +1053,7 @@
 			i32.const 16040 i64.load i32.const 16048 i64.load i32.const 16064 i64.load
 			call $segment_circle_hit
 			(if (then i32.const 1 call $destroy_ufo))))
-		 i32.const 1112 i32.const 1024 i32.load i32.store
+		 global.get $state_last_fire_address global.get $state_tick_address i32.load i32.store
 		i32.const 7 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
 
 	;; Tests a precomputed bullet segment against one asteroid. The expanded-AABB
@@ -1085,9 +1107,9 @@
 					local.get $end_y local.get $bullet i32.const 32 i32.add i64.load call $per_tick i64.sub local.set $start_y
 					i32.const 1 local.set $use_segment
 					local.get $start_x i64.const -25000000 i64.lt_s
-					local.get $start_x i32.const 1032 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+					local.get $start_x global.get $state_width_address i64.load i64.const 25000000 i64.add i64.gt_s i32.or
 					local.get $start_y i64.const -25000000 i64.lt_s i32.or
-					local.get $start_y i32.const 1040 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+					local.get $start_y global.get $state_height_address i64.load i64.const 25000000 i64.add i64.gt_s i32.or
 					local.get $start_x local.get $end_x i64.eq
 					local.get $start_y local.get $end_y i64.eq i32.and i32.or
 					(if (then i32.const 0 local.set $use_segment))
@@ -1119,7 +1141,7 @@
 			local.get $index call $asteroid_address local.set $address
 			local.get $address i32.load
 			(if (then
-				i32.const 1048 i64.load i32.const 1056 i64.load
+				global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
 				local.get $address i32.const 16 i32.add i64.load local.get $address i32.const 24 i32.add i64.load
 				local.get $address i32.const 48 i32.add i64.load i64.const 10000000 i64.add call $distance_lt
 				(if (then local.get $address return))))
@@ -1128,14 +1150,14 @@
 
 	;; Starts the ship death lifecycle without assuming what caused the impact.
 	(func $begin_ship_destruction
-		i32.const 1048 i64.load i32.const 1056 i64.load i32.const 40
-		i32.const 1064 i64.load i32.const 1072 i64.load call $spawn_particles
-		i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1064 i64.load i32.const 1072 i64.load call $spawn_debris
+		global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load i32.const 40
+		global.get $state_ship_vx_address i64.load global.get $state_ship_vy_address i64.load call $spawn_particles
+		global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_vx_address i64.load global.get $state_ship_vy_address i64.load call $spawn_debris
 		i32.const 3 f32.const 1 f32.const 1 i32.const 0 call $audio drop
 		call $load_flags global.get $flag_kid_mode i32.and i32.eqz
-		(if (then i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.sub i32.store))
-		i32.const 1124 i32.const 1 i32.store
-		i32.const 1128 i32.const 120 call $ticks_from_sixty i32.store
+		(if (then global.get $state_lives_address global.get $state_lives_address i32.load i32.const 1 i32.sub i32.store))
+		global.get $state_lifecycle_address i32.const 1 i32.store
+		global.get $state_lifecycle_ticks_address i32.const 120 call $ticks_from_sixty i32.store
 		global.get $flag_blossom_active call $clear_flag)
 
 	(func $begin_ship_explosion (param $asteroid i32)
@@ -1151,10 +1173,10 @@
 		(local $angle i64) (local $sine i64) (local $cosine i64)
 		(local $cross i64) (local $dot i64) (local $next_cross i64)
 		(local $next_dx i64) (local $next_dy i64)
-		i32.const 1080 i64.load local.set $dx
-		i32.const 1088 i64.load local.set $dy
-		i32.const 16568 i64.load i32.const 1048 i64.load i64.sub local.set $target_x
-		i32.const 16576 i64.load i32.const 1056 i64.load i64.sub local.set $target_y
+		global.get $state_ship_dx_address i64.load local.set $dx
+		global.get $state_ship_dy_address i64.load local.set $dy
+		i32.const 16568 i64.load global.get $state_ship_x_address i64.load i64.sub local.set $target_x
+		i32.const 16576 i64.load global.get $state_ship_y_address i64.load i64.sub local.set $target_y
 		local.get $target_x local.get $target_y call $fixed_hypot local.tee $length i64.eqz
 		(if (then return))
 		local.get $target_x global.get $scale i64.mul local.get $length i64.div_s local.set $target_dx
@@ -1167,8 +1189,8 @@
 			local.get $dy local.get $target_dy i64.mul i64.add local.set $dot
 			local.get $dot i64.const 0 i64.ge_s
 			(if (then
-				i32.const 1080 local.get $target_dx i64.store
-				i32.const 1088 local.get $target_dy i64.store
+				global.get $state_ship_dx_address local.get $target_dx i64.store
+				global.get $state_ship_dy_address local.get $target_dy i64.store
 				return))))
 		call $rotation_per_second call $per_tick local.tee $angle call $small_sine local.set $sine
 		local.get $angle call $small_cosine local.set $cosine
@@ -1192,15 +1214,15 @@
 				local.get $next_dy local.get $target_dx i64.mul i64.sub local.set $next_cross
 				local.get $next_cross i64.const 0 i64.ge_s
 				(if (then local.get $target_dx local.set $next_dx local.get $target_dy local.set $next_dy))))
-		i32.const 1080 local.get $next_dx i64.store
-		i32.const 1088 local.get $next_dy i64.store)
+		global.get $state_ship_dx_address local.get $next_dx i64.store
+		global.get $state_ship_dy_address local.get $next_dy i64.store)
 
 	(func $rotate_ship
 		(local $dx i64) (local $dy i64) (local $next_dx i64) (local $next_dy i64)
 		(local $angle i64) (local $sine i64) (local $cosine i64)
 		i32.const 16584 i32.load
 		(if (then call $rotate_toward_pointer return))
-		i32.const 1080 i64.load local.set $dx i32.const 1088 i64.load local.set $dy
+		global.get $state_ship_dx_address i64.load local.set $dx global.get $state_ship_dy_address i64.load local.set $dy
 		call $rotation_per_second call $per_tick local.tee $angle call $small_sine local.set $sine
 		local.get $angle call $small_cosine local.set $cosine
 		call $load_flags global.get $flag_rotate_right i32.and
@@ -1213,38 +1235,38 @@
 			local.get $dx local.get $cosine call $fixed_mul local.get $dy local.get $sine call $fixed_mul i64.add local.set $next_dx
 			local.get $dy local.get $cosine call $fixed_mul local.get $dx local.get $sine call $fixed_mul i64.sub local.set $next_dy
 			local.get $next_dx local.set $dx local.get $next_dy local.set $dy))
-		i32.const 1080 local.get $dx i64.store i32.const 1088 local.get $dy i64.store)
+		global.get $state_ship_dx_address local.get $dx i64.store global.get $state_ship_dy_address local.get $dy i64.store)
 
 	(func $activate_death_blossom
 		(local $flags i32)
 		call $load_flags local.set $flags
-		i32.const 1124 i32.load i32.eqz
+		global.get $state_lifecycle_address i32.load i32.eqz
 		local.get $flags global.get $flag_blocks_blossom_activation i32.and i32.eqz i32.and
 		local.get $flags global.get $flag_blossom_available i32.and i32.eqz i32.eqz i32.and
 		(if (then
 			local.get $flags global.get $flag_blossom_active i32.or
 			global.get $flag_blossom_available i32.const -1 i32.xor i32.and call $store_flags
-			i32.const 1144 i64.const 0 i64.store
+			global.get $state_blossom_rotation_address i64.const 0 i64.store
 			i32.const 5 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))
 
 	(func $update_death_blossom
 		(local $dx i64) (local $dy i64) (local $next_dx i64) (local $next_dy i64)
 		(local $angle i64) (local $sine i64) (local $cosine i64) (local $rotation i64)
-		i32.const 1080 i64.load local.set $dx i32.const 1088 i64.load local.set $dy
+		global.get $state_ship_dx_address i64.load local.set $dx global.get $state_ship_dy_address i64.load local.set $dy
 		i64.const 7200000 call $per_tick local.tee $angle call $small_sine local.set $sine
 		local.get $angle call $small_cosine local.set $cosine
 		local.get $dx local.get $cosine call $fixed_mul local.get $dy local.get $sine call $fixed_mul i64.add local.set $next_dx
 		local.get $dy local.get $cosine call $fixed_mul local.get $dx local.get $sine call $fixed_mul i64.sub local.set $next_dy
-		i32.const 1080 local.get $next_dx i64.store i32.const 1088 local.get $next_dy i64.store
-		i32.const 1144 i64.load local.get $angle i64.add local.set $rotation
+		global.get $state_ship_dx_address local.get $next_dx i64.store global.get $state_ship_dy_address local.get $next_dy i64.store
+		global.get $state_blossom_rotation_address i64.load local.get $angle i64.add local.set $rotation
 		local.get $rotation i64.const 75398224 i64.ge_s
 		(if
 			(then
-				i32.const 1144 i64.const 75398224 i64.store
+				global.get $state_blossom_rotation_address i64.const 75398224 i64.store
 				call $fire
 				global.get $flag_blossom_active call $clear_flag)
 			(else
-				i32.const 1144 local.get $rotation i64.store
+				global.get $state_blossom_rotation_address local.get $rotation i64.store
 				call $fire)))
 
 	(func $update_ship
@@ -1257,19 +1279,19 @@
 				call $rotate_ship
 				local.get $flags global.get $flag_thrust i32.and
 				(if (then
-					i32.const 1064 i32.const 1064 i64.load i32.const 1080 i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
-					i32.const 1072 i32.const 1072 i64.load i32.const 1088 i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
-					i32.const 1024 i32.load i32.const 3 i32.and i32.eqz
+					global.get $state_ship_vx_address global.get $state_ship_vx_address i64.load global.get $state_ship_dx_address i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
+					global.get $state_ship_vy_address global.get $state_ship_vy_address i64.load global.get $state_ship_dy_address i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
+					global.get $state_tick_address i32.load i32.const 3 i32.and i32.eqz
 					(if (then i32.const 4 f32.const 0.18 f32.const 1 i32.const 0 call $audio drop))))
 				local.get $flags global.get $flag_fire i32.and
 				local.get $flags global.get $flag_auto_fire i32.and i32.or
 				(if (then call $fire))))
-		i32.const 1064 i32.const 1064 i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
-		i32.const 1072 i32.const 1072 i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
-		i32.const 1048
-		i32.const 1048 i64.load i32.const 1064 i64.load call $per_tick i64.add i64.const 0 i32.const 1032 i64.load call $wrap i64.store
-		i32.const 1056
-		i32.const 1056 i64.load i32.const 1072 i64.load call $per_tick i64.add i64.const 0 i32.const 1040 i64.load call $wrap i64.store)
+		global.get $state_ship_vx_address global.get $state_ship_vx_address i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
+		global.get $state_ship_vy_address global.get $state_ship_vy_address i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
+		global.get $state_ship_x_address
+		global.get $state_ship_x_address i64.load global.get $state_ship_vx_address i64.load call $per_tick i64.add i64.const 0 global.get $state_width_address i64.load call $wrap i64.store
+		global.get $state_ship_y_address
+		global.get $state_ship_y_address i64.load global.get $state_ship_vy_address i64.load call $per_tick i64.add i64.const 0 global.get $state_height_address i64.load call $wrap i64.store)
 
 	(func $update_bullets
 		(local $index i32) (local $address i32) (local $vx i64) (local $vy i64)
@@ -1282,10 +1304,10 @@
 				local.get $address i32.const 32 i32.add i64.load local.set $vy
 				local.get $address i32.const 8 i32.add
 				local.get $address i32.const 8 i32.add i64.load local.get $vx call $per_tick i64.add
-				i64.const -25000000 i32.const 1032 i64.load i64.const 25000000 i64.add call $wrap i64.store
+				i64.const -25000000 global.get $state_width_address i64.load i64.const 25000000 i64.add call $wrap i64.store
 				local.get $address i32.const 16 i32.add
 				local.get $address i32.const 16 i32.add i64.load local.get $vy call $per_tick i64.add
-				i64.const -25000000 i32.const 1040 i64.load i64.const 25000000 i64.add call $wrap i64.store
+				i64.const -25000000 global.get $state_height_address i64.load i64.const 25000000 i64.add call $wrap i64.store
 				local.get $address i32.const 40 i32.add i64.load local.set $vx
 				;; A zero lifetime is reserved for hand-built fixtures and inert restored
 				;; records; production fire always installs a positive countdown.
@@ -1321,10 +1343,10 @@
 			(if (then
 				local.get $address i32.const 16 i32.add
 				local.get $address i32.const 16 i32.add i64.load local.get $address i32.const 32 i32.add i64.load call $per_tick i64.add
-				i64.const -50000000 i32.const 1032 i64.load i64.const 50000000 i64.add call $wrap i64.store
+				i64.const -50000000 global.get $state_width_address i64.load i64.const 50000000 i64.add call $wrap i64.store
 				local.get $address i32.const 24 i32.add
 				local.get $address i32.const 24 i32.add i64.load local.get $address i32.const 40 i32.add i64.load call $per_tick i64.add
-				i64.const -50000000 i32.const 1040 i64.load i64.const 50000000 i64.add call $wrap i64.store
+				i64.const -50000000 global.get $state_height_address i64.load i64.const 50000000 i64.add call $wrap i64.store
 				local.get $address i32.const 56 i32.add i64.load local.set $dx
 				local.get $address i32.const 64 i32.add i64.load local.set $dy
 				local.get $address i32.const 72 i32.add i32.load i64.extend_i32_s call $per_tick local.tee $angle call $small_sine local.set $sine
@@ -1430,8 +1452,8 @@
 									(then
 										i32.const 16040 i64.load i32.const 16048 i64.load
 										i32.const 16056 i64.load i64.const 0
-										i32.const 1048 i64.load i32.const 1056 i64.load
-										i32.const 1064 i64.load i32.const 1072 i64.load
+										global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
+										global.get $state_ship_vx_address i64.load global.get $state_ship_vy_address i64.load
 										call $ufo_projectile_speed call $aim_projectile_velocity
 										local.set $vy local.set $vx)
 									(else
@@ -1466,9 +1488,9 @@
 				local.get $address i32.const 16 i32.add i64.load
 				local.get $address i32.const 32 i32.add i64.load call $per_tick i64.add local.tee $y i64.store
 				local.get $x i64.const -25000000 i64.lt_s
-				local.get $x i32.const 1032 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+				local.get $x global.get $state_width_address i64.load i64.const 25000000 i64.add i64.gt_s i32.or
 				local.get $y i64.const -25000000 i64.lt_s i32.or
-				local.get $y i32.const 1040 i64.load i64.const 25000000 i64.add i64.gt_s i32.or
+				local.get $y global.get $state_height_address i64.load i64.const 25000000 i64.add i64.gt_s i32.or
 				(if (then local.get $address i32.const 0 i32.store))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
@@ -1502,10 +1524,10 @@
 				local.get $index call $asteroid_address
 				i64.const 0 i64.const 0 local.get $score_hit call $hit_asteroid))
 			local.get $index i32.const 1 i32.add local.set $index br $hits))
-		i32.const 1124 i32.load i32.eqz
-		i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
+		global.get $state_lifecycle_address i32.load i32.eqz
+		global.get $state_invulnerability_address i32.load i32.const 0 i32.le_s i32.and
 			(if (then
-				local.get $x local.get $y i32.const 1048 i64.load i32.const 1056 i64.load
+				local.get $x local.get $y global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
 				i64.const 130000000 call $distance_lt
 				(if (then call $begin_ship_destruction))))
 		i32.const 12 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
@@ -1543,9 +1565,9 @@
 		local.get $direction i32.const 1 i32.eq
 		(if (result i64)
 			(then i64.const -30000000)
-			(else i32.const 1032 i64.load i64.const 30000000 i64.add))
+			(else global.get $state_width_address i64.load i64.const 30000000 i64.add))
 		i64.store
-		i32.const 1040 i64.load i64.const 200000000 i64.sub local.set $height_range
+		global.get $state_height_address i64.load i64.const 200000000 i64.sub local.set $height_range
 		local.get $height_range i64.const 0 i64.lt_s (if (then i64.const 0 local.set $height_range))
 		i32.const 16480 call $rand_unit local.get $height_range call $fixed_mul i64.const 100000000 i64.add i64.store
 		i32.const 16488 local.get $direction i64.extend_i32_s i64.const 80000000 i64.mul i64.store
@@ -1571,7 +1593,7 @@
 			(then
 				i32.const 16472 i32.const 16472 i64.load i32.const 16488 i64.load call $per_tick i64.add i64.store
 				i32.const 16480 i32.const 16480 i64.load i32.const 16496 i64.load call $per_tick i64.add local.tee $y i64.store
-				i32.const 1040 i64.load i64.const 40000000 i64.sub local.set $bottom
+				global.get $state_height_address i64.load i64.const 40000000 i64.sub local.set $bottom
 				local.get $y i64.const 40000000 i64.lt_s
 				(if (then
 					i32.const 16480 i64.const 40000000 i64.store
@@ -1581,7 +1603,7 @@
 					i32.const 16480 local.get $bottom i64.store
 					i32.const 16496 i64.const 0 i32.const 16496 i64.load call $fixed_abs i64.sub i64.store))
 				i32.const 16472 i64.load i64.const -40000000 i64.lt_s
-				i32.const 16472 i64.load i32.const 1032 i64.load i64.const 40000000 i64.add i64.gt_s i32.or
+				i32.const 16472 i64.load global.get $state_width_address i64.load i64.const 40000000 i64.add i64.gt_s i32.or
 				(if (then call $lose_package)))
 			(else
 				i32.const 16516 i32.load i32.const 0 i32.gt_s
@@ -1592,10 +1614,10 @@
 	;; grants it for 20 simulated seconds, and begins a fresh package schedule.
 	(func $check_package_collection
 		i32.const 16464 i32.load
-		i32.const 1124 i32.load i32.eqz i32.and
+		global.get $state_lifecycle_address i32.load i32.eqz i32.and
 		(if (then
 			i32.const 16472 i64.load i32.const 16480 i64.load
-			i32.const 1048 i64.load i32.const 1056 i64.load
+			global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
 			i32.const 16504 i64.load i64.const 10000000 i64.add call $distance_lt
 			(if (then
 				i32.const 16464 i32.const 0 i32.store
@@ -1625,9 +1647,9 @@
 		local.get $direction i32.const 1 i32.eq
 		(if (result i64)
 			(then i64.const -30000000)
-			(else i32.const 1032 i64.load i64.const 30000000 i64.add))
+			(else global.get $state_width_address i64.load i64.const 30000000 i64.add))
 		i64.store
-		i32.const 1040 i64.load i64.const 200000000 i64.sub local.set $height_range
+		global.get $state_height_address i64.load i64.const 200000000 i64.sub local.set $height_range
 		local.get $height_range i64.const 0 i64.lt_s
 		(if (then i64.const 0 local.set $height_range))
 		i32.const 16048 call $rand_unit local.get $height_range call $fixed_mul
@@ -1649,7 +1671,7 @@
 				(if (then i32.const 16072 i32.const 16072 i32.load i32.const 1 i32.sub i32.store))
 				i32.const 16072 i32.load i32.eqz (if (then call $fire_ufo))
 				i32.const 16040 i64.load i64.const -40000000 i64.lt_s
-				i32.const 16040 i64.load i32.const 1032 i64.load i64.const 40000000 i64.add i64.gt_s i32.or
+				i32.const 16040 i64.load global.get $state_width_address i64.load i64.const 40000000 i64.add i64.gt_s i32.or
 				(if (then
 					i32.const 16032 i32.const 0 i32.store
 					i32.const 16512 call $random_spawn_ticks i32.store)))
@@ -1737,12 +1759,12 @@
 						local.get $bullet i32.const 0 i32.store
 						call $lose_package))))
 				local.get $bullet i32.load
-				i32.const 1124 i32.load i32.eqz i32.and
-				i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
+				global.get $state_lifecycle_address i32.load i32.eqz i32.and
+				global.get $state_invulnerability_address i32.load i32.const 0 i32.le_s i32.and
 				(if (then
 					local.get $bullet i32.const 8 i32.add i64.load
 					local.get $bullet i32.const 16 i32.add i64.load
-					i32.const 1048 i64.load i32.const 1056 i64.load i64.const 14000000 call $distance_lt
+					global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load i64.const 14000000 call $distance_lt
 					(if (then
 						local.get $bullet i32.const 0 i32.store
 						call $begin_ship_destruction))))))
@@ -1771,17 +1793,17 @@
 						br $asteroids_done))))
 				local.get $index i32.const 1 i32.add local.set $index br $asteroids))
 			i32.const 16032 i32.load
-			i32.const 1124 i32.load i32.eqz i32.and
-			i32.const 1116 i32.load i32.const 0 i32.le_s i32.and
+			global.get $state_lifecycle_address i32.load i32.eqz i32.and
+			global.get $state_invulnerability_address i32.load i32.const 0 i32.le_s i32.and
 			(if (then
 				i32.const 16040 i64.load i32.const 16048 i64.load
-				i32.const 1048 i64.load i32.const 1056 i64.load
+				global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
 				i32.const 16064 i64.load i64.const 10000000 i64.add call $distance_lt
 				(if (then
 					i32.const 0 call $destroy_ufo)))))))
 
 	(func $respawn_radius (result i64)
-		i32.const 1128 i32.load i32.const 300 call $ticks_from_sixty i32.ge_s
+		global.get $state_lifecycle_ticks_address i32.load i32.const 300 call $ticks_from_sixty i32.ge_s
 		(if (result i64) (then i64.const 48000000) (else i64.const 96000000)))
 
 	(func $respawn_safe (result i32)
@@ -1792,7 +1814,7 @@
 			local.get $index call $asteroid_address local.set $address
 			local.get $address i32.load
 			(if (then
-				i32.const 1032 i64.load i64.const 2 i64.div_s i32.const 1040 i64.load i64.const 2 i64.div_s
+				global.get $state_width_address i64.load i64.const 2 i64.div_s global.get $state_height_address i64.load i64.const 2 i64.div_s
 				local.get $address i32.const 16 i32.add i64.load local.get $address i32.const 24 i32.add i64.load
 				call $respawn_radius local.get $address i32.const 48 i32.add i64.load i64.add call $distance_lt
 				(if (then i32.const 0 return))))
@@ -1806,7 +1828,7 @@
 			local.get $index call $asteroid_address local.set $address
 			local.get $address i32.load
 			(if (then
-				i32.const 1032 i64.load i64.const 2 i64.div_s i32.const 1040 i64.load i64.const 2 i64.div_s
+				global.get $state_width_address i64.load i64.const 2 i64.div_s global.get $state_height_address i64.load i64.const 2 i64.div_s
 				local.get $address i32.const 16 i32.add i64.load local.get $address i32.const 24 i32.add i64.load
 				i64.const 80000000 local.get $address i32.const 48 i32.add i64.load i64.add call $distance_lt
 				(if (then local.get $address i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid i32.const 1 local.set $hit))))
@@ -1814,54 +1836,54 @@
 		local.get $hit (if (then i32.const 2 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))
 
 	(func $advance_lifecycle
-		i32.const 1124 i32.load i32.const 1 i32.eq
+		global.get $state_lifecycle_address i32.load i32.const 1 i32.eq
 		(if (then
-			i32.const 1128 i32.const 1128 i32.load i32.const 1 i32.sub i32.store
-			i32.const 1128 i32.load i32.const 0 i32.le_s
+			global.get $state_lifecycle_ticks_address global.get $state_lifecycle_ticks_address i32.load i32.const 1 i32.sub i32.store
+			global.get $state_lifecycle_ticks_address i32.load i32.const 0 i32.le_s
 			(if (then
-				i32.const 1100 i32.load i32.const 0 i32.le_s
-				(if (then i32.const 1124 i32.const 3 i32.store)
+				global.get $state_lives_address i32.load i32.const 0 i32.le_s
+				(if (then global.get $state_lifecycle_address i32.const 3 i32.store)
 					(else
-						i32.const 1124 i32.const 2 i32.store i32.const 1128 i32.const 0 i32.store
-						i32.const 1048 i32.const 1032 i64.load i64.const 2 i64.div_s i64.store
-						i32.const 1056 i32.const 1040 i64.load i64.const 2 i64.div_s i64.store
-						i32.const 1064 i64.const 0 i64.store i32.const 1072 i64.const 0 i64.store
+						global.get $state_lifecycle_address i32.const 2 i32.store global.get $state_lifecycle_ticks_address i32.const 0 i32.store
+						global.get $state_ship_x_address global.get $state_width_address i64.load i64.const 2 i64.div_s i64.store
+						global.get $state_ship_y_address global.get $state_height_address i64.load i64.const 2 i64.div_s i64.store
+						global.get $state_ship_vx_address i64.const 0 i64.store global.get $state_ship_vy_address i64.const 0 i64.store
 						call $respawn_safe
 						(if (then
-							i32.const 1124 i32.const 0 i32.store
-							i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store
-							i32.const 1132 i32.const 240 call $ticks_from_sixty i32.store
+							global.get $state_lifecycle_address i32.const 0 i32.store
+							global.get $state_invulnerability_address i32.const 120 call $ticks_from_sixty i32.store
+							global.get $state_banner_ticks_address i32.const 240 call $ticks_from_sixty i32.store
 							global.get $flag_blossom_available call $set_flag))))))))
-		i32.const 1124 i32.load i32.const 2 i32.eq
+		global.get $state_lifecycle_address i32.load i32.const 2 i32.eq
 		(if (then
-			i32.const 1128 i32.const 1128 i32.load i32.const 1 i32.add i32.store
-			i32.const 1128 i32.load i32.const 600 call $ticks_from_sixty i32.eq (if (then call $clear_respawn_zone))
+			global.get $state_lifecycle_ticks_address global.get $state_lifecycle_ticks_address i32.load i32.const 1 i32.add i32.store
+			global.get $state_lifecycle_ticks_address i32.load i32.const 600 call $ticks_from_sixty i32.eq (if (then call $clear_respawn_zone))
 			call $respawn_safe
 			(if (then
-				i32.const 1124 i32.const 0 i32.store i32.const 1128 i32.const 0 i32.store
-				i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store i32.const 1132 i32.const 240 call $ticks_from_sixty i32.store
+				global.get $state_lifecycle_address i32.const 0 i32.store global.get $state_lifecycle_ticks_address i32.const 0 i32.store
+				global.get $state_invulnerability_address i32.const 120 call $ticks_from_sixty i32.store global.get $state_banner_ticks_address i32.const 240 call $ticks_from_sixty i32.store
 				global.get $flag_blossom_available call $set_flag))))
 	)
 
 	(func $step
 		(local $collision i32)
-		i32.const 1024 i32.const 1024 i32.load i32.const 1 i32.add i32.store
+		global.get $state_tick_address global.get $state_tick_address i32.load i32.const 1 i32.add i32.store
 		call $load_flags global.get $flag_suspends_tick i32.and (if (then return))
-		i32.const 1124 i32.load i32.const 3 i32.eq
-		(if (then call $load_flags global.get $flag_fire i32.and (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset)) return))
+		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
+		(if (then call $load_flags global.get $flag_fire i32.and (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset)) return))
 		call $update_hazardous_blast
 		call $update_power_timers
-		i32.const 1124 i32.load i32.eqz
+		global.get $state_lifecycle_address i32.load i32.eqz
 		(if (then
 			call $update_ship call $update_bullets call $update_enemy_bullets call $update_asteroids call $update_particles call $update_debris
 			call $check_bullet_collisions
-			i32.const 1116 i32.load i32.const 0 i32.gt_s
-			(if (then i32.const 1116 i32.const 1116 i32.load i32.const 1 i32.sub i32.store)
+			global.get $state_invulnerability_address i32.load i32.const 0 i32.gt_s
+			(if (then global.get $state_invulnerability_address global.get $state_invulnerability_address i32.load i32.const 1 i32.sub i32.store)
 				(else call $find_ship_collision local.tee $collision (if (then local.get $collision call $begin_ship_explosion)))))
 			(else
-				i32.const 1124 i32.load i32.const 3 i32.ne
+				global.get $state_lifecycle_address i32.load i32.const 3 i32.ne
 				(if (then
-					i32.const 1124 i32.load i32.const 2 i32.eq (if (then call $rotate_ship))
+					global.get $state_lifecycle_address i32.load i32.const 2 i32.eq (if (then call $rotate_ship))
 					call $update_bullets call $update_enemy_bullets call $update_asteroids call $update_particles call $update_debris
 					call $check_bullet_collisions))))
 		call $update_ufo_schedule
@@ -1872,10 +1894,10 @@
 		call $check_ufo_collisions
 		call $check_package_collection
 		call $advance_lifecycle
-		call $asteroid_count i32.eqz i32.const 1124 i32.load i32.const 3 i32.ne i32.and
-		(if (then i32.const 1104 i32.const 1104 i32.load i32.const 1 i32.add i32.store call $spawn_wave))
-		i32.const 1132 i32.load i32.const 0 i32.gt_s
-		(if (then i32.const 1132 i32.const 1132 i32.load i32.const 1 i32.sub i32.store)))
+		call $asteroid_count i32.eqz global.get $state_lifecycle_address i32.load i32.const 3 i32.ne i32.and
+		(if (then global.get $state_level_address global.get $state_level_address i32.load i32.const 1 i32.add i32.store call $spawn_wave))
+		global.get $state_banner_ticks_address i32.load i32.const 0 i32.gt_s
+		(if (then global.get $state_banner_ticks_address global.get $state_banner_ticks_address i32.load i32.const 1 i32.sub i32.store)))
 
 	(func (export "AE_tick") (param $count i32) (result i32)
 		(local $index i32)
@@ -1945,12 +1967,12 @@
 
 	(func $resize (param $new_width i64) (param $new_height i64)
 		(local $dx i64) (local $dy i64)
-		local.get $new_width i64.const 2 i64.div_s i32.const 1032 i64.load i64.const 2 i64.div_s i64.sub local.set $dx
-		local.get $new_height i64.const 2 i64.div_s i32.const 1040 i64.load i64.const 2 i64.div_s i64.sub local.set $dy
-		i32.const 1048 i32.const 1048 i64.load local.get $dx i64.add i64.store
-		i32.const 1056 i32.const 1056 i64.load local.get $dy i64.add i64.store
+		local.get $new_width i64.const 2 i64.div_s global.get $state_width_address i64.load i64.const 2 i64.div_s i64.sub local.set $dx
+		local.get $new_height i64.const 2 i64.div_s global.get $state_height_address i64.load i64.const 2 i64.div_s i64.sub local.set $dy
+		global.get $state_ship_x_address global.get $state_ship_x_address i64.load local.get $dx i64.add i64.store
+		global.get $state_ship_y_address global.get $state_ship_y_address i64.load local.get $dy i64.add i64.store
 		local.get $dx local.get $dy call $translate_entities
-		i32.const 1032 local.get $new_width i64.store i32.const 1040 local.get $new_height i64.store
+		global.get $state_width_address local.get $new_width i64.store global.get $state_height_address local.get $new_height i64.store
 		call $refresh_bullet_maximum_distance
 		call $regenerate_stars)
 
@@ -1968,7 +1990,7 @@
 			local.get $mask i32.eqz
 			(if (then
 				local.get $code i32.const 5 i32.eq (if (then global.get $flag_paused call $toggle_flag))
-				local.get $code i32.const 6 i32.eq (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset))
+				local.get $code i32.const 6 i32.eq (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset))
 				local.get $code i32.const 7 i32.eq (if (then global.get $flag_auto_fire call $toggle_flag))
 				local.get $code i32.const 8 i32.eq (if (then global.get $flag_kid_mode call $toggle_flag))
 				local.get $code i32.const 9 i32.eq (if (then call $activate_death_blossom))
@@ -2015,7 +2037,7 @@
 		(if (then local.get $a call $from_host local.get $b call $from_host call $resize))
 		local.get $kind i32.const 7 i32.eq
 		(if (then
-			local.get $code i32.const 1 i32.eq (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset))
+			local.get $code i32.const 1 i32.eq (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset))
 			local.get $code i32.const 7 i32.eq (if (then global.get $flag_help_visible call $toggle_flag))
 			local.get $code i32.const 6 i32.eq (if (then i32.const 2 i32.const 0 i32.const 0 call $effect drop))))
 		local.get $kind i32.const 8 i32.eq local.get $code i32.eqz i32.and
@@ -2083,7 +2105,7 @@
 		(if (then
 			local.get $id i32.const 3 i32.add call $path_begin drop f32.const -5 f32.const -3 call $path_move drop
 			i64.const 0
-			i32.const 1024 i32.load i32.const 7 i32.and i64.extend_i32_u i64.const 2000000 i64.mul i64.const 12000000 i64.add
+			global.get $state_tick_address i32.load i32.const 7 i32.and i64.extend_i32_u i64.const 2000000 i64.mul i64.const 12000000 i64.add
 			i64.sub local.set $flame_x
 			local.get $flame_x call $to_host f32.const 0 call $path_line drop f32.const -5 f32.const 3 call $path_line drop
 			f32.const 2 i32.const 0 i32.const 0xff8a2bff i32.const 0 call $path_end drop))
@@ -2202,7 +2224,7 @@
 	(func $draw_blossom_available
 		(local $x i64)
 		call $load_flags global.get $flag_blossom_available i32.and i32.eqz (if (then return))
-		i32.const 1032 i64.load i64.const 2 i64.div_s local.set $x
+		global.get $state_width_address i64.load i64.const 2 i64.div_s local.set $x
 		i32.const 920 local.get $x call $to_host f32.const 82 f32.const 4 f32.const 0
 		i32.const 0xffcf5cff i32.const 1 call $circle drop
 		i32.const 921 local.get $x i64.const 14000000 i64.sub call $to_host f32.const 82 local.get $x i64.const 7000000 i64.sub call $to_host f32.const 82 f32.const 2 i32.const 0xffcf5cff call $line drop
@@ -2247,48 +2269,48 @@
 		(if
 			(then f32.const 0.96862745 f32.const 0.95686275 f32.const 0.92941176 f32.const 1 call $frame_begin drop)
 			(else f32.const 0.03137255 f32.const 0.04313725 f32.const 0.07058824 f32.const 1 call $frame_begin drop))
-		i32.const 1132 i32.load i32.const 0 i32.gt_s
+		global.get $state_banner_ticks_address i32.load i32.const 0 i32.gt_s
 		(if (then
 			call $splash_alpha local.set $alpha
 			i32.const 10 i32.const 64 i32.const 12
-			i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host
-			i32.const 1040 i64.load i64.const 333333 call $fixed_mul call $to_host
+			global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host
+			global.get $state_height_address i64.load i64.const 333333 call $fixed_mul call $to_host
 			f32.const 54 i32.const 0xff5cf400 local.get $alpha i32.or i32.const 1 call $text drop
 			i32.const 12 i32.const 64 i32.const 12
-			i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host
-			i32.const 1040 i64.load i64.const 333333 call $fixed_mul call $to_host
+			global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host
+			global.get $state_height_address i64.load i64.const 333333 call $fixed_mul call $to_host
 			f32.const 52 i32.const 0x5ee7ff00 local.get $alpha i32.or i32.const 1 call $text drop
 			i32.const 13 i32.const 64 i32.const 12
-			i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host
-			i32.const 1040 i64.load i64.const 333333 call $fixed_mul call $to_host
+			global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host
+			global.get $state_height_address i64.load i64.const 333333 call $fixed_mul call $to_host
 			f32.const 50 i32.const 0xffffff00 local.get $alpha i32.or i32.const 1 call $text drop
 			i32.const 11 i32.const 80 i32.const 16
-			i32.const 1032 i64.load i64.const 2 i64.div_s i64.const 100000000 i64.sub call $to_host
-			i32.const 1040 i64.load i64.const 333333 call $fixed_mul i64.const 58000000 i64.add call $to_host
+			global.get $state_width_address i64.load i64.const 2 i64.div_s i64.const 100000000 i64.sub call $to_host
+			global.get $state_height_address i64.load i64.const 333333 call $fixed_mul i64.const 58000000 i64.add call $to_host
 			f32.const 18 i32.const 0x58ff7200 local.get $alpha i32.or i32.const 1 call $text drop))
 		call $draw_stars
 		call $draw_ufo
 		call $draw_package
 		call $draw_laser
-		i32.const 160 i32.const 1096 i32.load call $write_six_digits
-		i32.const 168 i32.const 1104 i32.load call $write_two_digits
+		i32.const 160 global.get $state_score_address i32.load call $write_six_digits
+		i32.const 168 global.get $state_level_address i32.load call $write_two_digits
 		call $load_flags global.get $flag_kid_mode i32.and i32.eqz
 		(if (then
 		i32.const 20 i32.const 128 i32.const 5 f32.const 24 f32.const 24 f32.const 15 i32.const 0x9bb8d1ff i32.const 0 call $text drop
 		i32.const 21 i32.const 160 i32.const 6 f32.const 24 f32.const 48 f32.const 22 i32.const 0x58ff72ff i32.const 0 call $text drop
 		i32.const 22 i32.const 136 i32.const 5
-		i32.const 1032 i64.load i64.const 2 i64.div_s i64.const 50000000 i64.sub call $to_host f32.const 54 f32.const 15 i32.const 0x9bb8d1ff i32.const 1 call $text drop
+		global.get $state_width_address i64.load i64.const 2 i64.div_s i64.const 50000000 i64.sub call $to_host f32.const 54 f32.const 15 i32.const 0x9bb8d1ff i32.const 1 call $text drop
 		i32.const 23 i32.const 168 i32.const 2
-		i32.const 1032 i64.load i64.const 2 i64.div_s i64.const 30000000 i64.add call $to_host f32.const 54 f32.const 22 i32.const 0xffcf5cff i32.const 1 call $text drop
+		global.get $state_width_address i64.load i64.const 2 i64.div_s i64.const 30000000 i64.add call $to_host f32.const 54 f32.const 22 i32.const 0xffcf5cff i32.const 1 call $text drop
 		i32.const 24 i32.const 144 i32.const 5
-		i32.const 1032 i64.load i64.const 62000000 i64.sub call $to_host f32.const 24 f32.const 15 i32.const 0x9bb8d1ff i32.const 1 call $text drop
-		i32.const 1100 i32.load i32.const 1 i32.sub local.set $reserve_count
+		global.get $state_width_address i64.load i64.const 62000000 i64.sub call $to_host f32.const 24 f32.const 15 i32.const 0x9bb8d1ff i32.const 1 call $text drop
+		global.get $state_lives_address i32.load i32.const 1 i32.sub local.set $reserve_count
 		local.get $reserve_count local.set $reserve_icons
 		local.get $reserve_icons i32.const 3 i32.gt_u (if (then i32.const 3 local.set $reserve_icons))
 		(block $reserves_done (loop $reserves
 			local.get $index local.get $reserve_icons i32.ge_u br_if $reserves_done
 			i32.const 50 local.get $index i32.add
-			i32.const 1032 i64.load i64.const 40000000 i64.sub local.get $index i64.extend_i32_u i64.const 28000000 i64.mul i64.sub
+			global.get $state_width_address i64.load i64.const 40000000 i64.sub local.get $index i64.extend_i32_u i64.const 28000000 i64.mul i64.sub
 			i64.const 48000000 i64.const 1000000 i64.const 0 i64.const 550000 i32.const 0x58ff72ff i32.const 0 call $draw_ship
 			local.get $index i32.const 1 i32.add local.set $index br $reserves))
 		local.get $reserve_count i32.const 4 i32.ge_u
@@ -2296,15 +2318,15 @@
 			i32.const 544 local.get $reserve_count call $write_six_digits
 			local.get $reserve_count call $decimal_digits local.set $reserve_digits
 			i32.const 25 i32.const 550 local.get $reserve_digits i32.sub local.get $reserve_digits
-			i32.const 1032 i64.load i64.const 124000000 i64.sub call $to_host
+			global.get $state_width_address i64.load i64.const 124000000 i64.sub call $to_host
 			f32.const 54 f32.const 18 i32.const 0xffcf5cff i32.const 1 call $text drop))))
-		i32.const 1124 i32.load local.set $index
+		global.get $state_lifecycle_address i32.load local.set $index
 		local.get $index i32.eqz
 		(if (then
-			i32.const 1116 i32.load i32.eqz i32.const 1024 i32.load i32.const 8 i32.and i32.eqz i32.or
-			(if (then i32.const 1 i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1080 i64.load i32.const 1088 i64.load i64.const 1000000 i32.const -1 call $load_flags global.get $flag_thrust i32.and i32.eqz i32.eqz call $draw_ship)))
+			global.get $state_invulnerability_address i32.load i32.eqz global.get $state_tick_address i32.load i32.const 8 i32.and i32.eqz i32.or
+			(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const -1 call $load_flags global.get $flag_thrust i32.and i32.eqz i32.eqz call $draw_ship)))
 			(else local.get $index i32.const 2 i32.eq
-				(if (then i32.const 1 i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1080 i64.load i32.const 1088 i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))
+				(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))
 		i32.const 0 local.set $index
 		(block $bullets_done (loop $bullets
 			local.get $index global.get $player_bullet_capacity i32.ge_u br_if $bullets_done
@@ -2342,27 +2364,27 @@
 			local.get $index call $debris_address local.set $address local.get $index local.get $address call $draw_debris
 			local.get $index i32.const 1 i32.add local.set $index br $debris))
 		call $draw_hazardous_blast
-		i32.const 1124 i32.load i32.const 1 i32.eq
-		(if (then i32.const 32 i32.const 184 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 26 i32.const 0xff8a2bff i32.const 1 call $text drop))
+		global.get $state_lifecycle_address i32.load i32.const 1 i32.eq
+		(if (then i32.const 32 i32.const 184 i32.const 14 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 2 i64.div_s call $to_host f32.const 26 i32.const 0xff8a2bff i32.const 1 call $text drop))
 		call $draw_blossom_available
 		call $load_flags global.get $flag_blossom_active i32.and
-		(if (then i32.const 36 i32.const 472 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 666667 call $fixed_mul call $to_host f32.const 36 i32.const 0xff5cf4ff i32.const 1 call $text drop))
+		(if (then i32.const 36 i32.const 472 i32.const 14 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 666667 call $fixed_mul call $to_host f32.const 36 i32.const 0xff5cf4ff i32.const 1 call $text drop))
 		call $load_flags global.get $flag_paused i32.and
-		(if (then i32.const 33 i32.const 100 i32.const 6 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 36 i32.const 0xffcf5cff i32.const 1 call $text drop))
+		(if (then i32.const 33 i32.const 100 i32.const 6 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 2 i64.div_s call $to_host f32.const 36 i32.const 0xffcf5cff i32.const 1 call $text drop))
 		call $load_flags global.get $flag_help_visible i32.and
 		(if (then
-			i32.const 40 i32.const 224 i32.const 8 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 140000000 call $to_host f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
-			i32.const 41 i32.const 240 i32.const 21 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 200000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 42 i32.const 264 i32.const 21 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 232000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 43 i32.const 288 i32.const 19 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 264000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 44 i32.const 312 i32.const 24 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 296000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 45 i32.const 340 i32.const 23 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 328000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 46 i32.const 368 i32.const 28 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 360000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 53 i32.const 512 i32.const 26 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 388000000 call $to_host f32.const 16 i32.const 0xffcf5cff i32.const 1 call $text drop
-			i32.const 47 i32.const 400 i32.const 20 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 416000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 48 i32.const 424 i32.const 22 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 448000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
-			i32.const 49 i32.const 448 i32.const 19 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 480000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop))
-		i32.const 1124 i32.load i32.const 3 i32.eq
-		(if (then i32.const 34 i32.const 108 i32.const 9 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 40 i32.const 0xff5c73ff i32.const 1 call $text drop))
+			i32.const 40 i32.const 224 i32.const 8 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 140000000 call $to_host f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
+			i32.const 41 i32.const 240 i32.const 21 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 200000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 42 i32.const 264 i32.const 21 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 232000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 43 i32.const 288 i32.const 19 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 264000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 44 i32.const 312 i32.const 24 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 296000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 45 i32.const 340 i32.const 23 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 328000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 46 i32.const 368 i32.const 28 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 360000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 53 i32.const 512 i32.const 26 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 388000000 call $to_host f32.const 16 i32.const 0xffcf5cff i32.const 1 call $text drop
+			i32.const 47 i32.const 400 i32.const 20 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 416000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 48 i32.const 424 i32.const 22 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 448000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop
+			i32.const 49 i32.const 448 i32.const 19 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host i64.const 480000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop))
+		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
+		(if (then i32.const 34 i32.const 108 i32.const 9 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 2 i64.div_s call $to_host f32.const 40 i32.const 0xff5c73ff i32.const 1 call $text drop))
 		call $frame_end drop i32.const 0)
 )

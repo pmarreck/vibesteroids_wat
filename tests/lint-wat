@@ -44,6 +44,18 @@ awk '
 ' "$root/code.wat"
 
 awk '
+	$0 !~ /\(global \$state_/ {
+		line = $0
+		while (match(line, /i32\.const (1024|1028|1032|1040|1048|1056|1064|1072|1080|1088|1096|1100|1104|1108|1112|1116|1120|1124|1128|1132|1136|1144|1152) (i32\.(load|store)|i64\.(load|store)|global\.get \$state_)/)) {
+			printf "raw scalar-state address at line %d: %s\n", NR, substr(line, RSTART, RLENGTH) > "/dev/stderr"
+			errors++
+			line = substr(line, RSTART + RLENGTH)
+		}
+	}
+	END { exit(errors > 0) }
+' "$root/code.wat"
+
+awk '
 	/i32\.const 1108/ { flag_address_literals++ }
 	/i32\.const (-16|-129|-257|528|656)([^0-9]|$)/ && $0 !~ /\(global \$flag_/ {
 		printf "opaque flag composite at line %d: %s\n", NR, $0 > "/dev/stderr"
