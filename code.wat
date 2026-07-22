@@ -74,7 +74,6 @@
 	(data (i32.const 144) "LIVES")
 	(data (i32.const 160) "000000")
 	(data (i32.const 168) "00")
-	(data (i32.const 176) "WAVE")
 	(data (i32.const 184) "SHIP DESTROYED")
 	(data (i32.const 200) "Help / Controls")
 	(data (i32.const 224) "CONTROLS")

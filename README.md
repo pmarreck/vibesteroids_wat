@@ -75,6 +75,10 @@ Controls:
 | H / F1 | Help / Controls |
 | R | New game |
 | Ctrl+R | Reload watched WAT |
+| Mouse movement | Aim toward the pointer at the ship's bounded rotation rate |
+| Hold primary mouse button | Fire |
+| Hold secondary mouse button | Thrust |
+| Mouse wheel / trackpad scroll | Activate Death Blossom when available |
 
 New Game, Help / Controls, Reload, and Quit are also exposed through native
 window actions.
@@ -130,8 +134,8 @@ Implemented:
 - independently scheduled disc UFOs with predictive, random, and defensive
   fire, physical collisions, a 2,000-point bounty, and hazardous expanding
   blasts whose asteroid score follows player-kill attribution;
-- drifting packages that grant 20 seconds of finite, non-wrapping,
-  multi-target laser fire;
+- destructible drifting packages that randomly grant either 20 seconds of
+  finite, non-wrapping multi-target laser fire or doubled bounded fire rate;
 - guest-declared shot, laser, thrust, explosion, extra-life, Death Blossom,
   alert, notification, and layered 1.2-second-or-longer BOOM synths;
 - signed decimal-fixed internal state and physics, with one sealed float adapter
@@ -142,7 +146,7 @@ Implemented:
 Current deliberate limits:
 
 - the packaged simulation rate is 120 Hz, with equal-time 60/120 WAST proof;
-- touch/shake browser controls have no native equivalent yet;
+- touch/shake browser controls have no deployed native equivalent yet;
 - presentation and tuning remain POC quality; and
 - gameplay additions should be validated as experiments, not added merely
   because the frontplane can express them.

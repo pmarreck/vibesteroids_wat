@@ -124,6 +124,13 @@ H/F1        help or controls
 R           new game
 ~~~
 
+Pointer mapping is also guest-owned. Motion updates a target point; the ship
+turns toward it at the same bounded angular rate used by gameplay and snaps only
+when another fixed step would overshoot. Holding the primary button fires,
+holding the secondary button thrusts, and any delivered nonzero scroll gesture
+activates Death Blossom when eligible. Button releases and focus loss clear the
+corresponding held state.
+
 Key-up stops held actions. Focus loss clears all held controls. New Game resets
 from the configured seed. Help and pause must not corrupt input state.
 
@@ -159,7 +166,7 @@ children whose directions and speeds become wilder with level while respecting
 the level-scaled maximum speed. Completing a wave advances level, raises the
 difficulty envelope, and spawns the next bounded wave.
 
-### 6.4 Enemy ship and laser package
+### 6.4 Enemy ship and random-power package
 
 The game independently schedules one enemy saucer and one collectible package
 at uniformly selected intervals from 45 through 120 simulated seconds. A new
@@ -180,12 +187,16 @@ contact-triggered blasts never manufacture points. The 1.2-second presentation
 expands and contracts through the same fixed clock as gameplay, while damage is
 resolved once at detonation so newly split children survive the parent blast.
 
-The package drifts across the viewport without wrapping. Player contact grants
-20 simulated seconds of laser fire in place of bullets. A laser is a finite
-segment from the muzzle to the first viewport boundary: it never wraps, tests
-all targets present when fired, and may destroy multiple rocks without
-recursively targeting children created by that same beam. A short cyan
-afterimage makes the otherwise instantaneous command visible.
+The package drifts across the viewport without wrapping and does not collide
+with rocks. Player bullets, lasers, and enemy shots can destroy it; leaving the
+screen or being shot emits the same failure cue. Player contact selects one of
+two seeded rewards for 20 simulated seconds: laser fire or doubled bounded fire
+rate. Collection emits its own success cue.
+
+A laser is a finite segment from the muzzle to the first viewport boundary: it
+never wraps, tests all targets present when fired, and may destroy multiple
+rocks without recursively targeting children created by that same beam. A
+short cyan afterimage makes the otherwise instantaneous command visible.
 
 ### 6.4 Presentation and audio
 
@@ -270,6 +281,6 @@ mechanics still require scope discipline.
 - online multiplayer or service dependencies;
 - unbounded entities or general ECS machinery;
 - translation work during the POC;
-- touch/shake parity without a native input design;
-- changing to 120 Hz before equivalence tests and visual approval; or
+- touch/shake parity before Aedicule deploys its specified multi-contact event
+  contract;
 - claiming a production-ready game or stable frontplane ABI.

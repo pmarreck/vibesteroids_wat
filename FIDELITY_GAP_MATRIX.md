@@ -14,21 +14,21 @@ applicable.
 | Browser test-mode URL and in-page test UI | Keep standard WAST behavior scripts here; Mecha Aedicule independently tests generic host controls | WAST keeps application tests in the same ecosystem as the WAT while Rust remains outside this repository and outside the game boundary. |
 | Eruda mobile console and HTTPS development server | Not applicable | These exist solely to support a browser/mobile runtime. |
 | Device-motion permission and shake activation | Defer until a host motion capability exists | A desktop keyboard action remains available; the generic ABI must not pretend to have sensors. |
-| Browser touch controls | Implement pointer/touch semantics only after the generic pointer ABI is bounded and tested | GPUI can eventually supply pointer input, but this is separate from fixed-decimal and desktop parity. |
+| Browser touch controls | Keep desktop pointer controls live; defer multi-contact touch until Aedicule deploys event kinds 11--14 | The guest owns left/right zones and stroke meaning; the host owns opaque contact IDs and ordered delivery. |
 | Resize by proportional coordinate scaling | Translate positions by `new_center - old_center` | Peter explicitly selected center-relative preservation so resize does not stretch trajectories. |
 | Ship drag `0.99` | Use `0.995` per simulation tick | Peter selected the gentler coefficient during a live, state-preserving WAT edit. |
-| Refresh-rate-dependent browser delta timing | Use deterministic 60 Hz integer ticks | Replay, tests, and snapshots must not depend on display timing. |
+| Refresh-rate-dependent browser delta timing | Request deterministic 120/1 integer ticks from Aedicule's monotonic scheduler | Replay, tests, and snapshots do not depend on display timing; equal-time WAST covers 60, 120, 60000/1001, and 120000/1001 Hz. |
 | Ambient randomness for thrust/audio | Keep gameplay randomness seeded; keep audio noise outside gameplay state | Rendering/audio adapters must never feed nondeterminism back into simulation. |
 
 ## Numeric architecture — blocking prerequisite
 
 | Requirement | Current state | Completion evidence |
 |---|---|---|
-| Decimal fixed-point world values | **Implemented** | Schema 4 stores every gameplay scalar in signed `i64` decimal millionths and all velocities in canonical per-second units; WAST schema, motion, and exact-drag assertions pass. |
+| Decimal fixed-point world values | **Implemented** | Schema 9 stores gameplay dimensions in signed `i64` decimal millionths and velocities in canonical per-second units; WAST schema, motion, and exact-drag assertions pass. |
 | Integer-only simulation | **Implemented** | A structural classifier rejects floating-point arithmetic, loads, and stores outside explicitly marked host-scalar conversion adapters. |
 | Safe fixed-point multiplication and distance tests | **Implemented** | Collision deltas rescale to milli-fixed before squaring; exact `0.995`, negative values, collision equality, and 8K bounds are covered. |
 | One-way host conversion | **Implemented** | Host viewport scalars convert once on ingress and completed draw scalars once on egress; no converted value re-enters gameplay state. |
-| Explicit incompatible schema transitions | **Implemented** | Schema 2→3 introduced decimal-fixed state and 3→4 introduced canonical per-second units; transactional reload restarts rather than restoring bytes with different meaning. |
+| Explicit incompatible schema transitions | **Implemented** | Schema 9 records the player-bullet lifetime semantic; transactional reload restarts rather than restoring bytes with a different meaning. Earlier transitions remain preserved in Git. |
 
 ## Gameplay and state
 
@@ -38,11 +38,11 @@ applicable.
 | Five initial parent rocks, +1 per wave | **Implemented** | Retain capacity and progression tests after the schema migration. |
 | Level difficulty formulas | **Implemented** | Integer interpolation covers source acceleration, rotation, bullet speed, fire delay, and pre-20 asteroid caps; endpoint/cap tests pass. |
 | Ship rotation, thrust, wrap, and `0.995` drag | **Implemented** | Direction-vector rotation uses fixed small-angle sine/cosine, level-derived acceleration, and exact integer damping. |
-| Bullet origin, velocity inheritance, cadence, lifetime, and cap | **Implemented** | Fixed-decimal distance expires at half the live diagonal; source cadence/speed and full-pool failure are covered. |
+| Bullet origin, velocity inheritance, cadence, lifetime, and cap | **Implemented** | A cached viewport diagonal and per-shot countdown retain half-diagonal expiry without per-tick square roots; source cadence/speed, swept collision, wrap negatives, and full-pool failure are covered. |
 | Asteroid construction and irregular outlines | **Implemented, source-shaped spawn regions** | Seeded radii reach `[20,50)`, points span 8–12, angular motion is `[-1,1)` rad/s, and velocity limits are exact; the bounded port uses four safe edges rather than eight unweighted rectangles. |
 | Bullet/ship collision and splitting | **Implemented** | Thresholds/impulses are fixed decimal; tests cover 60% children, seeded ±20 offsets, scoring, and level caps. |
-| Scoring and repeated 20,000-point extra ships | **Implemented** | Preserve threshold-crossing and semantic-audio tests after migration. |
-| Ship death, debris, safe respawn, bomb, and game over | **Implemented** | World effects keep advancing; 120/300/600-tick lifecycle boundaries, 96/48 safe radii, no-score bomb, and delayed game over are tested. |
+| Scoring and geometrically rarer extra ships | **Implemented** | The first reserve arrives at 30,000 points; each later gap grows by 1.5x with unsigned saturation and one award per scoring event. |
+| Ship death, debris, safe respawn, bomb, and game over | **Implemented** | World effects keep advancing; source-time lifecycle boundaries, 96/48 safe radii, no-score bomb, and delayed game over are tested across rational rates. |
 | Pause, focus release, restart | **Implemented** | P/Escape and focus release are mapped; deterministic tests prove pause/help freeze and restart behavior. |
 | Auto-fire toggle (`F`) | **Implemented** | A generic key code drives a snapshotted latch and deterministic cadence; Help lists the control. |
 | Kid Mode (`K`) | **Implemented** | Tests prove score/life suppression, ordinary-HUD hiding, and retained collision/explosion behavior. |
@@ -54,13 +54,15 @@ applicable.
 |---|---|---|
 | Game fills drawable window | **Implemented; awaiting visual gate** | The host uses a 1:1 full-bounds projection and overlays native controls/status instead of consuming game space. |
 | Runtime viewport events | **Implemented** | Actual GPUI viewport sizes are coalesced by bitwise equality and delivered once per distinct finite positive size. |
-| Center-relative resize | **Implemented** | Snapshot tests prove ship, bullets, rocks, particles, and debris translate by the exact center delta while velocities remain unchanged. |
+| Center-relative resize | **Implemented** | Snapshot tests prove ship, bullets, enemy shots, foreign actors, beams, hazardous blasts, rocks, particles, and debris translate by the exact center delta while velocities remain unchanged. |
 | 100 deterministic stars regenerated on resize | **Implemented** | Exactly 100 stars are stored/regenerated independently; a regression proves the gameplay RNG state is unchanged. |
 | Recognizable vector ship/rocks/debris/particles | **Implemented, approximate** | Retain semantic scene-command tests while moving all geometry calculations to fixed decimal before draw conversion. |
 | Neon title/byline splash and timing | **Implemented; awaiting visual gate** | Layered magenta/cyan/white title and byline use an exact 60/120/60-tick fade/hold/fade lifecycle without render mutation. |
 | HUD, pause, game-over, and Play Again presentation | **Implemented, approximate styling** | Score/level/reserves, Kid hiding, Blossom status/message, pause/game-over, and native New Game exist; styling remains a visual comparison item. |
-| Discoverable Help/Controls | **Implemented; awaiting visual gate** | Standard action 7 and F1/H open a plugin-owned overlay listing every desktop control, including F/K/B. |
-| Pointer/touch overlays | **Deferred** | Specify and test a generic pointer capability before implementing desktop click/mobile parity. |
+| Discoverable Help/Controls | **Partial; awaiting Peter's visual gate** | Standard action 7 and F1/H open a plugin-owned overlay; keyboard rows are live, and the proposed desktop-pointer rows await visual approval. |
+| Desktop pointer controls | **Implemented** | Rate-limited aim, held primary fire, held secondary thrust, release/focus cleanup, and wheel Death Blossom are covered through ordered `AE_event` calls. |
+| Multi-contact touch controls | **Deferred** | Pin Aedicule after event kinds 11--14 deploy, then implement guest-owned zones/strokes and clear opaque contact state on end and cancel. |
+| Timed power-up identity | **Partial; awaiting Peter's visual gate** | Seeded selection between lasers and doubled fire rate is tested; the proposed active-kind icon/countdown awaits visual approval. |
 
 ## Audio
 

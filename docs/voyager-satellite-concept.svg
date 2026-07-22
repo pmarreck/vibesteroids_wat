@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+	<defs>
+		<!--
+			The production WAT can reproduce this model with AE_line, AE_circle,
+			AE_path_* and an affine transform. Curves and bitmap-only details are
+			intentionally absent so the review drawing is an honest ABI target.
+		-->
+		<g id="voyager-model" fill="none" stroke-linecap="round" stroke-linejoin="round">
+			<!-- Long magnetometer/science boom, bent at a dead joint. -->
+			<path d="M 20 13 L 64 -13 L 73 -9 M 80 -14 L 106 -30" stroke="#7893ac" stroke-width="2"/>
+			<path d="M 25 18 L 65 -8 L 72 -6 M 82 -11 L 108 -27" stroke="#53687d" stroke-width="1.4"/>
+			<line x1="38" y1="6" x2="43" y2="10" stroke="#53687d" stroke-width="1.2"/>
+			<line x1="51" y1="-2" x2="56" y2="2" stroke="#53687d" stroke-width="1.2"/>
+			<line x1="92" y1="-22" x2="96" y2="-18" stroke="#53687d" stroke-width="1.2"/>
+			<circle cx="110" cy="-30" r="3.5" stroke="#8eb0c9" stroke-width="1.8"/>
+
+			<!-- RTG boom and the three tandem radioisotope generators. -->
+			<path d="M -18 14 L -48 25 L -91 31" stroke="#7893ac" stroke-width="2.5"/>
+			<path d="M -43 20 L -38 29 L -51 34 L -56 25 Z" fill="#172536" stroke="#8eb0c9" stroke-width="1.8"/>
+			<path d="M -61 24 L -56 33 L -69 38 L -74 29 Z" fill="#172536" stroke="#8eb0c9" stroke-width="1.8"/>
+			<path d="M -79 27 L -74 36 L -87 41 L -92 32 Z" fill="#172536" stroke="#8eb0c9" stroke-width="1.8"/>
+			<circle cx="-47" cy="27" r="2.4" fill="#ff9b3d" stroke="#ffcf73" stroke-width="1"/>
+			<circle cx="-65" cy="31" r="2.4" fill="#e8792b" stroke="#ffbd5a" stroke-width="1"/>
+			<circle cx="-83" cy="34" r="2.4" fill="#bb5724" stroke="#e88a39" stroke-width="1"/>
+
+			<!-- Ten-sided equipment bus, with a cracked dead panel and gold record. -->
+			<path d="M -22 2 L -9 -8 L 9 -8 L 23 2 L 25 18 L 14 30 L -4 34 L -20 26 L -27 13 Z"
+				fill="#152436" stroke="#9bb8d1" stroke-width="2.4"/>
+			<path d="M 4 3 L -2 12 L 5 17 L 0 27" stroke="#53687d" stroke-width="1.6"/>
+			<circle cx="13" cy="16" r="5.5" fill="#b88731" stroke="#ffd36a" stroke-width="1.5"/>
+			<circle cx="13" cy="16" r="1.2" fill="#182033" stroke="none"/>
+
+			<!-- Polygonal high-gain dish. The missing rim segment marks dereliction. -->
+			<path d="M -38 -12 L -35 -18 L -27 -24 L -15 -28 L 0 -30 L 15 -28 L 27 -24"
+				stroke="#b7cfdf" stroke-width="2.8"/>
+			<path d="M 34 -18 L 38 -12 L 35 -6 L 27 0 L 15 4 L 0 6 L -15 4 L -27 0 L -35 -6 L -38 -12"
+				fill="#102133" stroke="#9bb8d1" stroke-width="2.8"/>
+			<path d="M -27 0 L 0 -8 L 27 0" stroke="#607b92" stroke-width="1.2"/>
+			<line x1="-17" y1="1" x2="0" y2="-25" stroke="#7893ac" stroke-width="1.5"/>
+			<line x1="17" y1="1" x2="0" y2="-25" stroke="#7893ac" stroke-width="1.5"/>
+			<line x1="0" y1="-8" x2="0" y2="-25" stroke="#8eb0c9" stroke-width="1.7"/>
+			<circle cx="0" cy="-26" r="3.2" fill="#5c7185" stroke="#b7cfdf" stroke-width="1.3"/>
+
+			<!-- Small broken cable: damage that remains legible at gameplay scale. -->
+			<path d="M 31 -8 L 38 -3 L 34 4" stroke="#ff8a3d" stroke-width="1.6"/>
+		</g>
+
+		<pattern id="stars" width="92" height="74" patternUnits="userSpaceOnUse">
+			<circle cx="12" cy="19" r="1" fill="#7b91a8" opacity="0.45"/>
+			<circle cx="69" cy="53" r="0.8" fill="#a8bfd2" opacity="0.32"/>
+		</pattern>
+	</defs>
+
+	<rect width="1200" height="760" fill="#08121f"/>
+	<rect width="1200" height="760" fill="url(#stars)"/>
+	<path d="M 0 112 L 1200 112" stroke="#26394c" stroke-width="2"/>
+
+	<text x="62" y="57" fill="#e2edf5" font-family="ui-monospace, monospace" font-size="29" font-weight="700">
+		DERELICT VOYAGER — PROPOSED GAME MODEL
+	</text>
+	<text x="63" y="88" fill="#7f9bb2" font-family="ui-monospace, monospace" font-size="16">
+		Historic silhouette, damaged readability, only host-reproducible vector primitives
+	</text>
+
+	<!-- Enlarged inspection view. -->
+	<rect x="45" y="145" width="730" height="530" rx="12" fill="#0c1928" stroke="#263f55" stroke-width="2"/>
+	<text x="72" y="181" fill="#7f9bb2" font-family="ui-monospace, monospace" font-size="15">INSPECTION VIEW · 2.55×</text>
+	<circle cx="374" cy="392" r="156" fill="none" stroke="#4ddff2" stroke-width="2" opacity="0.07"/>
+	<circle cx="374" cy="392" r="137" fill="none" stroke="#4ddff2" stroke-width="2" opacity="0.12"/>
+	<g transform="translate(374 392) rotate(-8) scale(2.55)">
+		<use href="#voyager-model"/>
+	</g>
+
+	<!-- Callouts describe intent; they are not production text. -->
+	<path d="M 179 247 L 226 290" stroke="#4ddff2" stroke-width="1.4"/>
+	<circle cx="226" cy="290" r="3" fill="#4ddff2"/>
+	<text x="78" y="236" fill="#9edce6" font-family="ui-monospace, monospace" font-size="14">broken dish rim</text>
+	<text x="78" y="254" fill="#607f96" font-family="ui-monospace, monospace" font-size="12">derelict at a glance</text>
+
+	<path d="M 158 531 L 218 488" stroke="#ff9b3d" stroke-width="1.4"/>
+	<circle cx="218" cy="488" r="3" fill="#ff9b3d"/>
+	<text x="78" y="552" fill="#ffc06f" font-family="ui-monospace, monospace" font-size="14">three dim RTGs</text>
+
+	<path d="M 575 248 L 562 299" stroke="#4ddff2" stroke-width="1.4"/>
+	<circle cx="562" cy="299" r="3" fill="#4ddff2"/>
+	<text x="584" y="230" fill="#9edce6" font-family="ui-monospace, monospace" font-size="14">bent boom + dead joint</text>
+	<text x="584" y="248" fill="#607f96" font-family="ui-monospace, monospace" font-size="12">asymmetric drift profile</text>
+
+	<path d="M 580 536 L 503 470" stroke="#ffd36a" stroke-width="1.4"/>
+	<circle cx="503" cy="470" r="3" fill="#ffd36a"/>
+	<text x="591" y="549" fill="#ffd978" font-family="ui-monospace, monospace" font-size="14">tiny gold-record nod</text>
+
+	<!-- Honest one-to-one gameplay-scale comparison. -->
+	<rect x="805" y="145" width="350" height="530" rx="12" fill="#0c1928" stroke="#263f55" stroke-width="2"/>
+	<text x="831" y="181" fill="#7f9bb2" font-family="ui-monospace, monospace" font-size="15">GAMEPLAY SCALE · 1 LOGICAL PX = 1 PX</text>
+	<rect x="831" y="205" width="298" height="300" rx="6" fill="#07111e" stroke="#1f3448"/>
+	<circle cx="981" cy="349" r="78" fill="none" stroke="#4ddff2" stroke-width="1.4" opacity="0.08"/>
+	<circle cx="981" cy="349" r="69" fill="none" stroke="#4ddff2" stroke-width="1.2" opacity="0.12"/>
+	<g transform="translate(981 349) rotate(7)">
+		<use href="#voyager-model"/>
+	</g>
+
+	<!-- Existing approximate silhouettes provide an honest size comparison. -->
+	<g transform="translate(884 474)" fill="none" stroke="#8eb0c9" stroke-linejoin="round">
+		<path d="M -13 8 L 12 0 L -13 -8 L -8 0 Z" stroke-width="1.5"/>
+		<circle cx="-5" cy="0" r="2.5" stroke-width="1.2"/>
+	</g>
+	<text x="903" y="479" fill="#607f96" font-family="ui-monospace, monospace" font-size="11">ship (~25 px)</text>
+	<g transform="translate(1036 474)" fill="none" stroke="#ffcf73">
+		<path d="M -24 3 L -18 -5 L 18 -5 L 24 3 L 18 8 L -18 8 Z" stroke-width="1.4"/>
+		<path d="M -9 -5 L -5 -12 L 5 -12 L 9 -5" stroke-width="1.2"/>
+	</g>
+	<text x="1068" y="479" fill="#607f96" font-family="ui-monospace, monospace" font-size="11">UFO (~48 px)</text>
+
+	<text x="831" y="550" fill="#9edce6" font-family="ui-monospace, monospace" font-size="14">PROPOSED FOOTPRINT</text>
+	<text x="831" y="575" fill="#d1e0ea" font-family="ui-monospace, monospace" font-size="18">220 × 72 logical px</text>
+	<text x="831" y="602" fill="#607f96" font-family="ui-monospace, monospace" font-size="13">Dish dominates; booms make the hazard</text>
+	<text x="831" y="621" fill="#607f96" font-family="ui-monospace, monospace" font-size="13">easy to identify but awkward to hit.</text>
+	<text x="831" y="650" fill="#4ddff2" font-family="ui-monospace, monospace" font-size="13">faint cyan pulse · no arrival cue</text>
+
+	<text x="60" y="719" fill="#526c82" font-family="ui-monospace, monospace" font-size="12">
+		Review artifact only — production geometry, collision bounds, pulse cadence, and damage details await Peter's approval.
+	</text>
+</svg>
