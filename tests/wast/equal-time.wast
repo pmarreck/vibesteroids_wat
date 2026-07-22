@@ -33,6 +33,23 @@
 		i32.const 1064 i64.const 100000000 i64.store
 		i32.const 60 call $tick drop
 		i32.const 1064 i64.load)
+	(func (export "initial_timers") (result i32 i32)
+		call $prepare i32.const 1116 i32.load i32.const 1132 i32.load)
+	(func (export "power_timer") (result i32)
+		call $prepare
+		i32.const 16464 i32.const 1 i32.store
+		i32.const 16472 i32.const 1048 i64.load i64.store
+		i32.const 16480 i32.const 1056 i64.load i64.store
+		i32.const 16504 i64.const 20000000 i64.store
+		i32.const 1 call $tick drop
+		i32.const 16520 i32.load)
+	(func (export "blast_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26624 i32.const 1 i32.store i32.const 26648 i32.const 0 i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26624 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26624 i32.load)
 )
 (register "rate_60_probe" $rate_60_probe)
 (module $rate_120_probe
@@ -68,6 +85,23 @@
 		i32.const 1064 i64.const 100000000 i64.store
 		i32.const 120 call $tick drop
 		i32.const 1064 i64.load)
+	(func (export "initial_timers") (result i32 i32)
+		call $prepare i32.const 1116 i32.load i32.const 1132 i32.load)
+	(func (export "power_timer") (result i32)
+		call $prepare
+		i32.const 16464 i32.const 1 i32.store
+		i32.const 16472 i32.const 1048 i64.load i64.store
+		i32.const 16480 i32.const 1056 i64.load i64.store
+		i32.const 16504 i64.const 20000000 i64.store
+		i32.const 1 call $tick drop
+		i32.const 16520 i32.load)
+	(func (export "blast_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26624 i32.const 1 i32.store i32.const 26648 i32.const 0 i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26624 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26624 i32.load)
 )
 (register "rate_120_probe" $rate_120_probe)
 (module $rate_60000_1001_probe
@@ -98,6 +132,23 @@
 		call $prepare
 		i32.const 59 call $tick drop
 		i32.const 1288 i64.load)
+	(func (export "initial_timers") (result i32 i32)
+		call $prepare i32.const 1116 i32.load i32.const 1132 i32.load)
+	(func (export "power_timer") (result i32)
+		call $prepare
+		i32.const 16464 i32.const 1 i32.store
+		i32.const 16472 i32.const 1048 i64.load i64.store
+		i32.const 16480 i32.const 1056 i64.load i64.store
+		i32.const 16504 i64.const 20000000 i64.store
+		i32.const 1 call $tick drop
+		i32.const 16520 i32.load)
+	(func (export "blast_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26624 i32.const 1 i32.store i32.const 26648 i32.const 0 i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26624 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26624 i32.load)
 )
 (module $rate_120000_1001_probe
 	(import "sut_120000_1001" "memory" (memory $state 1))
@@ -127,12 +178,45 @@
 		call $prepare
 		i32.const 119 call $tick drop
 		i32.const 1288 i64.load)
+	(func (export "initial_timers") (result i32 i32)
+		call $prepare i32.const 1116 i32.load i32.const 1132 i32.load)
+	(func (export "power_timer") (result i32)
+		call $prepare
+		i32.const 16464 i32.const 1 i32.store
+		i32.const 16472 i32.const 1048 i64.load i64.store
+		i32.const 16480 i32.const 1056 i64.load i64.store
+		i32.const 16504 i64.const 20000000 i64.store
+		i32.const 1 call $tick drop
+		i32.const 16520 i32.load)
+	(func (export "blast_boundary") (param $due i32) (result i32 i32)
+		call $prepare
+		i32.const 26624 i32.const 1 i32.store i32.const 26648 i32.const 0 i32.store
+		local.get $due i32.const 1 i32.sub call $tick drop
+		i32.const 26624 i32.load
+		i32.const 1 call $tick drop
+		i32.const 26624 i32.load)
 )
 
 (assert_return (invoke $rate_60_probe "run") (i64.const 160000000))
 (assert_return (invoke $rate_120_probe "run") (i64.const 160000000))
 (assert_return (invoke $rate_60000_1001_probe "run") (i64.const 159059000))
 (assert_return (invoke $rate_120000_1001_probe "run") (i64.const 159559500))
+
+;; Every lifecycle uses the same source-authored duration conversion. These
+;; probes cover reset timers, a collected 20-second reward, and the tick just
+;; before/at hazardous-blast expiry across integral and rational rates.
+(assert_return (invoke $rate_60_probe "initial_timers") (i32.const 120) (i32.const 240))
+(assert_return (invoke $rate_120_probe "initial_timers") (i32.const 240) (i32.const 480))
+(assert_return (invoke $rate_60000_1001_probe "initial_timers") (i32.const 119) (i32.const 239))
+(assert_return (invoke $rate_120000_1001_probe "initial_timers") (i32.const 239) (i32.const 479))
+(assert_return (invoke $rate_60_probe "power_timer") (i32.const 1200))
+(assert_return (invoke $rate_120_probe "power_timer") (i32.const 2400))
+(assert_return (invoke $rate_60000_1001_probe "power_timer") (i32.const 1198))
+(assert_return (invoke $rate_120000_1001_probe "power_timer") (i32.const 2397))
+(assert_return (invoke $rate_60_probe "blast_boundary" (i32.const 72)) (i32.const 1) (i32.const 0))
+(assert_return (invoke $rate_120_probe "blast_boundary" (i32.const 144)) (i32.const 1) (i32.const 0))
+(assert_return (invoke $rate_60000_1001_probe "blast_boundary" (i32.const 71)) (i32.const 1) (i32.const 0))
+(assert_return (invoke $rate_120000_1001_probe "blast_boundary" (i32.const 143)) (i32.const 1) (i32.const 0))
 
 ;; Linearized retention factors keep one-second damping perceptually equal
 ;; even though integer rounding differs across simulation step counts.
