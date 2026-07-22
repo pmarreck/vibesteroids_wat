@@ -92,9 +92,16 @@
 		(i32.const 15012) (i32.const -1) (i32.const 1))
 	(i32.const 1))
 (assert_return
-	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15024) (i32.const 100000000) (i32.const 668000000))
+	(invoke $vibesteroids_tests "state_i64_between"
+		(i32.const 15024) (i64.const 100000000) (i64.const 668000000))
 	(i32.const 1))
+;; A plausible low word cannot hide an out-of-range high word.
+(assert_return (invoke $vibesteroids_tests "state_set_i64"
+	(i32.const 15024) (i64.const 4394967296)))
+(assert_return
+	(invoke $vibesteroids_tests "state_i64_between"
+		(i32.const 15024) (i64.const 100000000) (i64.const 668000000))
+	(i32.const 0))
 
 ;; Horizontal motion is per-second fixed-point and the UFO has a distinct path.
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15008) (i32.const 1)))
@@ -236,9 +243,16 @@
 		(i32.const 15444) (i32.const -1) (i32.const 1))
 	(i32.const 1))
 (assert_return
-	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15456) (i32.const 100000000) (i32.const 668000000))
+	(invoke $vibesteroids_tests "state_i64_between"
+		(i32.const 15456) (i64.const 100000000) (i64.const 668000000))
 	(i32.const 1))
+;; Repeat the high-word negative control for the independent package record.
+(assert_return (invoke $vibesteroids_tests "state_set_i64"
+	(i32.const 15456) (i64.const 4394967296)))
+(assert_return
+	(invoke $vibesteroids_tests "state_i64_between"
+		(i32.const 15456) (i64.const 100000000) (i64.const 668000000))
+	(i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_package_paths") (i32.const 1))
