@@ -87,8 +87,47 @@
 			local.get $package local.get $maximum i32.gt_s i32.or
 			(if (then i32.const 0 return))
 			local.get $seed i32.const 1 i32.add local.set $seed
-			br $seeds))
+				br $seeds))
 		i32.const 1)
+	;; Classifies foreign-actor directions over a seed set and couples each sign
+	;; to its exact entry edge; both signs must occur for both independent actors.
+	(func (export "foreign_actor_edges_valid") (param $seed_count i32) (result i32)
+		(local $seed i32) (local $direction i32)
+		(local $ufo_directions i32) (local $package_directions i32)
+		call $configure drop
+		(block $valid (loop $seeds
+			local.get $seed local.get $seed_count i32.ge_u br_if $valid
+			local.get $seed i32.const 1 i32.add i32.const 0
+			f32.const 1024 f32.const 768 call $init drop
+			i32.const 16512 i32.const 1 i32.store
+			i32.const 16516 i32.const 1 i32.store
+			i32.const 1 call $tick drop
+			i32.const 16032 i32.load i32.eqz i32.const 16464 i32.load i32.eqz i32.or
+			(if (then i32.const 0 return))
+			i32.const 16036 i32.load local.tee $direction i32.const 1 i32.eq
+			(if
+				(then
+					i32.const 16040 i64.load i64.const -30000000 i64.ne (if (then i32.const 0 return))
+					local.get $ufo_directions i32.const 1 i32.or local.set $ufo_directions)
+				(else
+					local.get $direction i32.const -1 i32.ne (if (then i32.const 0 return))
+					i32.const 16040 i64.load i32.const 1032 i64.load i64.const 30000000 i64.add i64.ne
+					(if (then i32.const 0 return))
+					local.get $ufo_directions i32.const 2 i32.or local.set $ufo_directions))
+			i32.const 16468 i32.load local.tee $direction i32.const 1 i32.eq
+			(if
+				(then
+					i32.const 16472 i64.load i64.const -30000000 i64.ne (if (then i32.const 0 return))
+					local.get $package_directions i32.const 1 i32.or local.set $package_directions)
+				(else
+					local.get $direction i32.const -1 i32.ne (if (then i32.const 0 return))
+					i32.const 16472 i64.load i32.const 1032 i64.load i64.const 30000000 i64.add i64.ne
+					(if (then i32.const 0 return))
+					local.get $package_directions i32.const 2 i32.or local.set $package_directions))
+			local.get $seed i32.const 1 i32.add local.set $seed
+			br $seeds))
+		local.get $ufo_directions i32.const 3 i32.eq
+		local.get $package_directions i32.const 3 i32.eq i32.and)
 	(func (export "thrust_once") (result i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop

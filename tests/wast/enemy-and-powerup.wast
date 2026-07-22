@@ -4,6 +4,9 @@
 	(invoke $vibesteroids_tests "spawn_schedules_within"
 		(i32.const 5400) (i32.const 14400) (i32.const 64))
 	(i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "foreign_actor_edges_valid" (i32.const 64))
+	(i32.const 1))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
