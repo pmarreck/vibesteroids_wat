@@ -99,6 +99,40 @@
 	(global $wave_saw i32 (i32.const 2))
 	(global $filter_none i32 (i32.const 0))
 	(global $filter_low_pass i32 (i32.const 1))
+	(global $state_flags_address i32 (i32.const 1108))
+	(global $flag_rotate_left i32 (i32.const 1))
+	(global $flag_rotate_right i32 (i32.const 2))
+	(global $flag_thrust i32 (i32.const 4))
+	(global $flag_fire i32 (i32.const 8))
+	(global $flag_held_controls i32 (i32.const 15))
+	(global $flag_paused i32 (i32.const 16))
+	(global $flag_auto_fire i32 (i32.const 32))
+	(global $flag_kid_mode i32 (i32.const 64))
+	(global $flag_blossom_active i32 (i32.const 128))
+	(global $flag_blossom_available i32 (i32.const 256))
+	(global $flag_help_visible i32 (i32.const 512))
+	(global $flag_suspends_tick i32 (i32.const 528))
+	(global $flag_blocks_blossom_activation i32 (i32.const 656))
+
+	(func $load_flags (result i32)
+		global.get $state_flags_address i32.load)
+
+	(func $store_flags (param $flags i32)
+		global.get $state_flags_address local.get $flags i32.store)
+
+	(func $clear_flag (param $mask i32)
+		call $load_flags local.get $mask i32.const -1 i32.xor i32.and call $store_flags)
+
+	(func $set_flag (param $mask i32)
+		call $load_flags local.get $mask i32.or call $store_flags)
+
+	(func $toggle_flag (param $mask i32)
+		call $load_flags local.get $mask i32.xor call $store_flags)
+
+	;; Input-down edges are transient host state. Clear them as a class while
+	;; preserving modal gameplay choices across focus loss and hot reload.
+	(func $clear_held_controls
+		global.get $flag_held_controls call $clear_flag)
 
 	(func (export "AE_abi_major") (result i32) i32.const 0)
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
@@ -633,7 +667,7 @@
 		i32.const 1096 i32.const 0 i32.store
 		i32.const 1100 i32.const 3 i32.store
 		i32.const 1104 i32.const 1 i32.store
-		i32.const 1108 i32.const 256 i32.store
+		global.get $flag_blossom_available call $store_flags
 		i32.const 1112 i32.const -100 i32.store
 		i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store
 		i32.const 1120 i32.const 30000 i32.store
@@ -657,7 +691,7 @@
 	;; delivered its down edge but before its matching release. Clear only the
 	;; four edge-latched controls; persistent mode toggles remain snapshotted.
 	(func (export "AE_after_restore") (result i32)
-		i32.const 1108 i32.const 1108 i32.load i32.const -16 i32.and i32.store
+		call $clear_held_controls
 		i32.const 0)
 
 	(func $asteroid_count (result i32)
@@ -683,7 +717,7 @@
 	(func $fire
 		(local $address i32) (local $speed i64) (local $interval i32)
 		call $fire_interval_ticks local.set $interval
-		i32.const 1108 i32.load i32.const 128 i32.and
+		call $load_flags global.get $flag_blossom_active i32.and
 		(if (then i32.const 2 local.set $interval))
 		;; Ceiling division bounds the reward at no more than exactly twice the
 		;; ordinary rate even when a difficulty interval contains an odd tick.
@@ -691,7 +725,7 @@
 		i32.const 16592 i32.load i32.const 1 i32.eq i32.and
 		(if (then local.get $interval i32.const 1 i32.add i32.const 2 i32.div_u local.set $interval))
 		i32.const 1124 i32.load i32.eqz
-		i32.const 1108 i32.load i32.const 16 i32.and i32.eqz i32.and
+		call $load_flags global.get $flag_paused i32.and i32.eqz i32.and
 		i32.const 1024 i32.load i32.const 1112 i32.load i32.sub local.get $interval i32.ge_s i32.and
 		(if
 			(then
@@ -703,7 +737,7 @@
 						call $find_free_bullet local.tee $address
 						(if
 							(then
-								i32.const 1108 i32.load i32.const 128 i32.and
+								call $load_flags global.get $flag_blossom_active i32.and
 								(if (result i64)
 									(then i64.const 450000000)
 									(else call $bullet_speed_per_second))
@@ -821,7 +855,7 @@
 	;; Centralizes score and extra-life accounting so non-asteroid targets obey
 	;; the same Kid Mode and geometrically increasing reserve-ship rules.
 	(func $add_score (param $points i32)
-		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz
+		call $load_flags global.get $flag_kid_mode i32.and i32.eqz
 		(if
 			(then
 				i32.const 1096 i32.const 1096 i32.load local.get $points i32.add i32.store
@@ -1061,11 +1095,11 @@
 		i32.const 1064 i64.load i32.const 1072 i64.load call $spawn_particles
 		i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1064 i64.load i32.const 1072 i64.load call $spawn_debris
 		i32.const 3 f32.const 1 f32.const 1 i32.const 0 call $audio drop
-		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz
+		call $load_flags global.get $flag_kid_mode i32.and i32.eqz
 		(if (then i32.const 1100 i32.const 1100 i32.load i32.const 1 i32.sub i32.store))
 		i32.const 1124 i32.const 1 i32.store
 		i32.const 1128 i32.const 120 call $ticks_from_sixty i32.store
-		i32.const 1108 i32.const 1108 i32.load i32.const -129 i32.and i32.store)
+		global.get $flag_blossom_active call $clear_flag)
 
 	(func $begin_ship_explosion (param $asteroid i32)
 		local.get $asteroid i64.const 0 i64.const 0 i32.const 0 call $hit_asteroid
@@ -1132,12 +1166,12 @@
 		i32.const 1080 i64.load local.set $dx i32.const 1088 i64.load local.set $dy
 		call $rotation_per_second call $per_tick local.tee $angle call $small_sine local.set $sine
 		local.get $angle call $small_cosine local.set $cosine
-		i32.const 1108 i32.load i32.const 2 i32.and
+		call $load_flags global.get $flag_rotate_right i32.and
 		(if (then
 			local.get $dx local.get $cosine call $fixed_mul local.get $dy local.get $sine call $fixed_mul i64.sub local.set $next_dx
 			local.get $dy local.get $cosine call $fixed_mul local.get $dx local.get $sine call $fixed_mul i64.add local.set $next_dy
 			local.get $next_dx local.set $dx local.get $next_dy local.set $dy))
-		i32.const 1108 i32.load i32.const 1 i32.and
+		call $load_flags global.get $flag_rotate_left i32.and
 		(if (then
 			local.get $dx local.get $cosine call $fixed_mul local.get $dy local.get $sine call $fixed_mul i64.add local.set $next_dx
 			local.get $dy local.get $cosine call $fixed_mul local.get $dx local.get $sine call $fixed_mul i64.sub local.set $next_dy
@@ -1146,12 +1180,13 @@
 
 	(func $activate_death_blossom
 		(local $flags i32)
-		i32.const 1108 i32.load local.set $flags
+		call $load_flags local.set $flags
 		i32.const 1124 i32.load i32.eqz
-		local.get $flags i32.const 656 i32.and i32.eqz i32.and
-		local.get $flags i32.const 256 i32.and i32.eqz i32.eqz i32.and
+		local.get $flags global.get $flag_blocks_blossom_activation i32.and i32.eqz i32.and
+		local.get $flags global.get $flag_blossom_available i32.and i32.eqz i32.eqz i32.and
 		(if (then
-			i32.const 1108 local.get $flags i32.const 128 i32.or i32.const -257 i32.and i32.store
+			local.get $flags global.get $flag_blossom_active i32.or
+			global.get $flag_blossom_available i32.const -1 i32.xor i32.and call $store_flags
 			i32.const 1144 i64.const 0 i64.store
 			i32.const 5 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))
 
@@ -1170,26 +1205,27 @@
 			(then
 				i32.const 1144 i64.const 75398224 i64.store
 				call $fire
-				i32.const 1108 i32.const 1108 i32.load i32.const -129 i32.and i32.store)
+				global.get $flag_blossom_active call $clear_flag)
 			(else
 				i32.const 1144 local.get $rotation i64.store
 				call $fire)))
 
 	(func $update_ship
 		(local $flags i32)
-		i32.const 1108 i32.load local.set $flags
-		local.get $flags i32.const 128 i32.and
+		call $load_flags local.set $flags
+		local.get $flags global.get $flag_blossom_active i32.and
 		(if
 			(then call $update_death_blossom)
 			(else
 				call $rotate_ship
-				local.get $flags i32.const 4 i32.and
+				local.get $flags global.get $flag_thrust i32.and
 				(if (then
 					i32.const 1064 i32.const 1064 i64.load i32.const 1080 i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
 					i32.const 1072 i32.const 1072 i64.load i32.const 1088 i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
 					i32.const 1024 i32.load i32.const 3 i32.and i32.eqz
 					(if (then i32.const 4 f32.const 0.18 f32.const 1 i32.const 0 call $audio drop))))
-				local.get $flags i32.const 8 i32.and local.get $flags i32.const 32 i32.and i32.or
+				local.get $flags global.get $flag_fire i32.and
+				local.get $flags global.get $flag_auto_fire i32.and i32.or
 				(if (then call $fire))))
 		i32.const 1064 i32.const 1064 i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
 		i32.const 1072 i32.const 1072 i64.load i64.const 995000 call $retention_factor_per_tick call $fixed_mul i64.store
@@ -1756,7 +1792,7 @@
 							i32.const 1124 i32.const 0 i32.store
 							i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store
 							i32.const 1132 i32.const 240 call $ticks_from_sixty i32.store
-							i32.const 1108 i32.const 1108 i32.load i32.const 256 i32.or i32.store))))))))
+							global.get $flag_blossom_available call $set_flag))))))))
 		i32.const 1124 i32.load i32.const 2 i32.eq
 		(if (then
 			i32.const 1128 i32.const 1128 i32.load i32.const 1 i32.add i32.store
@@ -1765,15 +1801,15 @@
 			(if (then
 				i32.const 1124 i32.const 0 i32.store i32.const 1128 i32.const 0 i32.store
 				i32.const 1116 i32.const 120 call $ticks_from_sixty i32.store i32.const 1132 i32.const 240 call $ticks_from_sixty i32.store
-				i32.const 1108 i32.const 1108 i32.load i32.const 256 i32.or i32.store))))
+				global.get $flag_blossom_available call $set_flag))))
 	)
 
 	(func $step
 		(local $collision i32)
 		i32.const 1024 i32.const 1024 i32.load i32.const 1 i32.add i32.store
-		i32.const 1108 i32.load i32.const 528 i32.and (if (then return))
+		call $load_flags global.get $flag_suspends_tick i32.and (if (then return))
 		i32.const 1124 i32.load i32.const 3 i32.eq
-		(if (then i32.const 1108 i32.load i32.const 8 i32.and (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset)) return))
+		(if (then call $load_flags global.get $flag_fire i32.and (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset)) return))
 		call $update_hazardous_blast
 		call $update_power_timers
 		i32.const 1124 i32.load i32.eqz
@@ -1885,28 +1921,28 @@
 		(if (then
 			local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
 			local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
-			local.get $code i32.const 1 i32.eq (if (then i32.const 16584 i32.const 0 i32.store i32.const 1 local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then i32.const 16584 i32.const 0 i32.store i32.const 2 local.set $mask))
-			local.get $code i32.const 3 i32.eq (if (then i32.const 4 local.set $mask))
-			local.get $code i32.const 4 i32.eq (if (then i32.const 8 local.set $mask))
+			local.get $code i32.const 1 i32.eq (if (then i32.const 16584 i32.const 0 i32.store global.get $flag_rotate_left local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then i32.const 16584 i32.const 0 i32.store global.get $flag_rotate_right local.set $mask))
+			local.get $code i32.const 3 i32.eq (if (then global.get $flag_thrust local.set $mask))
+			local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
 			local.get $mask i32.eqz
 			(if (then
-				local.get $code i32.const 5 i32.eq (if (then i32.const 1108 i32.const 1108 i32.load i32.const 16 i32.xor i32.store))
+				local.get $code i32.const 5 i32.eq (if (then global.get $flag_paused call $toggle_flag))
 				local.get $code i32.const 6 i32.eq (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset))
-				local.get $code i32.const 7 i32.eq (if (then i32.const 1108 i32.const 1108 i32.load i32.const 32 i32.xor i32.store))
-				local.get $code i32.const 8 i32.eq (if (then i32.const 1108 i32.const 1108 i32.load i32.const 64 i32.xor i32.store))
+				local.get $code i32.const 7 i32.eq (if (then global.get $flag_auto_fire call $toggle_flag))
+				local.get $code i32.const 8 i32.eq (if (then global.get $flag_kid_mode call $toggle_flag))
 				local.get $code i32.const 9 i32.eq (if (then call $activate_death_blossom))
-				local.get $code i32.const 10 i32.eq (if (then i32.const 1108 i32.const 1108 i32.load i32.const 512 i32.xor i32.store)))
-				(else i32.const 1108 i32.const 1108 i32.load local.get $mask i32.or i32.store))))
+				local.get $code i32.const 10 i32.eq (if (then global.get $flag_help_visible call $toggle_flag)))
+				(else local.get $mask call $set_flag))))
 		local.get $kind i32.const 2 i32.eq
 		(if (then
 			local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
 			local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
-			local.get $code i32.const 1 i32.eq (if (then i32.const 1 local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then i32.const 2 local.set $mask))
-			local.get $code i32.const 3 i32.eq (if (then i32.const 4 local.set $mask))
-			local.get $code i32.const 4 i32.eq (if (then i32.const 8 local.set $mask))
-			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.const -1 i32.xor i32.and i32.store))
+			local.get $code i32.const 1 i32.eq (if (then global.get $flag_rotate_left local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then global.get $flag_rotate_right local.set $mask))
+			local.get $code i32.const 3 i32.eq (if (then global.get $flag_thrust local.set $mask))
+			local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
+			local.get $mask call $clear_flag))
 		;; Pointer motion owns heading until a keyboard turn key is pressed.
 		local.get $kind i32.const 3 i32.eq
 		(if (then
@@ -1920,17 +1956,17 @@
 			i32.const 16568 local.get $a call $from_host i64.store
 			i32.const 16576 local.get $b call $from_host i64.store
 			i32.const 16584 i32.const 1 i32.store
-			local.get $code i32.const 1 i32.eq (if (then i32.const 8 local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then i32.const 4 local.set $mask))
-			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.or i32.store))
+			local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then global.get $flag_thrust local.set $mask))
+			local.get $mask call $set_flag))
 		local.get $kind i32.const 5 i32.eq
 		(if (then
 			i32.const 16568 local.get $a call $from_host i64.store
 			i32.const 16576 local.get $b call $from_host i64.store
 			i32.const 16584 i32.const 1 i32.store
-			local.get $code i32.const 1 i32.eq (if (then i32.const 8 local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then i32.const 4 local.set $mask))
-			i32.const 1108 i32.const 1108 i32.load local.get $mask i32.const -1 i32.xor i32.and i32.store))
+			local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
+			local.get $code i32.const 2 i32.eq (if (then global.get $flag_thrust local.set $mask))
+			local.get $mask call $clear_flag))
 		;; Aedicule omits zero-delta scroll phases, so every delivered scroll event
 		;; represents an intentional wheel gesture without inspecting f32 payloads.
 		local.get $kind i32.const 10 i32.eq
@@ -1940,12 +1976,12 @@
 		local.get $kind i32.const 7 i32.eq
 		(if (then
 			local.get $code i32.const 1 i32.eq (if (then i32.const 1136 i32.load i32.const 1032 i64.load i32.const 1040 i64.load call $reset))
-			local.get $code i32.const 7 i32.eq (if (then i32.const 1108 i32.const 1108 i32.load i32.const 512 i32.xor i32.store))
+			local.get $code i32.const 7 i32.eq (if (then global.get $flag_help_visible call $toggle_flag))
 			local.get $code i32.const 6 i32.eq (if (then i32.const 2 i32.const 0 i32.const 0 call $effect drop))))
 		local.get $kind i32.const 8 i32.eq local.get $code i32.eqz i32.and
 		;; Losing focus can strand held edges, but must not rewrite persistent
 		;; player modes, overlays, pause, or the once-per-life weapon charge.
-		(if (then i32.const 1108 i32.const 1108 i32.load i32.const -16 i32.and i32.store))
+		(if (then call $clear_held_controls))
 		i32.const 0)
 
 	(func $rock_scale (param $address i32) (param $vertex i32) (result i64)
@@ -2125,7 +2161,7 @@
 	;; an emoji glyph being present in the host's chosen font.
 	(func $draw_blossom_available
 		(local $x i64)
-		i32.const 1108 i32.load i32.const 256 i32.and i32.eqz (if (then return))
+		call $load_flags global.get $flag_blossom_available i32.and i32.eqz (if (then return))
 		i32.const 1032 i64.load i64.const 2 i64.div_s local.set $x
 		i32.const 920 local.get $x call $to_host f32.const 82 f32.const 4 f32.const 0
 		i32.const 0xffcf5cff i32.const 1 call $circle drop
@@ -2196,7 +2232,7 @@
 		call $draw_laser
 		i32.const 160 i32.const 1096 i32.load call $write_six_digits
 		i32.const 168 i32.const 1104 i32.load call $write_two_digits
-		i32.const 1108 i32.load i32.const 64 i32.and i32.eqz
+		call $load_flags global.get $flag_kid_mode i32.and i32.eqz
 		(if (then
 		i32.const 20 i32.const 128 i32.const 5 f32.const 24 f32.const 24 f32.const 15 i32.const 0x9bb8d1ff i32.const 0 call $text drop
 		i32.const 21 i32.const 160 i32.const 6 f32.const 24 f32.const 48 f32.const 22 i32.const 0x58ff72ff i32.const 0 call $text drop
@@ -2226,7 +2262,7 @@
 		local.get $index i32.eqz
 		(if (then
 			i32.const 1116 i32.load i32.eqz i32.const 1024 i32.load i32.const 8 i32.and i32.eqz i32.or
-			(if (then i32.const 1 i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1080 i64.load i32.const 1088 i64.load i64.const 1000000 i32.const -1 i32.const 1108 i32.load i32.const 4 i32.and i32.eqz i32.eqz call $draw_ship)))
+			(if (then i32.const 1 i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1080 i64.load i32.const 1088 i64.load i64.const 1000000 i32.const -1 call $load_flags global.get $flag_thrust i32.and i32.eqz i32.eqz call $draw_ship)))
 			(else local.get $index i32.const 2 i32.eq
 				(if (then i32.const 1 i32.const 1048 i64.load i32.const 1056 i64.load i32.const 1080 i64.load i32.const 1088 i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))
 		i32.const 0 local.set $index
@@ -2269,11 +2305,11 @@
 		i32.const 1124 i32.load i32.const 1 i32.eq
 		(if (then i32.const 32 i32.const 184 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 26 i32.const 0xff8a2bff i32.const 1 call $text drop))
 		call $draw_blossom_available
-		i32.const 1108 i32.load i32.const 128 i32.and
+		call $load_flags global.get $flag_blossom_active i32.and
 		(if (then i32.const 36 i32.const 472 i32.const 14 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 666667 call $fixed_mul call $to_host f32.const 36 i32.const 0xff5cf4ff i32.const 1 call $text drop))
-		i32.const 1108 i32.load i32.const 16 i32.and
+		call $load_flags global.get $flag_paused i32.and
 		(if (then i32.const 33 i32.const 100 i32.const 6 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i32.const 1040 i64.load i64.const 2 i64.div_s call $to_host f32.const 36 i32.const 0xffcf5cff i32.const 1 call $text drop))
-		i32.const 1108 i32.load i32.const 512 i32.and
+		call $load_flags global.get $flag_help_visible i32.and
 		(if (then
 			i32.const 40 i32.const 224 i32.const 8 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 140000000 call $to_host f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
 			i32.const 41 i32.const 240 i32.const 21 i32.const 1032 i64.load i64.const 2 i64.div_s call $to_host i64.const 200000000 call $to_host f32.const 20 i32.const 0xffffffff i32.const 1 call $text drop

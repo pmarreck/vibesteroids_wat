@@ -42,3 +42,18 @@ awk '
 		exit(errors > 0)
 	}
 ' "$root/code.wat"
+
+awk '
+	/i32\.const 1108/ { flag_address_literals++ }
+	/i32\.const (-16|-129|-257|528|656)([^0-9]|$)/ && $0 !~ /\(global \$flag_/ {
+		printf "opaque flag composite at line %d: %s\n", NR, $0 > "/dev/stderr"
+		errors++
+	}
+	END {
+		if (flag_address_literals != 1) {
+			printf "expected one named flags-address declaration, found %d raw literals\n", flag_address_literals > "/dev/stderr"
+			errors++
+		}
+		exit(errors > 0)
+	}
+' "$root/code.wat"
