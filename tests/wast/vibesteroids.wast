@@ -358,6 +358,10 @@
 		i32.const 1288 i64.const 100000000 i64.store
 		i32.const 1296 i64.const 200000000 i64.store
 		i32.const 1304 i64.const 1234567 i64.store
+		;; An active blast belongs to world space just like its snapshotted targets.
+		i32.const 26624 i32.const 1 i32.store
+		i32.const 26632 i64.const 300000000 i64.store
+		i32.const 26640 i64.const 400000000 i64.store
 		i32.const 6 i32.const 0 f32.const 1600 f32.const 900 call $event drop
 		i32.const 1032 i64.load i64.const 1600000000 i64.ne (if (then i32.const 0 return))
 		i32.const 1040 i64.load i64.const 900000000 i64.ne (if (then i32.const 0 return))
@@ -368,6 +372,8 @@
 		i32.const 1304 i64.load i64.const 1234567 i64.ne (if (then i32.const 0 return))
 		i32.const 4368 i64.load local.get $asteroid_x i64.const 288000000 i64.add i64.ne (if (then i32.const 0 return))
 		i32.const 4376 i64.load local.get $asteroid_y i64.const 66000000 i64.add i64.ne (if (then i32.const 0 return))
+		i32.const 26632 i64.load i64.const 588000000 i64.ne (if (then i32.const 0 return))
+		i32.const 26640 i64.load i64.const 466000000 i64.ne (if (then i32.const 0 return))
 		i32.const 1028 i32.load local.get $rng i32.ne (if (then i32.const 0 return))
 		i32.const 14432 i64.load local.get $star_x i64.eq (if (then i32.const 0 return))
 		i32.const 1)

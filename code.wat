@@ -1798,6 +1798,11 @@
 			i32.const 16536 i32.const 16536 i64.load local.get $dy i64.add i64.store
 			i32.const 16544 i32.const 16544 i64.load local.get $dx i64.add i64.store
 			i32.const 16552 i32.const 16552 i64.load local.get $dy i64.add i64.store))
+		;; The hazardous blast persists for presentation after its collision
+		;; snapshot, so its center must follow the same resize translation.
+		i32.const 26624 i32.load (if (then
+			i32.const 26632 i32.const 26632 i64.load local.get $dx i64.add i64.store
+			i32.const 26640 i32.const 26640 i64.load local.get $dy i64.add i64.store))
 		i32.const 0 local.set $index
 		(block $asteroids_done (loop $asteroids
 			local.get $index i32.const 32 i32.ge_u br_if $asteroids_done
