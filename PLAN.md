@@ -5,6 +5,112 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [ ] Key the projectile range and the hazardous blast extent off a viewport
+  reference that leans toward the smaller dimension instead of the diagonal,
+  which a tall phone inflates until shots outrange the screen and blasts span
+  most of its width. (Peter, 2026-08-04 playtest.)
+	- [ ] RED WAST proving both quantities shrink on a portrait viewport while
+	  a square viewport of equal area is unchanged.
+	- [ ] Confirm `$refresh_bullet_maximum_distance` and
+	  `$hazardous_blast_radius` are the only two consumers that need it.
+
+- [ ] Add `W/A/D` keyboard aliases for thrust/rotate-left/rotate-right and make
+  the Help overlay advertise both arrow and letter controls.
+	- [x] Obtain documented stable physical-key IDs and a tested native/browser
+	  delivery pin from Aedicule: W=`13`, A=`14`, D=`15`, delivered by pin
+	  `baad5069…`. (2026-07-25 18:31 EDT)
+	- [x] RED/GREEN independent thrust ownership so releasing `Up`, `W`, or
+	  secondary-pointer thrust cannot cancel another source that remains held.
+	  (2026-07-24 10:38 EDT)
+	- [x] RED/GREEN WAST coverage proving each letter exactly aliases its arrow
+	  action on down/up, takes heading authority consistently, and cannot create
+	  a stuck held control across focus, pause, or reload boundaries. Rotation
+	  gained per-direction arrow/letter source sets mirroring the thrust design;
+	  the RED run failed on the very first W-down thrust assertion.
+	  (2026-07-25 18:47 EDT)
+	- [x] RED/GREEN the revised Help copy (`LEFT/A RIGHT/D`, `UP/W`) without
+	  changing the approved two-column geometry. (2026-07-24 10:41 EDT)
+	- [x] Document the aliases and source-ownership rule in `SPEC.md` and the
+	  `README.md` controls table. (2026-07-25 18:49 EDT)
+	- [ ] Pass the full suite, optimized build, real-host gate, and package.
+	- Curiosity poke: pressing an arrow and its letter alias together must not
+	  let releasing only one prematurely clear an action still held by the other.
+- [ ] Restore audible Vibesteroids audio on Aedicule's web platform without
+  adding guest-side browser behavior.
+	- [x] Trace the host boundary: Aedicule's browser runtime discards every
+	  synthesized `AE_audio` event, while its muted browser gate proves only that
+	  one packaged-sample request reached JavaScript. (2026-07-24 10:25 EDT)
+	- [x] Deliver the source evidence and MFIC-strengthened RED/GREEN proposal to
+	  the Aedicule agent. (2026-07-24 10:25 EDT)
+	- [x] Physically classify the browser paths: Peter heard Voyager's packaged
+	  Greta sample while synthesized game audio remained silent, isolating the
+	  live defect to `AE_audio`. (2026-07-24 10:37 EDT)
+	- [x] Pin Aedicule `baad5069c3f7b5cf4dcbdf0b8ce539a0e9c42aeb` (explicit rev
+	  override, not an unconstrained update; `original` stays `ref = yolo`). It
+	  carries the web-synth repair `aab2bf6…`, W/A/D IDs `e8736f9…`, and the
+	  browser mouse-chord/touch-focus fixes as ancestors. (2026-07-25 18:31 EDT)
+	- [x] Adopt Aedicule's announced executable hard cutover, which the new pin
+	  forced: `gpui-wasm`→`aedicule`, `gpui-wasm-render`→`aedicule-render`,
+	  `GPUI_WASM_DEFAULT_PLUGIN`→`AEDICULE_DEFAULT_APPLICATION`. The pin turned
+	  `tests/cli/aedicule_runtime` and `tests/cli/application_derivation_layout`
+	  RED; six `flake.nix` lines plus one `README.md` line turned them GREEN.
+	  New names verified against the built binaries, not just the inbox note.
+	  (2026-07-25 18:33 EDT)
+	- [x] Rerun the complete guest suite and optimized package build against the
+	  pin: `./test` EXIT=0 with silent output, both formerly-RED checks
+	  reconfirmed individually, `./build` EXIT=0. (2026-07-25 18:33 EDT)
+	- [x] Adopt Aedicule's next tested pin
+	  `73891e6da037552e731245971b74c4856df21b92` (2026-07-27, "Drop the untested
+	  keystroke buffering from the gpui_web pin"), which carries the confirmed
+	  iOS software-keyboard fix. SHA resolved against the repository before use.
+	  `./test` EXIT=0 with zero failures, `./build` EXIT=0, and the executable
+	  names carried over with no further cutover. (2026-08-02 11:22 EDT)
+	- [ ] Deploy the exact `.aed` from the pinned host, then have Peter
+	  physically verify an ordinary synthesized sound (shot is simplest); the
+	  packaged Greta sample path stays as the already-green control.
+	- [ ] Regenerate and re-pin `vibesteroids.aed` only AFTER the tranche is
+	  committed and Aedicule greens `75697fe`. Aedicule's
+	  `tests/cli/demo_snapshots` pins a (commit, sha256) pair, currently
+	  `935740771883…` / `b22e5002…`, verified byte-identical to the July-22
+	  archive; a hash generated from an uncommitted tree would cite a commit
+	  that does not exist. Zstandard packaging and the 16px touch slop both
+	  live in `75697fe`, whose `./test_browser` is red, so regenerating at
+	  `73891e6` yields another Stored 1,401,454-byte archive
+	  (`tests/main.wast` alone is 1,151,223 bytes, 82%).
+	- Curiosity poke: a Web Audio source can be started yet still be silent or
+	  disconnected, so acceptance must observe non-zero rendered/output PCM.
+- [ ] Correct the two remaining HUD-layout discrepancies and add restrained
+  thrust audio from Peter's live `.aed` playtest.
+	- [x] TDD a Help panel whose computed bottom edge and final content baseline
+	  stay inside the shortest supported viewport. (2026-07-23 13:42 EDT)
+	- [x] TDD power-up mode/countdown text centered vertically in the approved HUD
+	  badge geometry, including two-digit remaining time.
+	  (2026-07-23 13:43 EDT)
+	- [x] TDD a quiet low static-rumble thrust voice with a bounded lifecycle that
+	  neither retriggers every tick nor continues after thrust ends.
+	  (2026-07-23 13:50 EDT)
+	- [x] Pass `./test`, optimized `./build`, the working-tree host runtime, and
+	  launch the exact updated `.aed`. (2026-07-23 13:52 EDT)
+	- [x] Preserve the power-up badge centering accepted in Peter's second live
+	  playtest. (2026-07-23 14:07 EDT)
+	- [x] Replace the rejected viewport-bottom Help sizing with a panel derived
+	  from the final content baseline plus fixed padding.
+	  (2026-07-23 14:10 EDT)
+	- [x] Replace the rejected brown-noise/sine thrust layers with a
+	  static-forward filtered-noise design informed by classic Asteroids'
+	  discrete sound circuit. (2026-07-23 14:12 EDT)
+	- [x] Repass every gate and launch the exact revised `.aed`.
+	  (2026-07-23 14:15 EDT)
+	- [x] TDD Pause as an event boundary: clear held controls on entry, reject
+	  gameplay input, and retain unpause/native-command/resize/focus events.
+	  (2026-07-23 14:29 EDT)
+	- [x] Replace the rejected low-band thrust chatter with a single smoother
+	  filtered-white-noise bed. (2026-07-23 14:31 EDT)
+	- [x] Repass clean tests/build/runtime/package gates and launch the exact
+	  Pause/thrust revision. (2026-07-23 14:33 EDT)
+	- [ ] Receive Peter's visual/audio approval, then commit and push.
+	- Curiosity poke: very short windows, timer-width changes, and overlapping
+	  gameplay sounds must not make these fixes regress or become fatiguing.
 - [x] Double the shared UFO/Voyager hazardous-blast radius so it supports the
   intended strategic multi-asteroid clear and remains genuinely dangerous.
 	- [x] TDD a 240-pixel visual/damage radius, including asteroid/hull radii:
@@ -122,10 +228,30 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- Curiosity poke: does its blast radius create deliberate asteroid-grouping
 	  tactics without letting accidental chain clears dominate ordinary play?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and
-  implement multi-contact left/right-zone and stroke-direction semantics using
-  opaque, page-local contact IDs.
+  restore the original mobile control grammar using opaque, page-local contact
+  IDs: center 60% hold thrusts; outer 20% strips map vertical strokes to
+  opposite rotation directions; edge rotation fires at the ordinary rate;
+  touch end and cancel release only that contact's actions.
+	- [ ] Ask Aedicule for a tested touch-contact runtime pin; the current browser
+	  pointer fallback cannot distinguish a finger from primary-mouse fire.
+	- [x] Agree that guests discover concurrent input capabilities/modalities,
+	  not an OS or global `mobile` mode, and deliver the host/guest ownership
+	  proposal to Aedicule. (2026-07-24 09:05 EDT)
+	- [x] Receive Aedicule's disposition accepting both the semantic-capability
+	  event and the raw multi-contact ownership boundary; exact assignments and
+	  immutable pin remain pending host RED/GREEN work. (2026-07-24 10:42 EDT)
+	- [ ] RED/GREEN deterministic WAST coverage for center thrust, both edge
+	  directions, edge-fire cadence, simultaneous contacts, and end/cancel
+	  release without stuck actions.
+	- [ ] Trigger Death Blossom by shaking the device, matching the original's
+	  acceleration-magnitude threshold and multi-second cooldown; this needs a
+	  device-motion `AE_event` Aedicule has not designed yet, so pencil it in
+	  and keep a tap affordance for devices that deny motion permission.
+	- [ ] Peter-playtest whether to retain the original top-center pause zone now
+	  that Aedicule owns the registered pause lifecycle; do not assume general
+	  mobile autofire, which the original explicitly disabled.
 	- Curiosity poke: do touch end and cancel both clear every contact-owned action
-	  before the next fixed tick?
+	  before the next fixed tick, including when another contact remains active?
 - [ ] Peter-playtest UFO pressure, both gift outcomes, HUD readability, laser
   power, sound texture, and the highest-priority design experiments one at a
   time.

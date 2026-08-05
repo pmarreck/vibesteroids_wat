@@ -76,8 +76,9 @@ Controls:
 
 | Input | Action |
 | --- | --- |
-| Left / Right | Rotate |
-| Up | Thrust |
+| Left / A | Rotate left |
+| Right / D | Rotate right |
+| Up / W | Thrust |
 | Space | Fire bullets, or the temporary laser when powered up |
 | F | Toggle auto-fire |
 | K | Toggle Kid Mode |
@@ -180,7 +181,7 @@ for the Asteroids/Blasteroids engagement research and playtest proposals.
 `./test` enters a pure flake shell and accumulates all failures. It runs:
 
 - stock Wasmtime against the production WAT plus companion WAST scenarios;
-- the locked Aedicule `gpui-wasm-render` binary through configure, initialize,
+- the locked Aedicule `aedicule-render` binary through configure, initialize,
   tick, and render, with successful validation required to keep stderr silent;
 - the structural decimal-fixed classifier;
 - repository-boundary and Nix-composition classifiers; and

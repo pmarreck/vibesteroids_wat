@@ -20,6 +20,8 @@
 	(global $synth_11 (mut i32) (i32.const 0))
 	(global $synth_12 (mut i32) (i32.const 0))
 	(global $synth_13 (mut i32) (i32.const 0))
+	(global $thrust_rumble_mask (mut i32) (i32.const 0))
+	(global $thrust_rumble_errors (mut i32) (i32.const 0))
 	(global $satellite_ping_mask (mut i32) (i32.const 0))
 	(global $satellite_ping_errors (mut i32) (i32.const 0))
 	(global $short_boom_voices (mut i32) (i32.const 0))
@@ -37,6 +39,8 @@
 	(global $transform_depth (mut i32) (i32.const 0))
 	(global $text_mask (mut i64) (i64.const 0))
 	(global $audio_mask (mut i32) (i32.const 0))
+	(global $thrust_audio_count (mut i32) (i32.const 0))
+	(global $thrust_audio_errors (mut i32) (i32.const 0))
 	(global $sample_asset_count (mut i32) (i32.const 0))
 	(global $sample_asset_valid (mut i32) (i32.const 0))
 	(global $sample_play_count (mut i32) (i32.const 0))
@@ -72,8 +76,10 @@
 	(global $help_max_y (mut f32) (f32.const 0))
 	(global $help_pointer_input_x (mut f32) (f32.const 0))
 	(global $help_pointer_action_x (mut f32) (f32.const 0))
+	(global $help_keyboard_alias_copy_mask (mut i32) (i32.const 0))
 	(global $power_hud_kind (mut i32) (i32.const -1))
 	(global $power_hud_text_valid (mut i32) (i32.const 0))
+	(global $power_hud_text_y (mut f32) (f32.const 0))
 	(global $power_hud_primitives (mut i32) (i32.const 0))
 	(global $blast_circles (mut i32) (i32.const 0))
 	(global $blast_radius (mut f32) (f32.const 0))
@@ -100,6 +106,8 @@
 		i32.const 0 global.set $synth_11
 		i32.const 0 global.set $synth_12
 		i32.const 0 global.set $synth_13
+		i32.const 0 global.set $thrust_rumble_mask
+		i32.const 0 global.set $thrust_rumble_errors
 		i32.const 0 global.set $satellite_ping_mask
 		i32.const 0 global.set $satellite_ping_errors
 		i32.const 0 global.set $short_boom_voices
@@ -149,8 +157,10 @@
 		f32.const 0 global.set $help_max_y
 		f32.const 0 global.set $help_pointer_input_x
 		f32.const 0 global.set $help_pointer_action_x
+		i32.const 0 global.set $help_keyboard_alias_copy_mask
 		i32.const -1 global.set $power_hud_kind
 		i32.const 0 global.set $power_hud_text_valid
+		f32.const 0 global.set $power_hud_text_y
 		i32.const 0 global.set $power_hud_primitives
 		i32.const 0 global.set $blast_circles
 		f32.const 0 global.set $blast_radius
@@ -160,6 +170,8 @@
 		f32.const 0 global.set $flame_min_x)
 	(func (export "test_reset_effects")
 		i32.const 0 global.set $audio_mask
+		i32.const 0 global.set $thrust_audio_count
+		i32.const 0 global.set $thrust_audio_errors
 		i32.const 0 global.set $sample_play_count
 		i32.const 0 global.set $sample_play_valid
 		i32.const 0 global.set $effect_mask)
@@ -190,6 +202,10 @@
 		global.get $synth_13 i32.const 3 i32.eq
 		global.get $satellite_ping_mask i32.const 7 i32.eq i32.and
 		global.get $satellite_ping_errors i32.eqz i32.and)
+	(func (export "test_thrust_rumble_valid") (result i32)
+		global.get $synth_4 i32.const 1 i32.eq
+		global.get $thrust_rumble_mask i32.const 1 i32.eq i32.and
+		global.get $thrust_rumble_errors i32.eqz i32.and)
 	(func (export "test_synth_signature") (result i64) global.get $synth_signature)
 	(func (export "test_frame_count") (result i32) global.get $frame_count)
 	(func (export "test_flash_frames") (result i32) global.get $flash_frames)
@@ -205,6 +221,12 @@
 		global.get $text_mask i64.const 1 local.get $id i64.extend_i32_u i64.shl i64.and i64.eqz i32.eqz)
 	(func (export "test_audio_seen") (param $id i32) (result i32)
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.and i32.eqz i32.eqz)
+	(func (export "test_audio_count") (param $id i32) (result i32)
+		local.get $id i32.const 4 i32.eq
+		(if (result i32) (then global.get $thrust_audio_count) (else i32.const 0)))
+	(func (export "test_thrust_audio_valid") (result i32)
+		global.get $thrust_audio_count i32.const 0 i32.gt_s
+		global.get $thrust_audio_errors i32.eqz i32.and)
 	(func (export "test_sample_asset_valid") (result i32)
 		global.get $sample_asset_count i32.const 1 i32.eq
 		global.get $sample_asset_valid i32.and)
@@ -247,11 +269,15 @@
 		global.get $help_column_errors i32.eqz i32.and)
 	(func (export "test_help_fits_height") (param $height f32) (result i32)
 		global.get $help_max_y local.get $height f32.le)
+	(func (export "test_help_max_y") (result f32) global.get $help_max_y)
 	(func (export "test_help_pointer_gap_valid") (result i32)
 		global.get $help_pointer_action_x global.get $help_pointer_input_x f32.sub
 		f32.const 125 f32.ge)
+	(func (export "test_help_keyboard_alias_copy_mask") (result i32)
+		global.get $help_keyboard_alias_copy_mask)
 	(func (export "test_power_hud_kind") (result i32) global.get $power_hud_kind)
 	(func (export "test_power_hud_text_valid") (result i32) global.get $power_hud_text_valid)
+	(func (export "test_power_hud_text_y") (result f32) global.get $power_hud_text_y)
 	(func (export "test_power_hud_primitives") (result i32) global.get $power_hud_primitives)
 	(func (export "test_blast_circles") (result i32) global.get $blast_circles)
 	(func (export "test_blast_radius") (result f32) global.get $blast_radius)
@@ -517,10 +543,20 @@
 		local.get $key i32.const 54 i32.eq
 		(if (then local.get $ptr i32.const 560 i32.eq local.get $len i32.const 8 i32.eq i32.and
 			(if (then global.get $help_copy_mask i32.const 1 i32.or global.set $help_copy_mask))))
-		local.get $key i32.const 55 i32.eq
-		(if (then local.get $ptr i32.const 568 i32.eq local.get $len i32.const 7 i32.eq i32.and
-			(if (then global.get $help_copy_mask i32.const 2 i32.or global.set $help_copy_mask))))
-		local.get $key i32.const 56 i32.eq
+			local.get $key i32.const 55 i32.eq
+			(if (then local.get $ptr i32.const 568 i32.eq local.get $len i32.const 7 i32.eq i32.and
+				(if (then global.get $help_copy_mask i32.const 2 i32.or global.set $help_copy_mask))))
+			local.get $key i32.const 41 i32.eq
+			(if (then local.get $ptr i32.const 240 i32.eq local.get $len i32.const 14 i32.eq i32.and
+				(if (then
+					global.get $help_keyboard_alias_copy_mask i32.const 1 i32.or
+					global.set $help_keyboard_alias_copy_mask))))
+			local.get $key i32.const 42 i32.eq
+			(if (then local.get $ptr i32.const 264 i32.eq local.get $len i32.const 4 i32.eq i32.and
+				(if (then
+					global.get $help_keyboard_alias_copy_mask i32.const 2 i32.or
+					global.set $help_keyboard_alias_copy_mask))))
+			local.get $key i32.const 56 i32.eq
 		(if (then local.get $ptr i32.const 576 i32.eq local.get $len i32.const 4 i32.eq i32.and
 			(if (then global.get $help_copy_mask i32.const 4 i32.or global.set $help_copy_mask))))
 		local.get $key i32.const 57 i32.eq
@@ -535,10 +571,12 @@
 		local.get $key i32.const 60 i32.eq
 		(if (then
 			i32.const 0 global.set $power_hud_kind
+			local.get $y global.set $power_hud_text_y
 			local.get $ptr i32.const 672 i32.eq local.get $len i32.const 11 i32.eq i32.and global.set $power_hud_text_valid))
 		local.get $key i32.const 61 i32.eq
 		(if (then
 			i32.const 1 global.set $power_hud_kind
+			local.get $y global.set $power_hud_text_y
 			local.get $ptr i32.const 688 i32.eq local.get $len i32.const 11 i32.eq i32.and global.set $power_hud_text_valid))
 		local.get $key i32.const 25 i32.eq
 		(if (then
@@ -557,8 +595,18 @@
 		i32.const 0 global.set $transform_depth
 		i32.const -1 global.set $current_path_key
 		i32.const 0)
-	(func (export "AE_audio") (param $id i32) (param f32 f32 i32) (result i32)
+	(func (export "AE_audio") (param $id i32) (param $volume f32) (param $pitch f32)
+		(param $flags i32) (result i32)
 		global.get $audio_mask i32.const 1 local.get $id i32.shl i32.or global.set $audio_mask
+		local.get $id i32.const 4 i32.eq
+		(if (then
+			global.get $thrust_audio_count i32.const 1 i32.add global.set $thrust_audio_count
+			local.get $volume f32.const 0.18 f32.ne
+			local.get $pitch f32.const 1 f32.ne i32.or
+			local.get $flags i32.eqz i32.eqz i32.or
+			(if (then
+				global.get $thrust_audio_errors i32.const 1 i32.add
+				global.set $thrust_audio_errors))))
 		i32.const 0)
 	(func (export "AE_sample_asset")
 		(param $id i32) (param $ptr i32) (param $len i32) (param $flags i32) (result i32)
@@ -584,7 +632,7 @@
 		(param $gain_start i32) (param $gain_peak i32) (param $gain_end i32)
 		(param $filter i32) (param $filter_start i32) (param $filter_end i32) (param $cooldown i32)
 		(result i32)
-		(local $satellite_voice i32)
+		(local $satellite_voice i32) (local $thrust_voice i32)
 		local.get $id call $record_synth_scalar
 		local.get $waveform call $record_synth_scalar
 		local.get $delay call $record_synth_scalar
@@ -617,6 +665,26 @@
 		local.get $id i32.const 9 i32.eq (if (then global.get $synth_9 i32.const 1 i32.add global.set $synth_9))
 		local.get $id i32.const 10 i32.eq (if (then global.get $synth_10 i32.const 1 i32.add global.set $synth_10))
 		local.get $id i32.const 11 i32.eq (if (then global.get $synth_11 i32.const 1 i32.add global.set $synth_11))
+		local.get $id i32.const 4 i32.eq
+		(if (then
+			local.get $delay i32.eqz
+			local.get $duration i32.const 120 i32.eq i32.and
+			local.get $frequency_start i32.eqz i32.and
+			local.get $frequency_mid i32.eqz i32.and
+			local.get $frequency_end i32.eqz i32.and
+			local.get $gain_start i32.const 90000 i32.eq i32.and
+			local.get $gain_peak i32.const 120000 i32.eq i32.and
+			local.get $gain_end i32.const 40000 i32.eq i32.and
+			local.get $filter i32.const 1 i32.eq i32.and
+			local.get $filter_start i32.const 1800000 i32.eq i32.and
+			local.get $filter_end i32.const 1200000 i32.eq i32.and
+			local.get $cooldown i32.const 55 i32.eq i32.and
+			local.get $waveform i32.const 3 i32.eq i32.and
+			(if (then i32.const 1 local.set $thrust_voice))
+			local.get $thrust_voice i32.eqz
+			(if
+				(then global.get $thrust_rumble_errors i32.const 1 i32.add global.set $thrust_rumble_errors)
+				(else global.get $thrust_rumble_mask local.get $thrust_voice i32.or global.set $thrust_rumble_mask))))
 		local.get $id i32.const 12 i32.eq
 		(if (then
 			global.get $synth_12 i32.const 1 i32.add global.set $synth_12

@@ -84,8 +84,8 @@
 	(data (i32.const 184) "SHIP DESTROYED")
 	(data (i32.const 200) "Help / Controls")
 	(data (i32.const 224) "CONTROLS")
-	(data (i32.const 240) "LEFT / RIGHT   ROTATE")
-	(data (i32.const 264) "UP             THRUST")
+	(data (i32.const 240) "LEFT/A RIGHT/D ROTATE")
+	(data (i32.const 264) "UP/W           THRUST")
 	(data (i32.const 288) "SPACE          FIRE")
 	(data (i32.const 312) "F              AUTO-FIRE")
 	(data (i32.const 340) "K              KID MODE")
@@ -115,6 +115,7 @@
 	(global $player_bullet_capacity i32 (i32.const 256))
 	(global $wave_sine i32 (i32.const 1))
 	(global $wave_saw i32 (i32.const 2))
+	(global $wave_white_noise i32 (i32.const 3))
 	(global $filter_none i32 (i32.const 0))
 	(global $filter_low_pass i32 (i32.const 1))
 	(global $state_base_address i32 (i32.const 1024))
@@ -168,6 +169,19 @@
 	(global $flag_help_visible i32 (i32.const 512))
 	(global $flag_suspends_tick i32 (i32.const 528))
 	(global $flag_blocks_blossom_activation i32 (i32.const 656))
+	;; Host input edges are intentionally not snapshotted: reload clears them.
+	;; Each thrust source owns one bit so releasing an alias or pointer cannot
+	;; cancel another physical source that remains held.
+	(global $thrust_source_up i32 (i32.const 1))
+	(global $thrust_source_pointer i32 (i32.const 2))
+	(global $thrust_source_letter i32 (i32.const 4))
+	(global $held_thrust_sources (mut i32) (i32.const 0))
+	;; Rotation likewise has two physical sources per direction, the arrow key
+	;; and its letter alias, so each direction needs its own held-source set.
+	(global $rotate_source_arrow i32 (i32.const 1))
+	(global $rotate_source_letter i32 (i32.const 2))
+	(global $held_rotate_left_sources (mut i32) (i32.const 0))
+	(global $held_rotate_right_sources (mut i32) (i32.const 0))
 
 	(func $load_flags (result i32)
 		global.get $state_flags_address i32.load)
@@ -184,10 +198,93 @@
 	(func $toggle_flag (param $mask i32)
 		call $load_flags local.get $mask i32.xor call $store_flags)
 
+	(func $refresh_thrust_flag
+		global.get $held_thrust_sources i32.eqz
+		(if
+			(then global.get $flag_thrust call $clear_flag)
+			(else global.get $flag_thrust call $set_flag)))
+
+	(func $hold_thrust_source (param $source i32)
+		global.get $held_thrust_sources local.get $source i32.or
+		global.set $held_thrust_sources
+		call $refresh_thrust_flag)
+
+	(func $release_thrust_source (param $source i32)
+		global.get $held_thrust_sources local.get $source i32.const -1 i32.xor i32.and
+		global.set $held_thrust_sources
+		call $refresh_thrust_flag)
+
+	(func $refresh_rotate_left_flag
+		global.get $held_rotate_left_sources i32.eqz
+		(if
+			(then global.get $flag_rotate_left call $clear_flag)
+			(else global.get $flag_rotate_left call $set_flag)))
+
+	(func $hold_rotate_left_source (param $source i32)
+		global.get $held_rotate_left_sources local.get $source i32.or
+		global.set $held_rotate_left_sources
+		call $refresh_rotate_left_flag)
+
+	(func $release_rotate_left_source (param $source i32)
+		global.get $held_rotate_left_sources local.get $source i32.const -1 i32.xor i32.and
+		global.set $held_rotate_left_sources
+		call $refresh_rotate_left_flag)
+
+	(func $refresh_rotate_right_flag
+		global.get $held_rotate_right_sources i32.eqz
+		(if
+			(then global.get $flag_rotate_right call $clear_flag)
+			(else global.get $flag_rotate_right call $set_flag)))
+
+	(func $hold_rotate_right_source (param $source i32)
+		global.get $held_rotate_right_sources local.get $source i32.or
+		global.set $held_rotate_right_sources
+		call $refresh_rotate_right_flag)
+
+	(func $release_rotate_right_source (param $source i32)
+		global.get $held_rotate_right_sources local.get $source i32.const -1 i32.xor i32.and
+		global.set $held_rotate_right_sources
+		call $refresh_rotate_right_flag)
+
 	;; Input-down edges are transient host state. Clear them as a class while
 	;; preserving modal gameplay choices across focus loss and hot reload.
 	(func $clear_held_controls
+		i32.const 0 global.set $held_thrust_sources
+		i32.const 0 global.set $held_rotate_left_sources
+		i32.const 0 global.set $held_rotate_right_sources
 		global.get $flag_held_controls call $clear_flag)
+
+	;; Pause is an input boundary: entering it releases every held gameplay edge
+	;; so a later resume cannot resurrect thrust, fire, or rotation.
+	(func $toggle_pause
+		global.get $flag_paused call $toggle_flag
+		call $load_flags global.get $flag_paused i32.and
+		(if (then call $clear_held_controls)))
+
+	;; Classifies the only events that remain meaningful behind Pause. Native
+	;; commands, viewport/focus housekeeping, and the unpause key stay live;
+	;; every gameplay-control family is rejected before it can mutate state.
+	(func $event_allowed_while_paused (param $kind i32) (param $code i32) (result i32)
+		call $load_flags global.get $flag_paused i32.and i32.eqz
+		(if (result i32)
+			(then i32.const 1)
+			(else
+				local.get $kind i32.const 6 i32.eq
+				local.get $kind i32.const 7 i32.eq i32.or
+				local.get $kind i32.const 8 i32.eq i32.or
+				local.get $kind i32.const 1 i32.eq
+				local.get $code i32.const 5 i32.eq
+				local.get $code i32.const 11 i32.eq i32.or
+				i32.and i32.or)))
+
+	;; Keeps modal presentation frozen without discarding held-edge state needed
+	;; by Help; Pause itself has already cleared gameplay edges on entry.
+	(func $thrust_is_presented (result i32)
+		(local $flags i32)
+		call $load_flags local.set $flags
+		local.get $flags global.get $flag_thrust i32.and i32.eqz i32.eqz
+		local.get $flags global.get $flag_suspends_tick i32.and i32.eqz
+		i32.and)
 
 	(func (export "AE_abi_major") (result i32) i32.const 0)
 	(func (export "AE_abi_minor") (result i32) i32.const 0)
@@ -262,11 +359,14 @@
 		i32.const 500000 i32.const 500000 i32.const 0
 		i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice)
 	(func $configure_thrust_sound
-		;; Thrust: rate-limited 60 Hz saw through a 200 Hz low-pass.
-		i32.const 4 i32.const 2 i32.const 0 i32.const 50
-		i32.const 60000 i32.const 60000 i32.const 60000
-		i32.const 100000 i32.const 100000 i32.const 10000
-		i32.const 1 i32.const 200000 i32.const 200000 i32.const 55 call $declare_voice)
+		;; Thrust uses one low-passed white-noise bed: removing the low band-pass
+		;; and overlapping second voice avoids mechanical rattle while retaining
+		;; the non-tonal static texture of classic LFSR-based engine effects.
+		i32.const 4 global.get $wave_white_noise i32.const 0 i32.const 120
+		i32.const 0 i32.const 0 i32.const 0
+		i32.const 90000 i32.const 120000 i32.const 40000
+		global.get $filter_low_pass i32.const 1800000 i32.const 1200000 i32.const 55
+		call $declare_voice)
 	(func $configure_death_blossom_sound
 		;; Death Blossom: three scheduled 400 -> 800 -> 400 Hz whoops.
 		i32.const 5 i32.const 1 i32.const 0 i32.const 300 i32.const 400000 i32.const 800000 i32.const 400000 i32.const 300000 i32.const 300000 i32.const 1000 i32.const 0 i32.const 0 i32.const 0 i32.const 0 call $declare_voice
@@ -748,6 +848,9 @@
 		local.get $seed local.set $normalized_seed
 		local.get $normalized_seed i32.eqz (if (then i32.const 1 local.set $normalized_seed))
 		global.get $state_tick_address i32.const 0 i32.const 32768 memory.fill
+		i32.const 0 global.set $held_thrust_sources
+		i32.const 0 global.set $held_rotate_left_sources
+		i32.const 0 global.set $held_rotate_right_sources
 		global.get $state_rng_address local.get $normalized_seed i32.store
 		global.get $state_width_address local.get $width i64.store
 		global.get $state_height_address local.get $height i64.store
@@ -1347,7 +1450,8 @@
 				(if (then
 					global.get $state_ship_vx_address global.get $state_ship_vx_address i64.load global.get $state_ship_dx_address i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
 					global.get $state_ship_vy_address global.get $state_ship_vy_address i64.load global.get $state_ship_dy_address i64.load call $ship_acceleration_per_second call $per_tick call $fixed_mul i64.add i64.store
-					global.get $state_tick_address i32.load i32.const 3 i32.and i32.eqz
+					global.get $state_tick_address i32.load
+					i32.const 4 call $ticks_from_sixty i32.rem_u i32.eqz
 					(if (then i32.const 4 f32.const 0.18 f32.const 1 i32.const 0 call $audio drop))))
 				local.get $flags global.get $flag_fire i32.and
 				local.get $flags global.get $flag_auto_fire i32.and i32.or
@@ -2220,17 +2324,32 @@
 	(func (export "AE_event") (param $kind i32) (param $code i32)
 		(param $a f32) (param $b f32) (result i32)
 		(local $mask i32)
+		local.get $kind local.get $code call $event_allowed_while_paused i32.eqz
+		(if (then i32.const 0 return))
 		local.get $kind i32.const 1 i32.eq
-		(if (then
-			local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
-			local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
-			local.get $code i32.const 1 i32.eq (if (then i32.const 16584 i32.const 0 i32.store global.get $flag_rotate_left local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then i32.const 16584 i32.const 0 i32.store global.get $flag_rotate_right local.set $mask))
-			local.get $code i32.const 3 i32.eq (if (then global.get $flag_thrust local.set $mask))
-			local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
+			(if (then
+				local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
+				local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
+				local.get $code i32.const 1 i32.eq
+				(if (then i32.const 16584 i32.const 0 i32.store
+					global.get $rotate_source_arrow call $hold_rotate_left_source))
+				local.get $code i32.const 14 i32.eq
+				(if (then i32.const 16584 i32.const 0 i32.store
+					global.get $rotate_source_letter call $hold_rotate_left_source))
+				local.get $code i32.const 2 i32.eq
+				(if (then i32.const 16584 i32.const 0 i32.store
+					global.get $rotate_source_arrow call $hold_rotate_right_source))
+				local.get $code i32.const 15 i32.eq
+				(if (then i32.const 16584 i32.const 0 i32.store
+					global.get $rotate_source_letter call $hold_rotate_right_source))
+				local.get $code i32.const 3 i32.eq
+				(if (then global.get $thrust_source_up call $hold_thrust_source))
+				local.get $code i32.const 13 i32.eq
+				(if (then global.get $thrust_source_letter call $hold_thrust_source))
+				local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
 			local.get $mask i32.eqz
 			(if (then
-				local.get $code i32.const 5 i32.eq (if (then global.get $flag_paused call $toggle_flag))
+				local.get $code i32.const 5 i32.eq (if (then call $toggle_pause))
 				local.get $code i32.const 6 i32.eq (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset))
 				local.get $code i32.const 7 i32.eq (if (then global.get $flag_auto_fire call $toggle_flag))
 				local.get $code i32.const 8 i32.eq (if (then global.get $flag_kid_mode call $toggle_flag))
@@ -2239,12 +2358,21 @@
 				(else local.get $mask call $set_flag))))
 		local.get $kind i32.const 2 i32.eq
 		(if (then
-			local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
-			local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
-			local.get $code i32.const 1 i32.eq (if (then global.get $flag_rotate_left local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then global.get $flag_rotate_right local.set $mask))
-			local.get $code i32.const 3 i32.eq (if (then global.get $flag_thrust local.set $mask))
-			local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
+				local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
+				local.get $code i32.const 12 i32.eq (if (then i32.const 10 local.set $code))
+				local.get $code i32.const 1 i32.eq
+				(if (then global.get $rotate_source_arrow call $release_rotate_left_source))
+				local.get $code i32.const 14 i32.eq
+				(if (then global.get $rotate_source_letter call $release_rotate_left_source))
+				local.get $code i32.const 2 i32.eq
+				(if (then global.get $rotate_source_arrow call $release_rotate_right_source))
+				local.get $code i32.const 15 i32.eq
+				(if (then global.get $rotate_source_letter call $release_rotate_right_source))
+				local.get $code i32.const 3 i32.eq
+				(if (then global.get $thrust_source_up call $release_thrust_source))
+				local.get $code i32.const 13 i32.eq
+				(if (then global.get $thrust_source_letter call $release_thrust_source))
+				local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
 			local.get $mask call $clear_flag))
 		;; Pointer motion owns heading until a keyboard turn key is pressed.
 		local.get $kind i32.const 3 i32.eq
@@ -2257,19 +2385,21 @@
 		local.get $kind i32.const 4 i32.eq
 		(if (then
 			i32.const 16568 local.get $a call $from_host i64.store
-			i32.const 16576 local.get $b call $from_host i64.store
-			i32.const 16584 i32.const 1 i32.store
-			local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then global.get $flag_thrust local.set $mask))
-			local.get $mask call $set_flag))
+				i32.const 16576 local.get $b call $from_host i64.store
+				i32.const 16584 i32.const 1 i32.store
+				local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
+				local.get $code i32.const 2 i32.eq
+				(if (then global.get $thrust_source_pointer call $hold_thrust_source))
+				local.get $mask call $set_flag))
 		local.get $kind i32.const 5 i32.eq
 		(if (then
 			i32.const 16568 local.get $a call $from_host i64.store
-			i32.const 16576 local.get $b call $from_host i64.store
-			i32.const 16584 i32.const 1 i32.store
-			local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
-			local.get $code i32.const 2 i32.eq (if (then global.get $flag_thrust local.set $mask))
-			local.get $mask call $clear_flag))
+				i32.const 16576 local.get $b call $from_host i64.store
+				i32.const 16584 i32.const 1 i32.store
+				local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
+				local.get $code i32.const 2 i32.eq
+				(if (then global.get $thrust_source_pointer call $release_thrust_source))
+				local.get $mask call $clear_flag))
 		;; Aedicule omits zero-delta scroll phases, so every delivered scroll event
 		;; represents an intentional wheel gesture without inspecting f32 payloads.
 		local.get $kind i32.const 10 i32.eq
@@ -2649,11 +2779,11 @@
 				i32.const 2025 f32.const 54 f32.const 95 f32.const 42 f32.const 106 f32.const 3 local.get $color call $line drop
 				i32.const 2026 f32.const 56 f32.const 84 f32.const 68 f32.const 95 f32.const 3 local.get $color call $line drop
 				i32.const 2027 f32.const 68 f32.const 95 f32.const 56 f32.const 106 f32.const 3 local.get $color call $line drop))
-		local.get $key local.get $ptr i32.const 11 f32.const 88 f32.const 87 f32.const 20 local.get $color i32.const 0 call $text drop)
+		local.get $key local.get $ptr i32.const 11 f32.const 88 f32.const 95 f32.const 20 local.get $color i32.const 0 call $text drop)
 
-	;; Maps the approved 768px Help composition into the live panel's available
-	;; vertical span, preserving exact reference geometry on taller viewports.
-	(func $help_y (param $reference i64) (result f32)
+	;; Maps approved 768px Help geometry into a fixed-point live coordinate,
+	;; preserving exact reference spacing while compacting only short windows.
+	(func $help_fixed_y (param $reference i64) (result i64)
 		(local $span i64)
 		global.get $state_height_address i64.load i64.const 78000000 i64.sub local.set $span
 		local.get $span i64.const 0 i64.lt_s (if (then i64.const 0 local.set $span))
@@ -2661,14 +2791,17 @@
 		(if (then i64.const 690000000 local.set $span))
 		i64.const 62000000
 		local.get $reference i64.const 62 i64.sub local.get $span i64.mul i64.const 690 i64.div_s
-		i64.add call $to_host)
+		i64.add)
+
+	(func $help_y (param $reference i64) (result f32)
+		local.get $reference call $help_fixed_y call $to_host)
 
 	;; Draws the approved two-column Help panel after the world, using a filled
 	;; vector backdrop so every keyboard and pointer row remains legible.
 	(func $draw_help_overlay
 		(local $center i64) (local $keyboard_input i64) (local $keyboard_action i64)
 		(local $pointer_input i64) (local $pointer_action i64)
-		(local $far_x i64) (local $bottom i64)
+		(local $far_x i64) (local $bottom f32)
 		global.get $state_width_address i64.load i64.const 2 i64.div_s local.set $center
 		global.get $state_width_address i64.load i64.const 98 i64.mul i64.const 1024 i64.div_u local.set $keyboard_input
 		global.get $state_width_address i64.load i64.const 285 i64.mul i64.const 1024 i64.div_u local.set $keyboard_action
@@ -2677,24 +2810,28 @@
 		local.get $pointer_action local.get $pointer_input i64.const 130000000 i64.add i64.lt_s
 		(if (then local.get $pointer_input i64.const 130000000 i64.add local.set $pointer_action))
 		global.get $state_width_address i64.load i64.const 40000000 i64.sub local.set $far_x
-		global.get $state_height_address i64.load i64.const 16000000 i64.sub local.set $bottom
+		;; Size the panel from its last content baseline, not the viewport edge:
+		;; this removes dead space on tall windows and carries the same 32px
+		;; content padding through the compact layout used by short windows.
+		i64.const 636 call $help_fixed_y i64.const 32000000 i64.add call $to_host
+		local.set $bottom
 		i32.const 2009 call $path_begin drop
 		f32.const 40 f32.const 62 call $path_move drop
 		local.get $far_x call $to_host f32.const 62 call $path_line drop
-		local.get $far_x call $to_host local.get $bottom call $to_host call $path_line drop
-		f32.const 40 local.get $bottom call $to_host call $path_line drop
+		local.get $far_x call $to_host local.get $bottom call $path_line drop
+		f32.const 40 local.get $bottom call $path_line drop
 		call $path_close drop f32.const 0 i32.const 0x081021f5 i32.const 0 i32.const 0 call $path_end drop
 		i32.const 2010 f32.const 40 f32.const 62 local.get $far_x call $to_host f32.const 62 f32.const 2 i32.const 0x5ee7ffff call $line drop
-		i32.const 2011 local.get $far_x call $to_host f32.const 62 local.get $far_x call $to_host local.get $bottom call $to_host f32.const 2 i32.const 0x5ee7ffff call $line drop
-		i32.const 2012 local.get $far_x call $to_host local.get $bottom call $to_host f32.const 40 local.get $bottom call $to_host f32.const 2 i32.const 0x5ee7ffff call $line drop
-		i32.const 2013 f32.const 40 local.get $bottom call $to_host f32.const 40 f32.const 62 f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2011 local.get $far_x call $to_host f32.const 62 local.get $far_x call $to_host local.get $bottom f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2012 local.get $far_x call $to_host local.get $bottom f32.const 40 local.get $bottom f32.const 2 i32.const 0x5ee7ffff call $line drop
+		i32.const 2013 f32.const 40 local.get $bottom f32.const 40 f32.const 62 f32.const 2 i32.const 0x5ee7ffff call $line drop
 		i32.const 2014 f32.const 88 i64.const 150 call $help_y global.get $state_width_address i64.load i64.const 88000000 i64.sub call $to_host i64.const 150 call $help_y f32.const 1 i32.const 0x31536bff call $line drop
 		i32.const 40 i32.const 224 i32.const 8 local.get $center call $to_host i64.const 125 call $help_y f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
 		i32.const 54 i32.const 560 i32.const 8 local.get $keyboard_input call $to_host i64.const 190 call $help_y f32.const 18 i32.const 0xffcf5cff i32.const 0 call $text drop
 		i32.const 55 i32.const 568 i32.const 7 local.get $pointer_input call $to_host i64.const 190 call $help_y f32.const 18 i32.const 0xffcf5cff i32.const 0 call $text drop
-		i32.const 41 i32.const 240 i32.const 12 local.get $keyboard_input call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+		i32.const 41 i32.const 240 i32.const 14 local.get $keyboard_input call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
 		i32.const 62 i32.const 255 i32.const 6 local.get $keyboard_action call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
-		i32.const 42 i32.const 264 i32.const 2 local.get $keyboard_input call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+		i32.const 42 i32.const 264 i32.const 4 local.get $keyboard_input call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
 		i32.const 63 i32.const 279 i32.const 6 local.get $keyboard_action call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
 		i32.const 43 i32.const 288 i32.const 5 local.get $keyboard_input call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
 		i32.const 64 i32.const 303 i32.const 4 local.get $keyboard_action call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
@@ -2820,7 +2957,7 @@
 		local.get $index i32.eqz
 		(if (then
 			global.get $state_invulnerability_address i32.load i32.eqz global.get $state_tick_address i32.load i32.const 8 i32.and i32.eqz i32.or
-			(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const -1 call $load_flags global.get $flag_thrust i32.and i32.eqz i32.eqz call $draw_ship)))
+			(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const -1 call $thrust_is_presented call $draw_ship)))
 			(else local.get $index i32.const 2 i32.eq
 				(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))
 		i32.const 0 local.set $index

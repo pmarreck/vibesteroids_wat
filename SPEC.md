@@ -113,8 +113,9 @@ except for deliberately specified presentation/lifecycle timers.
 Physical-key mapping is guest-owned:
 
 ~~~text
-Left/Right  rotate
-Up          thrust
+Left/A      rotate left
+Right/D     rotate right
+Up/W        thrust
 Space       fire
 F           toggle auto-fire
 K           toggle Kid Mode
@@ -131,8 +132,16 @@ holding the secondary button thrusts, and any delivered nonzero scroll gesture
 activates Death Blossom when eligible. Button releases and focus loss clear the
 corresponding held state.
 
-Key-up stops held actions. Focus loss clears all held controls. New Game resets
-from the configured seed. Help and pause must not corrupt input state.
+Key-up stops held actions. Each physical source owns its action independently:
+thrust is held by Up, W, or the secondary pointer button, and each rotation
+direction is held by its arrow key or its letter alias. An action ends only when
+its last held source releases, so letting go of one alias never cancels another
+that is still down. Pressing a letter alias takes heading authority from pointer
+aim exactly as its arrow does. Focus loss clears all held controls. Entering
+Pause also clears held gameplay controls; while paused, gameplay keys, pointer
+motion/buttons, wheel, and player-mode toggles are ignored. Unpause, native
+menu/button commands, resize, and focus housekeeping remain live. New Game
+resets from the configured seed. Help and pause must not corrupt input state.
 
 ## 6. Core behaviors
 
@@ -228,12 +237,14 @@ While a timed gift is active, a text-plus-icon badge identifies `LASER` or
 `RAPID` and displays the ceil-rounded remaining time in tenths; it disappears
 at expiry. Help uses a filled two-column keyboard/pointer panel.
 The WAT declares composable shot, thrust, explosion, extra-life, Death Blossom,
-notification, and hazardous-blast synth programs. The hazardous blast layers
-three maximum-volume 1.2--1.5-second voices beneath a flickering orange pulse
-and one high-contrast background frame. Voyager adds a faint single-voice sine
-ping and a pure fixed-phase 52--56-pixel cyan glow. Its connected damaged-boom
-silhouette is approximately 136 by 47 logical pixels. The host knows only
-generic program IDs and oscillator parameters.
+notification, and hazardous-blast synth programs. While thrust is held, a quiet
+low-passed white-noise bed retriggers at a rate-independent cadence, then stops
+requesting new voices on release. The hazardous blast layers three
+maximum-volume 1.2--1.5-second voices beneath a flickering orange pulse and one
+high-contrast background frame. Voyager adds a faint single-voice sine ping and
+a pure fixed-phase 52--56-pixel cyan glow. Its connected damaged-boom silhouette
+is approximately 136 by 47 logical pixels. The host knows only generic program
+IDs and oscillator parameters.
 
 ## 7. Determinism and limits
 

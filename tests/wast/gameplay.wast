@@ -105,6 +105,74 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 56)) (i64.const 83234))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 64)) (i64.const -996529))
 
+;; Held thrust emits one bounded rumble request per nominal four 60-Hz ticks;
+;; releasing the control stops new requests immediately.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 0)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 0)) (i32.const 6))
+(assert_return (invoke $vibesteroids_tests "host_audio_count" (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_count" (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_thrust_audio_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_count" (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_count" (i32.const 4)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_count" (i32.const 4)) (i32.const 2))
+
+;; Entering Pause clears held controls, and no gameplay input may animate a
+;; flame or mutate player modes behind the modal overlay.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_flame_min_x") (f32.const 0))
+;; Gameplay inputs are a rejected set while paused.
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 4) (i32.const 2) (f32.const 512) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 8)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 3) (i32.const 0) (f32.const 700) (f32.const 500))
+	(i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 10) (i32.const 1) (f32.const 0) (f32.const -1))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 32)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 64)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 256)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 0))
+;; Native commands and resize remain an accepted set while paused.
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 7) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 512)) (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "viewport" (f32.const 900) (f32.const 700))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 8)) (i64.const 900000000))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 7) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 16)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_flame_min_x") (f32.const -12))
+
 ;; Pointer aim uses the same bounded rotation step, then snaps exactly rather
 ;; than overshooting the target direction on the final tick.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
@@ -152,6 +220,118 @@
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 0))
+
+;; Each physical source owns its held action independently: releasing Up must
+;; not cancel thrust while the secondary pointer button remains held.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 4) (i32.const 2) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 5) (i32.const 2) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+
+;; W (13) exactly aliases Up thrust on both edges.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+
+;; Up, W, and the secondary pointer are three independent thrust sources, so
+;; thrust survives every release until the last held source lets go.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 13)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 4) (i32.const 2) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 5) (i32.const 2) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+
+;; A (14) and D (15) alias Left and Right and take heading authority from aim.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 3) (i32.const 0) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 1)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 1)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "pointer_event"
+		(i32.const 3) (i32.const 0) (f32.const 612) (f32.const 384))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 15)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 2)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 15560)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 15)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 2)) (i32.const 0))
+
+;; Arrow and letter rotation aliases own their direction independently, so
+;; releasing one must not cancel rotation the other still holds.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 1)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 2)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 15)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 15)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 2)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 2)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 2)) (i32.const 0))
+
+;; Focus loss clears every transient letter source without stranding it: a
+;; later arrow release must not resurrect an action, and the same letters must
+;; take effect again on their next press.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 15)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 8) (i32.const 0)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 4)) (i32.const 0))
+
+;; Entering Pause releases held letter aliases too, so resuming and releasing
+;; the arrow cannot resurrect thrust from a stranded W source.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 13)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 14)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 7)) (i32.const 0))
 
 ;; Live reload cannot promise a release edge for a key or button held while the
 ;; guest is replaced. Restore clears only edge-latched controls, retaining the
@@ -245,14 +425,26 @@
 (assert_return (invoke $vibesteroids_tests "host_help_copy_mask") (i32.const 63))
 (assert_return (invoke $vibesteroids_tests "host_help_frame_lines") (i32.const 5))
 (assert_return (invoke $vibesteroids_tests "host_help_columns_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_help_max_y") (f32.const 669))
+(assert_return (invoke $vibesteroids_tests "host_help_keyboard_alias_copy_mask") (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 245)) (i32.const 0x41))
+(assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 253)) (i32.const 0x44))
+(assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 267)) (i32.const 0x57))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 560)) (i32.const 0x4b))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 568)) (i32.const 0x50))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 576)) (i32.const 0x4d))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 592)) (i32.const 0x48))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 616)) (i32.const 0x48))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 640)) (i32.const 0x53))
-;; The reference composition retains its exact 768px geometry, then compacts
-;; vertically inside the same panel edges when the live viewport is shorter.
+;; Taller viewports add no dead panel space: the border remains content-sized.
+(assert_return
+	(invoke $vibesteroids_tests "viewport" (f32.const 1024) (f32.const 900))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_help_max_y") (f32.const 669))
+;; The reference composition compacts vertically, including its content-sized
+;; border, when the live viewport is shorter than the approved 768px geometry.
 (assert_return
 	(invoke $vibesteroids_tests "viewport" (f32.const 800) (f32.const 600))
 	(i32.const 0))
@@ -260,6 +452,9 @@
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "host_help_fits_height" (f32.const 600))
+	(i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "host_help_fits_height" (f32.const 530))
 	(i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "host_help_pointer_gap_valid")
@@ -280,6 +475,7 @@
 (assert_return (invoke $vibesteroids_tests "host_text_seen" (i32.const 61)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_power_hud_kind") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_power_hud_text_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_power_hud_text_y") (f32.const 95))
 (assert_return (invoke $vibesteroids_tests "host_power_hud_primitives") (i32.const 6))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 679)) (i32.const 0x31))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 680)) (i32.const 0x39))
@@ -291,6 +487,7 @@
 (assert_return (invoke $vibesteroids_tests "host_text_seen" (i32.const 61)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_power_hud_kind") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_power_hud_text_valid") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_power_hud_text_y") (f32.const 95))
 (assert_return (invoke $vibesteroids_tests "host_power_hud_primitives") (i32.const 8))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15496) (i32.const 0)))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))

@@ -38,7 +38,7 @@
 						nativeBuildInputs = [ frontplane ];
 					} ''
 						mkdir -p $out
-						gpui-wasm --package \
+						aedicule --package \
 							${application}/share/vibesteroids_wat \
 							$out/vibesteroids.aed
 					'';
@@ -51,12 +51,12 @@
 						mkdir -p $out/bin $out/share
 						ln -s ${application}/share/vibesteroids_wat \
 							$out/share/vibesteroids_wat
-						makeWrapper ${frontplane}/bin/gpui-wasm \
+						makeWrapper ${frontplane}/bin/aedicule \
 							$out/bin/vibesteroids-wat \
-							--set GPUI_WASM_DEFAULT_PLUGIN $out/share/vibesteroids_wat
-						makeWrapper ${frontplane}/bin/gpui-wasm-render \
+							--set AEDICULE_DEFAULT_APPLICATION $out/share/vibesteroids_wat
+						makeWrapper ${frontplane}/bin/aedicule-render \
 							$out/bin/vibesteroids-wat-render \
-							--set GPUI_WASM_DEFAULT_PLUGIN $out/share/vibesteroids_wat
+							--set AEDICULE_DEFAULT_APPLICATION $out/share/vibesteroids_wat
 					'';
 				});
 
@@ -71,7 +71,7 @@
 						nativeBuildInputs = [ frontplane ];
 					} ''
 						mkdir -p $out
-						if ! gpui-wasm-render \
+						if ! aedicule-render \
 							${application}/share/vibesteroids_wat \
 							--ticks 1 -o $out/frame.svg 2>$TMPDIR/runtime.stderr; then
 							cat $TMPDIR/runtime.stderr >&2
