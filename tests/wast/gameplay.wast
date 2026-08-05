@@ -770,3 +770,26 @@
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "star_repeated_step_pairs") (i32.const 0))
+
+;; iOS grants Web Audio only on a completed tap, and a steering drag never
+;; counts, so boot is gated behind a Start Game button to guarantee the first
+;; interaction is a tap. The gate holds lifecycle 2, the existing no-ship state,
+;; so rocks drift behind it and dismissal spawns the ship through the ordinary
+;; respawn-safety path rather than a second spawn mechanism.
+(assert_return (invoke $vibesteroids_tests "reset_gated") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 100)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "gate_visible") (i32.const 1))
+;; The gate outlasts any number of ticks; only a dismissal clears it.
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 600)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 100)) (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "gate_visible") (i32.const 1))
+;; Rocks drift behind it, so the gate is an overlay and not a pause.
+(assert_return (invoke $vibesteroids_tests "asteroids_moved_during" (i32.const 30)) (i32.const 1))
+;; A key dismisses it, and the ship then arrives through the respawn path with
+;; the ordinary invulnerability window rather than materializing unprotected.
+(assert_return (invoke $vibesteroids_tests "reset_gated") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 3)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "gate_visible") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 100)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32_between" (i32.const 92) (i32.const 1) (i32.const 240)) (i32.const 1))

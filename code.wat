@@ -172,6 +172,13 @@
 	(global $flag_help_visible i32 (i32.const 512))
 	(global $flag_suspends_tick i32 (i32.const 528))
 	(global $flag_blocks_blossom_activation i32 (i32.const 656))
+	;; The boot gate. iOS unlocks Web Audio only on a completed tap and never on
+	;; a drag, so play begins behind a button whose sole job is guaranteeing the
+	;; first interaction is a tap. It is a flag rather than a lifecycle value
+	;; because the world behind it keeps advancing through lifecycle 2, the
+	;; existing no-ship state, and dismissal then spawns the ship through the
+	;; ordinary respawn-safety path instead of a second spawn mechanism.
+	(global $flag_gate i32 (i32.const 1024))
 	;; Host input edges are intentionally not snapshotted: reload clears them.
 	;; Each thrust source owns one bit so releasing an alias or pointer cannot
 	;; cancel another physical source that remains held.
@@ -910,7 +917,8 @@
 		global.get $state_last_fire_address i32.const -100 i32.store
 		global.get $state_invulnerability_address i32.const 120 call $ticks_from_sixty i32.store
 		global.get $state_next_life_address i32.const 30000 i32.store
-		global.get $state_lifecycle_address i32.const 0 i32.store
+		global.get $state_lifecycle_address i32.const 2 i32.store
+		global.get $flag_gate call $set_flag
 		global.get $state_lifecycle_ticks_address i32.const 0 i32.store
 		global.get $state_seed_address local.get $normalized_seed i32.store
 		global.get $state_blossom_rotation_address i64.const 0 i64.store
@@ -2215,6 +2223,18 @@
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		local.get $hit (if (then i32.const 2 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))
 
+	;; Clears the boot gate and spawns the ship under the ordinary invulnerability
+	;; window. Spawning immediately rather than waiting for $respawn_safe is
+	;; deliberate: the player chose this moment, and the invulnerability window is
+	;; already the fairness mechanism for arriving next to a rock.
+	(func $dismiss_gate
+		global.get $flag_gate call $clear_flag
+		global.get $state_lifecycle_address i32.load i32.const 2 i32.eq
+		(if (then
+			global.get $state_lifecycle_address i32.const 0 i32.store
+			global.get $state_lifecycle_ticks_address i32.const 0 i32.store
+			global.get $state_invulnerability_address i32.const 120 call $ticks_from_sixty i32.store)))
+
 	(func $advance_lifecycle
 		global.get $state_lifecycle_address i32.load i32.const 1 i32.eq
 		(if (then
@@ -2235,6 +2255,7 @@
 							global.get $state_banner_ticks_address i32.const 240 call $ticks_from_sixty i32.store
 							global.get $flag_blossom_available call $set_flag))))))))
 		global.get $state_lifecycle_address i32.load i32.const 2 i32.eq
+		call $load_flags global.get $flag_gate i32.and i32.eqz i32.and
 		(if (then
 			global.get $state_lifecycle_ticks_address global.get $state_lifecycle_ticks_address i32.load i32.const 1 i32.add i32.store
 			global.get $state_lifecycle_ticks_address i32.load i32.const 600 call $ticks_from_sixty i32.eq (if (then call $clear_respawn_zone))
@@ -2368,6 +2389,14 @@
 		(local $mask i32)
 		local.get $kind local.get $code call $event_allowed_while_paused i32.eqz
 		(if (then i32.const 0 return))
+		;; The gate consumes the first key or click outright rather than letting
+		;; it also act, so the tap that unlocks audio cannot double as a thrust
+		;; or a shot the player did not intend.
+		call $load_flags global.get $flag_gate i32.and
+		(if (then
+			local.get $kind i32.const 1 i32.eq
+			local.get $kind i32.const 3 i32.eq i32.or
+			(if (then call $dismiss_gate i32.const 0 return))))
 		local.get $kind i32.const 1 i32.eq
 			(if (then
 				local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))

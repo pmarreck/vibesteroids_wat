@@ -87,12 +87,27 @@
 	(func (export "state_len") (result i32) call $state_len)
 	(func (export "tick_rate") (param i32 i32) (result i32 i32)
 		local.get 0 local.get 1 call $tick_rate)
+	;; Fixtures that exercise gameplay want a playable ship, so every ordinary
+	;; entry point dismisses the boot gate through the real event path rather
+	;; than by writing the flag directly. The gate consumes that key outright, so
+	;; no matching key-up is needed and no action leaks into the fixture.
+	;; reset_gated leaves the gate armed for its own oracles.
+	(func $init_playable (param $seed i32) (param $mode i32)
+		(param $width f32) (param $height f32) (result i32)
+		(local $status i32)
+		local.get $seed local.get $mode local.get $width local.get $height
+		call $init local.set $status
+		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
+		local.get $status)
 	(func (export "reset") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable)
+	(func (export "reset_gated") (result i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init)
 	(func (export "reset_seed") (param $seed i32) (result i32)
 		call $configure drop
-		local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init)
+		local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init_playable)
 	(func (export "after_restore") (result i32) call $after_restore)
 	;; Classifies all independent spawn schedules over a deterministic seed set,
 	;; preventing one lucky fixture from vacuously satisfying a changed range.
@@ -104,7 +119,7 @@
 			local.get $seed local.get $seed_count i32.ge_u
 			(if (then i32.const 1 return))
 			local.get $seed i32.const 1 i32.add i32.const 0
-			f32.const 1024 f32.const 768 call $init drop
+			f32.const 1024 f32.const 768 call $init_playable drop
 			i32.const 16512 i32.load local.set $ufo
 			i32.const 16516 i32.load local.set $package
 			i32.const 26732 i32.load local.set $satellite
@@ -127,7 +142,7 @@
 		(block $valid (loop $seeds
 			local.get $seed local.get $seed_count i32.ge_u br_if $valid
 			local.get $seed i32.const 1 i32.add i32.const 0
-			f32.const 1024 f32.const 768 call $init drop
+			f32.const 1024 f32.const 768 call $init_playable drop
 			i32.const 26732 i32.const 1 i32.store
 			i32.const 1 call $tick drop
 			i32.const 26656 i32.load i32.eqz (if (then i32.const 0 return))
@@ -160,7 +175,7 @@
 		(block $valid (loop $seeds
 			local.get $seed local.get $seed_count i32.ge_u br_if $valid
 			local.get $seed i32.const 1 i32.add i32.const 0
-			f32.const 1024 f32.const 768 call $init drop
+			f32.const 1024 f32.const 768 call $init_playable drop
 			i32.const 16512 i32.const 1 i32.store
 			i32.const 16516 i32.const 1 i32.store
 			i32.const 1 call $tick drop
@@ -192,17 +207,17 @@
 		local.get $package_directions i32.const 3 i32.eq i32.and)
 	(func (export "thrust_once") (result i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 1 call $tick)
 	(func (export "fire_once") (result i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
 		i32.const 1 call $tick)
 	(func (export "drag_once") (result i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1064 i64.const 2500000 i64.store
 		i32.const 1072 i64.const -1250000 i64.store
 		i32.const 1 call $tick)
@@ -211,12 +226,12 @@
 		call $configure)
 	(func (export "render_initial") (result i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		call $host_reset_frame
 		call $render)
 	(func (export "render_thrust") (result i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		call $host_reset_frame
 		call $render)
@@ -272,7 +287,7 @@
 		(param $bullet_vx i64) (param $bullet_vy i64) (result i32)
 		(local $index i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		(block $cleared (loop $clear
 			local.get $index i32.const 32 i32.ge_u br_if $cleared
 			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
@@ -386,14 +401,39 @@
 	(func (export "star_field_differs_across_seeds")
 		(param $first i32) (param $second i32) (result i32)
 		(local $first_checksum i64)
-		local.get $first i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		local.get $first i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		call $star_field_checksum local.set $first_checksum
-		local.get $second i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		local.get $second i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		local.get $first_checksum call $star_field_checksum i64.ne)
 	;; Counts consecutive stars whose horizontal step repeats the first one. An
 	;; arithmetic generator puts every star on one lattice and scores near 99; a
 	;; PRNG scores near zero. This is the visible defect Peter reported, that the
 	;; field reads as diagonal banding rather than as scattered sky.
+	;; The boot gate is a flag rather than a lifecycle value, because the world
+	;; behind it must keep advancing through the ordinary no-ship state.
+	(func (export "gate_visible") (result i32)
+		i32.const 1108 i32.load i32.const 1024 i32.and i32.const 0 i32.ne)
+	;; Classifies whether the rock field actually advances across the given span,
+	;; distinguishing an overlay from a pause. Any single rock moving is enough,
+	;; and comparing a checksum avoids depending on which rock that is.
+	(func (export "asteroids_moved_during") (param $ticks i32) (result i32)
+		(local $index i32) (local $before i64) (local $after i64)
+		call $asteroid_position_checksum local.set $before
+		local.get $ticks call $tick_source drop
+		local.get $before call $asteroid_position_checksum i64.ne)
+	(func $asteroid_position_checksum (result i64)
+		(local $index i32) (local $address i32) (local $checksum i64)
+		(block $done
+			(loop $again
+				local.get $index i32.const 32 i32.ge_u br_if $done
+				i32.const 1024 i32.const 3328 i32.add
+				local.get $index i32.const 80 i32.mul i32.add local.set $address
+				local.get $checksum i64.const 31 i64.mul
+				local.get $address i32.const 16 i32.add i64.load i64.add local.set $checksum
+				local.get $checksum i64.const 31 i64.mul
+				local.get $address i32.const 24 i32.add i64.load i64.add local.set $checksum
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		local.get $checksum)
 	(func (export "star_repeated_step_pairs") (result i32)
 		(local $index i32) (local $step i64) (local $count i32)
 		i32.const 14448 i64.load i32.const 14432 i64.load i64.sub local.set $step
@@ -410,13 +450,15 @@
 		local.get $count)
 	;; Converts source-authored 60-Hz fixture durations into the production
 	;; rational rate while leaving the guest's raw AE_tick contract untouched.
-	(func (export "tick") (param $source_ticks i32) (result i32)
+	(func $tick_source (param $source_ticks i32) (result i32)
 		(local $numerator i32) (local $denominator i32)
 		i32.const 0 i32.const 0 call $tick_rate
 		local.set $denominator local.set $numerator
 		local.get $source_ticks i64.extend_i32_u local.get $numerator i64.extend_i32_u i64.mul
 		i64.const 60 local.get $denominator i64.extend_i32_u i64.mul i64.div_u
 		i32.wrap_i64 call $tick)
+	(func (export "tick") (param $source_ticks i32) (result i32)
+		local.get $source_ticks call $tick_source)
 	(func (export "raw_tick") (param $ticks i32) (result i32)
 		local.get $ticks call $tick)
 	(func (export "render") (result i32) call $render)
@@ -496,21 +538,21 @@
 	(func (export "render_is_state_pure") (result i32)
 		(local $before i64)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 0 i32.const 8192 call $state_hash_from local.set $before
 		call $render drop
 		i32.const 0 i32.const 8192 call $state_hash_from local.get $before i64.eq)
 	(func (export "deterministic_input_replay") (result i32)
 		(local $before i64)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1 i32.const 2 f32.const 0 f32.const 0 call $event drop
 		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 30 call $tick drop
 		i32.const 2 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 2 i32.const 2 f32.const 0 f32.const 0 call $event drop
 		i32.const 0 i32.const 8192 call $state_hash_from local.set $before
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1 i32.const 2 f32.const 0 f32.const 0 call $event drop
 		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		i32.const 30 call $tick drop
@@ -520,7 +562,7 @@
 	(func (export "help_freezes_state") (result i32)
 		(local $before i64)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 7 i32.const 7 f32.const 0 f32.const 0 call $event drop
 		i32.const 4 i32.const 8191 call $state_hash_from local.set $before
 		i32.const 10 call $tick drop
@@ -528,7 +570,7 @@
 	(func (export "pause_freezes_state") (result i32)
 		(local $before i64)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1 i32.const 5 f32.const 0 f32.const 0 call $event drop
 		i32.const 4 i32.const 8191 call $state_hash_from local.set $before
 		i32.const 10 call $tick drop
@@ -536,10 +578,10 @@
 	(func (export "seeded_fields_differ") (result i32)
 		(local $x i64) (local $y i64)
 		call $configure drop
-		i32.const 1 i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 1 i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 4368 i64.load local.set $x
 		i32.const 4376 i64.load local.set $y
-		i32.const 2 i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 2 i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 4368 i64.load local.get $x i64.ne
 		i32.const 4376 i64.load local.get $y i64.ne i32.or)
 	(func (export "initial_asteroid_ranges_valid") (result i32)
@@ -548,7 +590,7 @@
 		i32.const 1 local.set $seed
 		(block $seeds_done (loop $seeds
 			local.get $seed i32.const 12 i32.gt_u br_if $seeds_done
-			local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+			local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 			i32.const 0 local.set $index
 			(block $rocks_done (loop $rocks
 				local.get $index i32.const 5 i32.ge_u br_if $rocks_done
@@ -566,7 +608,7 @@
 		local.get $saw_small local.get $saw_large i32.and local.get $saw_spin i32.and)
 	(func (export "initial_asteroid_velocities_valid") (result i32)
 		(local $index i32) (local $address i32) (local $component i64)
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		(block $done (loop $again
 			local.get $index i32.const 5 i32.ge_u br_if $done
 			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add local.set $address
@@ -581,7 +623,7 @@
 	(func (export "resize_invariants") (result i32)
 		(local $rng i32) (local $asteroid_x i64) (local $asteroid_y i64) (local $star_x i64)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1028 i32.load local.set $rng
 		i32.const 4368 i64.load local.set $asteroid_x
 		i32.const 4376 i64.load local.set $asteroid_y
@@ -634,7 +676,7 @@
 		i32.const 1)
 	(func (export "split_at_level") (param $level i32) (result i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1104 local.get $level i32.store
 		i32.const 4368 i64.const 200000000 i64.store
 		i32.const 4376 i64.const 200000000 i64.store
@@ -650,7 +692,7 @@
 	(func (export "explosion_advances_at_tick_rate") (result i32)
 		(local $debris_x i64) (local $debris_vx i64) (local $particle_life i32)
 		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		i32.const 1116 i32.const 0 i32.store
 		i32.const 4368 i64.const 512000000 i64.store
 		i32.const 4376 i64.const 384000000 i64.store

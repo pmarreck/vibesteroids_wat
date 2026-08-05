@@ -10,6 +10,7 @@
 		(local $index i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		(block $done (loop $next
 			local.get $index i32.const 32 i32.ge_u br_if $done
 			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
@@ -92,6 +93,7 @@
 		(local $index i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		(block $done (loop $next
 			local.get $index i32.const 32 i32.ge_u br_if $done
 			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
@@ -174,6 +176,7 @@
 		(local $index i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		(block $done (loop $next
 			local.get $index i32.const 32 i32.ge_u br_if $done
 			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
@@ -250,6 +253,7 @@
 		(local $index i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
 		(block $done (loop $next
 			local.get $index i32.const 32 i32.ge_u br_if $done
 			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
