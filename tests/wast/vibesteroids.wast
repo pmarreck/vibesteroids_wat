@@ -362,6 +362,52 @@
 		i32.const 1040 i64.load local.get $smaller i64.lt_s
 		(if (then i32.const 1040 i64.load local.set $smaller))
 		i32.const 1152 i64.load local.get $smaller i64.le_s)
+	;; Mixes the whole star field into one value so two layouts can be compared
+	;; without scratch memory. The multiplier makes the accumulator order- and
+	;; position-sensitive, so a moved star cannot cancel against another.
+	(func $star_field_checksum (result i64)
+		(local $index i32) (local $address i32) (local $checksum i64)
+		(block $done
+			(loop $again
+				local.get $index i32.const 100 i32.ge_u br_if $done
+				i32.const 14432 local.get $index i32.const 16 i32.mul i32.add
+				local.set $address
+				local.get $checksum i64.const 31 i64.mul
+				local.get $address i64.load i64.add local.set $checksum
+				local.get $checksum i64.const 31 i64.mul
+				local.get $address i32.const 8 i32.add i64.load i64.add
+				local.set $checksum
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		local.get $checksum)
+	;; A star field generated from a deterministic PRNG must depend on the world
+	;; seed. Passing one seed twice is the paired specificity case: it must
+	;; report no difference, so a checksum that simply always differed could not
+	;; be mistaken for the fix.
+	(func (export "star_field_differs_across_seeds")
+		(param $first i32) (param $second i32) (result i32)
+		(local $first_checksum i64)
+		local.get $first i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		call $star_field_checksum local.set $first_checksum
+		local.get $second i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		local.get $first_checksum call $star_field_checksum i64.ne)
+	;; Counts consecutive stars whose horizontal step repeats the first one. An
+	;; arithmetic generator puts every star on one lattice and scores near 99; a
+	;; PRNG scores near zero. This is the visible defect Peter reported, that the
+	;; field reads as diagonal banding rather than as scattered sky.
+	(func (export "star_repeated_step_pairs") (result i32)
+		(local $index i32) (local $step i64) (local $count i32)
+		i32.const 14448 i64.load i32.const 14432 i64.load i64.sub local.set $step
+		i32.const 1 local.set $index
+		(block $done
+			(loop $again
+				local.get $index i32.const 99 i32.ge_u br_if $done
+				i32.const 14432 local.get $index i32.const 1 i32.add
+				i32.const 16 i32.mul i32.add i64.load
+				i32.const 14432 local.get $index i32.const 16 i32.mul i32.add i64.load
+				i64.sub local.get $step i64.eq
+				(if (then local.get $count i32.const 1 i32.add local.set $count))
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		local.get $count)
 	;; Converts source-authored 60-Hz fixture durations into the production
 	;; rational rate while leaving the guest's raw AE_tick contract untouched.
 	(func (export "tick") (param $source_ticks i32) (result i32)

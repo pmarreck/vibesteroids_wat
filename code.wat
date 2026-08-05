@@ -802,6 +802,26 @@
 			(else local.get $value local.get $maximum i64.gt_s
 				(if (result i64) (then local.get $minimum) (else local.get $value)))))
 
+	;; Scatters one star deterministically from the world seed and its index
+	;; without drawing from the gameplay stream, so a resize cannot perturb
+	;; asteroid spawns and every seed still paints its own sky. The body is the
+	;; mulberry32 finalizer applied to a seed/index/axis mix rather than to
+	;; running state, which is why it needs no stored stream of its own. The
+	;; multipliers are the golden-ratio and MurmurHash3 constants, chosen so
+	;; adjacent indices and the two axes decorrelate rather than march in step.
+	(func $star_hash (param $index i32) (param $axis i32) (result i32)
+		(local $t i32)
+		global.get $state_seed_address i32.load
+		local.get $index i32.const 0x9e3779b9 i32.mul i32.add
+		local.get $axis i32.const 0x85ebca6b i32.mul i32.add
+		i32.const 0x6d2b79f5 i32.add local.set $t
+		local.get $t local.get $t i32.const 15 i32.shr_u i32.xor
+		local.get $t i32.const 1 i32.or i32.mul local.set $t
+		local.get $t
+		local.get $t local.get $t local.get $t i32.const 7 i32.shr_u i32.xor
+		local.get $t i32.const 61 i32.or i32.mul i32.add i32.xor local.set $t
+		local.get $t local.get $t i32.const 14 i32.shr_u i32.xor)
+
 	(func $regenerate_stars
 		(local $index i32) (local $address i32)
 		(block $done
@@ -809,11 +829,13 @@
 				local.get $index i32.const 100 i32.ge_u br_if $done
 				local.get $index call $star_address local.set $address
 				local.get $address
-				local.get $index i32.const 83 i32.mul i32.const 47 i32.add i32.const 1000 i32.rem_u
-				i64.extend_i32_u global.get $state_width_address i64.load i64.mul i64.const 1000 i64.div_u i64.store
+				local.get $index i32.const 0 call $star_hash i32.const 0xffff i32.and
+				i64.extend_i32_u global.get $state_width_address i64.load i64.mul
+				i64.const 65536 i64.div_u i64.store
 				local.get $address i32.const 8 i32.add
-				local.get $index i32.const 47 i32.mul i32.const 29 i32.add i32.const 1000 i32.rem_u
-				i64.extend_i32_u global.get $state_height_address i64.load i64.mul i64.const 1000 i64.div_u i64.store
+				local.get $index i32.const 1 call $star_hash i32.const 0xffff i32.and
+				i64.extend_i32_u global.get $state_height_address i64.load i64.mul
+				i64.const 65536 i64.div_u i64.store
 				local.get $index i32.const 1 i32.add local.set $index br $again)))
 
 	(func $spawn_asteroid_at (param $address i32) (param $x i64) (param $y i64)

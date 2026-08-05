@@ -759,3 +759,14 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 3408)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 100)) (i32.const 0))
+
+;; The star field must come from the deterministic PRNG, like every other
+;; placement. It was generated from the loop index alone, so every seed drew the
+;; identical sky, and both coordinates advanced by a fixed step per star, which
+;; laid all one hundred on a diagonal lattice instead of scattering them.
+(assert_return (invoke $vibesteroids_tests "star_field_differs_across_seeds" (i32.const 1) (i32.const 2)) (i32.const 1))
+;; Specificity: one seed must still reproduce its own sky exactly.
+(assert_return (invoke $vibesteroids_tests "star_field_differs_across_seeds" (i32.const 1) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "star_repeated_step_pairs") (i32.const 0))

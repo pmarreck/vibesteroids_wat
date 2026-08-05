@@ -2,9 +2,16 @@
 
 set -u
 
+# The distributable artifact is the .aed package, not the wrapped application,
+# so a bare ./build produces both: result for `./run` and local play, result-aed
+# for the Aedicule demo manifest.
 case "${1:-}" in
 	"")
-		exec nix build
+		nix build -o result || exit $?
+		exec nix build .#aed -o result-aed
+		;;
+	--aed)
+		exec nix build .#aed -o result-aed
 		;;
 	--test)
 		exec ./test
@@ -14,7 +21,7 @@ case "${1:-}" in
 		exec ./test
 		;;
 	*)
-		printf 'usage: %s [--test|--debug]\n' "$0" >&2
+		printf 'usage: %s [--aed|--test|--debug]\n' "$0" >&2
 		exit 2
 		;;
 esac

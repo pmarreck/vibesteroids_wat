@@ -5,6 +5,34 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [x] Generate the star field from the seeded PRNG. It was a pure function of
+  the loop index, so every seed drew the identical sky, and both coordinates
+  advanced by a fixed step, laying all one hundred stars on a diagonal lattice
+  (90 of 99 consecutive pairs shared one horizontal step). (Peter, 2026-08-05;
+  done 2026-08-05 12:15 EDT.)
+- [x] Make `./build` produce the `.aed` alongside the application, since the
+  package is the distributable. (Peter, 2026-08-05; done 2026-08-05 12:08 EDT.)
+- [ ] Gate boot behind a Start Game button so the first interaction is always a
+  completed tap, which is the only gesture iOS accepts to unlock Web Audio.
+  Peter's decisions, 2026-08-05: show it at boot, after game over without
+  overlapping the game-over indication, and as "Resume" after focus loss;
+  asteroids drift behind it with no ship spawned; dismissal spawns the ship
+  through the ordinary respawn-safety path; a button click or any key dismisses
+  it on desktop.
+	- [ ] Focus loss needs nothing new from Aedicule; it already arrives as
+	  `AE_event` kind 8 with code 0, and the gate stays up until dismissed, so
+	  no focus-gain event is required either.
+- [ ] Port the original touch control grammar now that Aedicule ships device
+  flags at `2ca03e5`: outer 20% strips stroke-rotate and fire on contact, the
+  middle 60% thrusts, shake activates Death Blossom. Declare `AE_abi_minor` 6
+  so an older host rejects cleanly instead of reporting flags = 0 and hiding
+  touch controls on a phone.
+- [ ] Pin `2ca03e5` once Peter's current playtest against `61f287f` is done;
+  rebuilding underneath a live test would disrupt him.
+- [x] Standing policy from Peter, 2026-08-05: Aedicule's demo manifest always
+  tracks the latest demos, so send a new `.aed` pin pair after each tranche
+  worth demoing rather than waiting to be asked. First pair sent for
+  `df61ffe`. (2026-08-05 12:07 EDT.)
 - [x] Key the projectile range and the hazardous blast extent off a viewport
   reference that leans toward the smaller dimension instead of the diagonal,
   which a tall phone inflated until shots outranged the screen and blasts
