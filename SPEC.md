@@ -163,6 +163,13 @@ mode. Bullets inherit relevant ship motion, expire after their authored
 lifetime, wrap or terminate according to the documented rule, and resolve each
 hit once.
 
+Extents that must scale with the window key off a single viewport reference:
+the geometric mean of width and height, the side of the square with the same
+area. Projectile range is half that reference and the hazardous blast is 0.27
+of it. The diagonal is deliberately not used, because a portrait phone's
+diagonal is dominated by its height and inflates every derived extent until
+shots outrange the width they cross and blasts span most of the screen.
+
 The semi-secret Death Blossom is once per life when available. It emits a
 radial burst with its own audiovisual sequence and cannot silently exceed pool,
 fuel, or command budgets.
@@ -189,13 +196,13 @@ takes priority; otherwise a seeded choice selects either a random bearing or a
 fixed-point iterative intercept of the moving player. Enemy shots may destroy
 rocks but never score. The saucer and player can each die from their mutual
 collision or from rocks; player bullets and lasers destroy the saucer for 2,000
-points. Every saucer destruction creates an immediate 240-pixel-radius
-snapshot blast that can destroy nearby rocks; target radii extend that boundary,
-so the player's 10-pixel hull is endangered at 250 pixels. Rocks score only when
+points. Every saucer destruction creates an immediate viewport-scaled snapshot
+blast that can destroy nearby rocks; target radii extend that boundary, so the
+player's 10-pixel hull is endangered ten pixels beyond it. Rocks score only when
 the player caused the saucer destruction; contact-triggered blasts never
 manufacture points. The 1.2-second presentation expands and contracts to the
-same 240-pixel gameplay radius through the fixed clock, while damage is resolved
-once at detonation so newly split children survive the parent blast.
+same gameplay radius through the fixed clock, while damage is resolved once at
+detonation so newly split children survive the parent blast.
 
 The package drifts across the viewport without wrapping and does not collide
 with rocks. Player bullets, lasers, and enemy shots can destroy it; leaving the
@@ -217,7 +224,7 @@ pitch-stable sonar ping with two diminishing delayed reflections starts after
 1.5 simulated seconds and repeats every 3 seconds.
 
 Player bullets and finite lasers rupture the satellite reactor. The resulting
-hazardous blast shares the 240-pixel UFO radius and has no intrinsic bounty, but
+hazardous blast shares the UFO blast radius and has no intrinsic bounty, but
 clustered rocks caught in it score because the player caused the detonation.
 Physical asteroid contact triggers the same blast with no score attribution.
 

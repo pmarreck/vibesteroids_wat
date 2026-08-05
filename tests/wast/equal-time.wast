@@ -338,12 +338,14 @@
 (assert_return (invoke $rate_60000_1001_probe "blast_boundary" (i32.const 71)) (i32.const 1) (i32.const 0))
 (assert_return (invoke $rate_120000_1001_probe "blast_boundary" (i32.const 143)) (i32.const 1) (i32.const 0))
 
-;; Per-shot countdowns preserve the half-diagonal expiry boundary while their
-;; exact tick counts scale with each integral or rational simulation rate.
-(assert_return (invoke $rate_60_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 113))
-(assert_return (invoke $rate_120_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 227))
-(assert_return (invoke $rate_60000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 113))
-(assert_return (invoke $rate_120000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 227))
+;; Per-shot countdowns preserve the area-referenced expiry boundary while their
+;; exact tick counts scale with each integral or rational simulation rate. The
+;; halving between the 60- and 120-Hz families is the invariant under test; the
+;; absolute counts merely record where the current reference places it.
+(assert_return (invoke $rate_60_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 78))
+(assert_return (invoke $rate_120_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 157))
+(assert_return (invoke $rate_60000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 78))
+(assert_return (invoke $rate_120000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 157))
 
 ;; The delayed phone-home cue resets on the same three simulated seconds at
 ;; integral and NTSC-derived rates, without sleeps or wall-clock observation.

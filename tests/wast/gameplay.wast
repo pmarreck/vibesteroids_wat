@@ -59,7 +59,7 @@
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 
 ;; Held fire repeats, carries a precomputed lifetime, and expires at the same
-;; half-viewport-diagonal boundary without per-tick square roots.
+;; half-reference boundary without per-tick square roots.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 45)) (i32.const 0))
@@ -69,13 +69,13 @@
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 226))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 156))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 1)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 4)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 112)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 77)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 2))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
@@ -639,8 +639,23 @@
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 64))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 5))
 
+;; Extents derived from the viewport must track its area, not its diagonal. On a
+;; portrait phone the diagonal is dominated by height, which inflated the range
+;; until a shot outran the width it was fired across, wrapped, and came back.
+;; The first case is oracle-free: equal areas must agree whatever the aspect.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "range_matches_across_equal_area" (f32.const 1024) (f32.const 768) (f32.const 1536) (f32.const 512)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "range_within_smaller_dimension" (f32.const 390) (f32.const 844)) (i32.const 1))
+;; Specificity: the landscape case already satisfied the bound, so a classifier
+;; that simply answered zero could not be mistaken for the fix.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "range_within_smaller_dimension" (f32.const 1024) (f32.const 768)) (i32.const 1))
+
 ;; Rapid-fire Death Blossom must outgrow the legacy 64-slot pool before its
-;; oldest projectile reaches the half-diagonal expiry distance.
+;; oldest projectile reaches the half-reference expiry distance. The base pool
+;; carries a transient hole once expiry begins reclaiming its oldest slots, so
+;; the overflow total, not base saturation, is what proves the pool grew.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
@@ -651,11 +666,11 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15568) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 9)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 70)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 64))
-(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 16384) (i32.const 48) (i32.const 192)) (i32.const 76))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 63))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 16384) (i32.const 48) (i32.const 192)) (i32.const 55))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 140))
+(assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 118))
 
 ;; Focus loss clears the complete set of held controls without silently
 ;; changing pause, Auto-fire, Kid Mode, Help, or either Death Blossom bit.

@@ -5,14 +5,17 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
-- [ ] Key the projectile range and the hazardous blast extent off a viewport
+- [x] Key the projectile range and the hazardous blast extent off a viewport
   reference that leans toward the smaller dimension instead of the diagonal,
-  which a tall phone inflates until shots outrange the screen and blasts span
-  most of its width. (Peter, 2026-08-04 playtest.)
-	- [ ] RED WAST proving both quantities shrink on a portrait viewport while
-	  a square viewport of equal area is unchanged.
-	- [ ] Confirm `$refresh_bullet_maximum_distance` and
-	  `$hazardous_blast_radius` are the only two consumers that need it.
+  which a tall phone inflated until shots outranged the screen and blasts
+  spanned most of its width. (Peter, 2026-08-04 playtest; done 2026-08-04
+  21:45 EDT.)
+	- [x] RED WAST proving equal-area viewports agree whatever their aspect and
+	  that a portrait shot no longer outruns the narrower dimension, with the
+	  landscape case passing beforehand as a specificity guard.
+	- [x] `$refresh_bullet_maximum_distance` and `$hazardous_blast_radius` were
+	  the only two consumers; the former stays cached because bullets are a
+	  per-tick hot path, the latter is recomputed because blasts are rare.
 
 - [ ] Add `W/A/D` keyboard aliases for thrust/rotate-left/rotate-right and make
   the Help overlay advertise both arrow and letter controls.

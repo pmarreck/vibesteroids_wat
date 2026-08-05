@@ -107,9 +107,12 @@
 	(data (i32.const 704) "assets/audio/satellite-destroyed.flac")
 
 	(global $scale i64 (i64.const 1000000))
-	;; Shared visual and damage extent for UFO/Voyager explosions; target hull
-	;; radii are added at collision sites so the drawn danger area stays honest.
-	(global $hazardous_blast_radius i64 (i64.const 240000000))
+	;; Fraction of the viewport reference spanned by a UFO/Voyager explosion. The
+	;; historical extent was a flat 240 units, chosen at the 1024x768 design
+	;; viewport whose reference length is 886.81, so 0.27 reproduces it to within
+	;; a quarter of a percent while letting the blast shrink with a phone-sized
+	;; screen instead of swallowing it.
+	(global $hazardous_blast_fraction i64 (i64.const 270000))
 	(global $tick_numerator i64 (i64.const 120))
 	(global $tick_denominator i64 (i64.const 1))
 	(global $player_bullet_capacity i32 (i32.const 256))
@@ -622,12 +625,29 @@
 		local.get $milli_y local.get $milli_y i64.mul i64.add
 		call $integer_sqrt i64.const 1000 i64.mul)
 
+	;; Reference length for every viewport-derived gameplay extent: the geometric
+	;; mean of width and height, which is the side of the square with the same
+	;; area. It tracks the smaller dimension far more closely than the diagonal
+	;; does, so a portrait phone no longer inflates each extent by its dominant
+	;; height. Milli-scaling before the multiply keeps an 8K viewport clear of
+	;; i64 overflow, the same guard $fixed_hypot uses.
+	(func $viewport_reference (result i64)
+		global.get $state_width_address i64.load i64.const 1000 i64.div_s
+		global.get $state_height_address i64.load i64.const 1000 i64.div_s
+		i64.mul call $integer_sqrt i64.const 1000 i64.mul)
+
+	;; Shared visual and damage extent for UFO/Voyager explosions; target hull
+	;; radii are added at collision sites so the drawn danger area stays honest.
+	;; Recomputed rather than cached because a blast is rare and short-lived,
+	;; unlike the per-tick projectile range beneath it.
+	(func $hazardous_blast_radius (result i64)
+		call $viewport_reference global.get $hazardous_blast_fraction call $fixed_mul)
+
 	;; Caches the viewport-dependent projectile range at lifecycle boundaries;
 	;; bullets then need no invariant square root during their tick updates.
 	(func $refresh_bullet_maximum_distance
 		global.get $state_bullet_maximum_distance_address
-		global.get $state_width_address i64.load global.get $state_height_address i64.load
-		call $fixed_hypot i64.const 2 i64.div_u i64.store)
+		call $viewport_reference i64.const 2 i64.div_u i64.store)
 
 	;; Converts a newly fired bullet's constant speed and cached range into one
 	;; deterministic countdown, using ceiling division to retain the old expiry tick.
@@ -1681,7 +1701,7 @@
 				local.get $x local.get $y
 				local.get $asteroid i32.const 16 i32.add i64.load
 				local.get $asteroid i32.const 24 i32.add i64.load
-				global.get $hazardous_blast_radius
+				call $hazardous_blast_radius
 				local.get $asteroid i32.const 48 i32.add i64.load i64.add
 				call $distance_lt
 				(if (then
@@ -1699,7 +1719,7 @@
 		global.get $state_invulnerability_address i32.load i32.const 0 i32.le_s i32.and
 			(if (then
 				local.get $x local.get $y global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load
-				global.get $hazardous_blast_radius i64.const 10000000 i64.add call $distance_lt
+				call $hazardous_blast_radius i64.const 10000000 i64.add call $distance_lt
 				(if (then call $begin_ship_destruction))))
 		i32.const 12 f32.const 1 f32.const 1 i32.const 0 call $audio drop)
 
@@ -2877,11 +2897,11 @@
 		i32.const 72 call $ticks_from_sixty local.set $duration
 		local.get $elapsed local.get $half i32.le_u
 		(if (then
-			local.get $elapsed i64.extend_i32_u global.get $hazardous_blast_radius i64.mul
+			local.get $elapsed i64.extend_i32_u call $hazardous_blast_radius i64.mul
 			local.get $half i64.extend_i32_u i64.div_u local.set $radius)
 		(else
 			local.get $duration local.get $elapsed i32.sub i64.extend_i32_u
-			global.get $hazardous_blast_radius i64.mul
+			call $hazardous_blast_radius i64.mul
 			local.get $half i64.extend_i32_u i64.div_u local.set $radius))
 		local.get $radius i64.const 4000000 i64.lt_u
 		(if (then i64.const 4000000 local.set $radius))

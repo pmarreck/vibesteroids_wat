@@ -336,6 +336,32 @@
 		local.get $kind local.get $code local.get $x local.get $y call $event)
 	(func (export "viewport") (param $width f32) (param $height f32) (result i32)
 		i32.const 6 i32.const 0 local.get $width local.get $height call $event)
+	;; Metamorphic control over the viewport-derived projectile range: two
+	;; viewports of equal area must produce an identical range. That holds for
+	;; any area-based reference and fails for every diagonal-based one, and the
+	;; guest is compared against itself, so the oracle cannot be satisfied by
+	;; transcribing the implementation's own answer into an expected value.
+	(func (export "range_matches_across_equal_area")
+		(param $first_width f32) (param $first_height f32)
+		(param $second_width f32) (param $second_height f32) (result i32)
+		(local $first i64)
+		i32.const 6 i32.const 0 local.get $first_width local.get $first_height
+		call $event drop
+		i32.const 1152 i64.load local.set $first
+		i32.const 6 i32.const 0 local.get $second_width local.get $second_height
+		call $event drop
+		local.get $first i32.const 1152 i64.load i64.eq)
+	;; Classifies whether a shot expires before it can outrun the narrower screen
+	;; dimension. A portrait phone is the reported case: a diagonal-derived range
+	;; let a bullet cross the full width, wrap, and come back.
+	(func (export "range_within_smaller_dimension")
+		(param $width f32) (param $height f32) (result i32)
+		(local $smaller i64)
+		i32.const 6 i32.const 0 local.get $width local.get $height call $event drop
+		i32.const 1032 i64.load local.set $smaller
+		i32.const 1040 i64.load local.get $smaller i64.lt_s
+		(if (then i32.const 1040 i64.load local.set $smaller))
+		i32.const 1152 i64.load local.get $smaller i64.le_s)
 	;; Converts source-authored 60-Hz fixture durations into the production
 	;; rational rate while leaving the guest's raw AE_tick contract untouched.
 	(func (export "tick") (param $source_ticks i32) (result i32)
@@ -617,7 +643,7 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383979219))
 (assert_return (invoke $vibesteroids_tests "fire_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -337500000))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 227))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 157))
 (assert_return (invoke $vibesteroids_tests "drag_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 40)) (i64.const 2493750))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -1246875))

@@ -144,7 +144,7 @@ Implemented:
   debris, particles, safe respawn, and extra lives;
 - auto-fire, Kid Mode, and the semi-secret Death Blossom;
 - independently scheduled disc UFOs with predictive, random, and defensive
-  fire, physical collisions, a 2,000-point bounty, and hazardous 240-pixel
+  fire, physical collisions, a 2,000-point bounty, and hazardous viewport-scaled
   expanding blasts whose asteroid score follows player-kill attribution;
 - destructible drifting packages that randomly grant either 20 seconds of
   finite, non-wrapping multi-target laser fire or doubled bounded fire rate,
