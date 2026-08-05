@@ -279,33 +279,6 @@
 			(if (then local.get $count i32.const 1 i32.add local.set $count))
 			local.get $index i32.const 1 i32.add local.set $index br $again))
 		local.get $count)
-	;; Parameterizes the four toroidal margins without duplicating snapshot setup;
-	;; one scalar means the rock, projectile, and zero score all survived.
-	(func (export "wrapped_sweep_survives")
-		(param $asteroid_x i64) (param $asteroid_y i64)
-		(param $bullet_x i64) (param $bullet_y i64)
-		(param $bullet_vx i64) (param $bullet_vy i64) (result i32)
-		(local $index i32)
-		call $configure drop
-		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
-		(block $cleared (loop $clear
-			local.get $index i32.const 32 i32.ge_u br_if $cleared
-			i32.const 4352 local.get $index i32.const 80 i32.mul i32.add i32.const 0 i32.store
-			local.get $index i32.const 1 i32.add local.set $index br $clear))
-		i32.const 4352 i32.const 1 i32.store
-		i32.const 4368 local.get $asteroid_x i64.store
-		i32.const 4376 local.get $asteroid_y i64.store
-		i32.const 4384 i64.const 0 i64.store i32.const 4392 i64.const 0 i64.store
-		i32.const 4400 i64.const 5000000 i64.store
-		i32.const 1280 i32.const 1 i32.store
-		i32.const 1288 local.get $bullet_x i64.store
-		i32.const 1296 local.get $bullet_y i64.store
-		i32.const 1304 local.get $bullet_vx i64.store
-		i32.const 1312 local.get $bullet_vy i64.store
-		i32.const 1 call $tick drop
-		i32.const 4352 i32.load i32.const 1 i32.eq
-		i32.const 1280 i32.load i32.const 1 i32.eq i32.and
-		i32.const 1096 i32.load i32.eqz i32.and)
 	(func (export "active_at_least") (param $base i32) (param $stride i32) (param $capacity i32) (param $minimum i32) (result i32)
 		(local $index i32) (local $count i32)
 		(block $done (loop $again
@@ -325,6 +298,17 @@
 		(block $done (loop $again
 			local.get $index local.get $capacity i32.ge_u br_if $done
 			i32.const 1024 local.get $base i32.add local.get $index local.get $stride i32.mul i32.add i32.const 1 i32.store
+			local.get $index i32.const 1 i32.add local.set $index br $again)))
+	;; Fills the 64-slot legacy region with real, slowly moving projectiles so a
+	;; pool-capacity fixture does not depend on inert records surviving a tick.
+	(func (export "fill_legacy_bullet_pool")
+		(local $index i32) (local $address i32)
+		(block $done (loop $again
+			local.get $index i32.const 64 i32.ge_u br_if $done
+			i32.const 1280 local.get $index i32.const 48 i32.mul i32.add local.set $address
+			local.get $address i32.const 1 i32.store
+			local.get $address i32.const 24 i32.add i64.const 1000000 i64.store
+			local.get $address i32.const 32 i32.add i64.const 0 i64.store
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 	;; Builds the smallest real scoring collision used to exercise production
 	;; extra-life accounting without exposing an otherwise-private score helper.
@@ -351,32 +335,27 @@
 		local.get $kind local.get $code local.get $x local.get $y call $event)
 	(func (export "viewport") (param $width f32) (param $height f32) (result i32)
 		i32.const 6 i32.const 0 local.get $width local.get $height call $event)
-	;; Metamorphic control over the viewport-derived projectile range: two
-	;; viewports of equal area must produce an identical range. That holds for
-	;; any area-based reference and fails for every diagonal-based one, and the
-	;; guest is compared against itself, so the oracle cannot be satisfied by
-	;; transcribing the implementation's own answer into an expected value.
-	(func (export "range_matches_across_equal_area")
+	;; Compares the rendered blast against itself at two equal-area viewports.
+	;; This catches a return to diagonal scaling without transcribing a radius.
+	(func (export "blast_matches_across_equal_area")
 		(param $first_width f32) (param $first_height f32)
 		(param $second_width f32) (param $second_height f32) (result i32)
-		(local $first i64)
-		i32.const 6 i32.const 0 local.get $first_width local.get $first_height
-		call $event drop
-		i32.const 1152 i64.load local.set $first
+		(local $first f32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 local.get $first_width local.get $first_height
+		call $init_playable drop
+		i32.const 26624 i32.const 1 i32.store
+		i32.const 26632 i64.const 100000000 i64.store
+		i32.const 26640 i64.const 100000000 i64.store
+		i32.const 26648 i32.const 72 i32.store
+		call $host_reset_frame
+		call $render drop
+		call $host_blast_radius local.set $first
 		i32.const 6 i32.const 0 local.get $second_width local.get $second_height
 		call $event drop
-		local.get $first i32.const 1152 i64.load i64.eq)
-	;; Classifies whether a shot expires before it can outrun the narrower screen
-	;; dimension. A portrait phone is the reported case: a diagonal-derived range
-	;; let a bullet cross the full width, wrap, and come back.
-	(func (export "range_within_smaller_dimension")
-		(param $width f32) (param $height f32) (result i32)
-		(local $smaller i64)
-		i32.const 6 i32.const 0 local.get $width local.get $height call $event drop
-		i32.const 1032 i64.load local.set $smaller
-		i32.const 1040 i64.load local.get $smaller i64.lt_s
-		(if (then i32.const 1040 i64.load local.set $smaller))
-		i32.const 1152 i64.load local.get $smaller i64.le_s)
+		call $host_reset_frame
+		call $render drop
+		local.get $first call $host_blast_radius f32.eq)
 	;; Mixes the whole star field into one value so two layouts can be compared
 	;; without scratch memory. The multiplier makes the accumulator order- and
 	;; position-sensitive, so a moved star cannot cancel against another.
@@ -724,14 +703,14 @@
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 24)) (i64.const 512000000))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 384000000))
 
-;; Schema 11 stores canonical per-second velocities and precomputed projectile
-;; lifetimes while integrating at 120 Hz.
+;; Schema 11 stores canonical per-second velocities while integrating at 120
+;; Hz. The retired per-projectile countdown slot remains reserved and zero.
 (assert_return (invoke $vibesteroids_tests "thrust_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -2493750))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 32)) (i64.const 383979219))
 (assert_return (invoke $vibesteroids_tests "fire_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 288)) (i64.const -337500000))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 157))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 0))
 (assert_return (invoke $vibesteroids_tests "drag_once") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 40)) (i64.const 2493750))
 (assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 48)) (i64.const -1246875))

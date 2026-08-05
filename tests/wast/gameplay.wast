@@ -58,8 +58,9 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 10)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 2))
 
-;; Held fire repeats, carries a precomputed lifetime, and expires at the same
-;; half-reference boundary without per-tick square roots.
+;; Held fire repeats at the ordinary cadence and each shot is drawn. Projectiles
+;; carry no countdown any more, so the record's former lifetime slot stays zero;
+;; expiry is proved separately against the viewport edge.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 45)) (i32.const 0))
@@ -69,16 +70,19 @@
 (assert_return (invoke $vibesteroids_tests "host_reset_effects"))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 156))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 0))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 1)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 2) (i32.const 4)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 77)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 296)) (i64.const 2))
+;; Still airborne well past the distance the old countdown allowed, then gone by
+;; leaving the viewport. The exact edge tick is pinned separately by a
+;; hand-placed projectile, so this fixture asserts the shape rather than a
+;; boundary that would move with the ship's muzzle offset.
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 30)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 200)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
 
 ;; Emptying the rock pool advances the wave and spawns one additional parent.
@@ -611,51 +615,22 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
 
-;; A wrap snaps the new endpoint to the opposite margin. The reconstructed
-;; prior point therefore lies outside the extended viewport and must not form a
-;; swept segment through an asteroid waiting in that off-screen margin.
-(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
-	(i64.const -50000000) (i64.const 200000000)
-	(i64.const 1040000000) (i64.const 200000000)
-	(i64.const 12000000000) (i64.const 0)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
-	(i64.const 1074000000) (i64.const 200000000)
-	(i64.const -20000000) (i64.const 200000000)
-	(i64.const -12000000000) (i64.const 0)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
-	(i64.const 200000000) (i64.const -50000000)
-	(i64.const 200000000) (i64.const 780000000)
-	(i64.const 0) (i64.const 12000000000)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "wrapped_sweep_survives"
-	(i64.const 200000000) (i64.const 818000000)
-	(i64.const 200000000) (i64.const -20000000)
-	(i64.const 0) (i64.const -12000000000)) (i32.const 1))
-
 ;; A full bullet pool fails closed and focus loss releases held controls.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "fill_active" (i32.const 256) (i32.const 48) (i32.const 64)))
+(assert_return (invoke $vibesteroids_tests "fill_legacy_bullet_pool"))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 4)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 64))
 (assert_return (invoke $vibesteroids_tests "active_count" (i32.const 3328) (i32.const 80) (i32.const 32)) (i32.const 5))
 
-;; Extents derived from the viewport must track its area, not its diagonal. On a
-;; portrait phone the diagonal is dominated by height, which inflated the range
-;; until a shot outran the width it was fired across, wrapped, and came back.
-;; The first case is oracle-free: equal areas must agree whatever the aspect.
-(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "range_matches_across_equal_area" (f32.const 1024) (f32.const 768) (f32.const 1536) (f32.const 512)) (i32.const 1))
-(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "range_within_smaller_dimension" (f32.const 390) (f32.const 844)) (i32.const 1))
-;; Specificity: the landscape case already satisfied the bound, so a classifier
-;; that simply answered zero could not be mistaken for the fix.
-(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "range_within_smaller_dimension" (f32.const 1024) (f32.const 768)) (i32.const 1))
+;; Blast extent follows viewport area. Equal-area viewports must render the same
+;; peak radius even when their aspect ratios differ.
+(assert_return (invoke $vibesteroids_tests "blast_matches_across_equal_area"
+	(f32.const 1024) (f32.const 768) (f32.const 1536) (f32.const 512)) (i32.const 1))
 
-;; Rapid-fire Death Blossom must outgrow the legacy 64-slot pool before its
-;; oldest projectile reaches the half-reference expiry distance. The base pool
-;; carries a transient hole once expiry begins reclaiming its oldest slots, so
-;; the overflow total, not base saturation, is what proves the pool grew.
+;; Rapid-fire Death Blossom must outgrow the legacy 64-slot pool. After 70
+;; ticks, even the shot heading toward the nearest edge has traveled only about
+;; 197 of the required 384 pixels, so all 130 emitted projectiles remain.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
@@ -666,11 +641,11 @@
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15568) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 9)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 70)) (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 63))
-(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 16384) (i32.const 48) (i32.const 192)) (i32.const 55))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 256) (i32.const 48) (i32.const 64)) (i32.const 64))
+(assert_return (invoke $vibesteroids_tests "active_count" (i32.const 16384) (i32.const 48) (i32.const 192)) (i32.const 66))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
-(assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 118))
+(assert_return (invoke $vibesteroids_tests "host_bullet_circles") (i32.const 130))
 
 ;; Focus loss clears the complete set of held controls without silently
 ;; changing pause, Auto-fire, Kid Mode, Help, or either Death Blossom bit.
@@ -793,3 +768,42 @@
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 100)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32_between" (i32.const 92) (i32.const 1) (i32.const 240)) (i32.const 1))
+
+;; Projectiles are projectiles: they end on a hit or at the viewport edge, and
+;; they never wrap. The previous distance countdown made shots evaporate in open
+;; space, which Peter reported as the range being far too short.
+;; A zero-world-velocity shot is reachable when ship motion exactly cancels
+;; muzzle speed. An overlapping target must claim that shot before the inert
+;; record guard retires it.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "hit_terminal_asteroid_at_score" (i32.const 0)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 72)) (i32.const 120))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
+
+;; Bullet 0 is placed by hand at centre travelling right at the base speed, so
+;; the arithmetic is exact rather than dependent on ship heading. A far-away
+;; rock keeps wave scheduling inert without becoming a collision target.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 256) (i32.const 48) (i32.const 64)))
+(assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 3328) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3344) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3352) (i64.const 10000000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 3376) (i64.const 20000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 256) (i32.const 1)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 264) (i64.const 512000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 272) (i64.const 384000000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 280) (i64.const 337500000)))
+(assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 288) (i64.const 0)))
+;; Still airborne just inside the right margin after 95 original 60-Hz source
+;; ticks, which the harness converts to 190 production ticks.
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 95)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i64" (i32.const 264)) (i64.const 1046375000))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 1))
+;; One more source tick carries it past the margin, where it ends by leaving.
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))
+;; Gone once it clears the edge, and gone by leaving rather than by wrapping
+;; back into play from the left.
+(assert_return (invoke $vibesteroids_tests "tick" (i32.const 6)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 256)) (i32.const 0))

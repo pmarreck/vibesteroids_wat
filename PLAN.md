@@ -22,28 +22,42 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- [ ] Focus loss needs nothing new from Aedicule; it already arrives as
 	  `AE_event` kind 8 with code 0, and the gate stays up until dismissed, so
 	  no focus-gain event is required either.
-- [ ] Port the original touch control grammar now that Aedicule ships device
-  flags at `2ca03e5`: outer 20% strips stroke-rotate and fire on contact, the
-  middle 60% thrusts, shake activates Death Blossom. Declare `AE_abi_minor` 6
-  so an older host rejects cleanly instead of reporting flags = 0 and hiding
-  touch controls on a phone.
-- [ ] Pin `2ca03e5` once Peter's current playtest against `61f287f` is done;
-  rebuilding underneath a live test would disrupt him.
+- [ ] Port the original touch control grammar against Aedicule `1b4cde7`:
+  outer 20% strips stroke-rotate and fire on contact, the middle 60% thrusts,
+  and registered motion kind 1 delivers one Death Blossom event per physical
+  shake. Keep the tap fallback because silence is the denied/no-sensor signal.
+  Decide whether to require ABI minor 7 or keep motion best-effort above the
+  required device-flags ABI minor 6.
+- [ ] Confirm Aedicule `1b4cde7` is CI-green, then pin it. Peter's playtest
+  against `61f287f` is finished and the rebuild hold is lifted. The new pin
+  supersedes `2ca03e5` and includes device-change delivery, the ghost-tap fix,
+  gesture-end audio unlock, and ABI-v0.7 registered motion input.
 - [x] Standing policy from Peter, 2026-08-05: Aedicule's demo manifest always
   tracks the latest demos, so send a new `.aed` pin pair after each tranche
   worth demoing rather than waiting to be asked. First pair sent for
   `df61ffe`. (2026-08-05 12:07 EDT.)
-- [x] Key the projectile range and the hazardous blast extent off a viewport
-  reference that leans toward the smaller dimension instead of the diagonal,
-  which a tall phone inflated until shots outranged the screen and blasts
-  spanned most of its width. (Peter, 2026-08-04 playtest; done 2026-08-04
-  21:45 EDT.)
-	- [x] RED WAST proving equal-area viewports agree whatever their aspect and
-	  that a portrait shot no longer outruns the narrower dimension, with the
-	  landscape case passing beforehand as a specificity guard.
-	- [x] `$refresh_bullet_maximum_distance` and `$hazardous_blast_radius` were
-	  the only two consumers; the former stays cached because bullets are a
-	  per-tick hot path, the latter is recomputed because blasts are rare.
+- [x] Key the hazardous blast extent off a viewport reference that leans toward
+  the smaller dimension instead of the diagonal, which made blasts span too
+  much of a tall phone. The projectile-range portion of the original change was
+  later superseded by viewport-edge termination. (Peter, 2026-08-04 playtest;
+  done 2026-08-04 21:45 EDT; proof retargeted 2026-08-05 17:27 EDT.)
+	- [x] Metamorphic WAST proving equal-area viewports render equal peak blast
+	  radii whatever their aspect ratio.
+	- [x] Keep `$hazardous_blast_radius` recomputed because blasts are rare.
+- [x] Replace cached projectile range and per-shot countdowns with Peter's rule:
+  a player projectile persists until it hits or clears the viewport, and never
+  wraps. (Done 2026-08-05 17:30 EDT.)
+	- [x] Observe the old countdown and wrap oracles fail under edge termination,
+	  then replace them with an exact 60-Hz-source/120-Hz-production boundary.
+	- [x] Preserve swept collision and let an overlapping target claim a
+	  zero-net-velocity shot before the inert-record guard retires it.
+	- [x] Update the Death Blossom pool proof to account for all 130 shots still
+	  being in flight before any can reach the nearest edge.
+	- [x] Remove dead range/lifetime helpers and reconcile `SPEC.md` plus the
+	  fidelity matrix.
+	- [x] Pass the complete suite and optimized build.
+	- Curiosity poke: a resize translates active projectiles with the world; an
+	  immediately out-of-bounds translated shot should retire on the next tick.
 
 - [ ] Add `W/A/D` keyboard aliases for thrust/rotate-left/rotate-right and make
   the Help overlay advertise both arrow and letter controls.
@@ -263,8 +277,9 @@ implementation history remains recoverable in Git through commit `8df6b11`.
   IDs: center 60% hold thrusts; outer 20% strips map vertical strokes to
   opposite rotation directions; edge rotation fires at the ordinary rate;
   touch end and cancel release only that contact's actions.
-	- [ ] Ask Aedicule for a tested touch-contact runtime pin; the current browser
-	  pointer fallback cannot distinguish a finger from primary-mouse fire.
+	- [x] Receive the touch/device-flags runtime pin. `1b4cde7` supersedes the
+	  earlier `2ca03e5`; Aedicule reported CI pending when it sent the pin on
+	  2026-08-05, so confirm green before adopting it.
 	- [x] Agree that guests discover concurrent input capabilities/modalities,
 	  not an OS or global `mobile` mode, and deliver the host/guest ownership
 	  proposal to Aedicule. (2026-07-24 09:05 EDT)
@@ -274,10 +289,9 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- [ ] RED/GREEN deterministic WAST coverage for center thrust, both edge
 	  directions, edge-fire cadence, simultaneous contacts, and end/cancel
 	  release without stuck actions.
-	- [ ] Trigger Death Blossom by shaking the device, matching the original's
-	  acceleration-magnitude threshold and multi-second cooldown; this needs a
-	  device-motion `AE_event` Aedicule has not designed yet, so pencil it in
-	  and keep a tap affordance for devices that deny motion permission.
+	- [ ] Trigger Death Blossom from registered Aedicule motion kind 1. The host
+	  owns the 15 m/s² shake threshold and 1500 ms cooldown and emits event kind
+	  16/code 1; keep a tap affordance for devices that deny motion permission.
 	- [ ] Peter-playtest whether to retain the original top-center pause zone now
 	  that Aedicule owns the registered pause lifecycle; do not assume general
 	  mobile autofire, which the original explicitly disabled.

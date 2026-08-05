@@ -144,7 +144,6 @@
 	(global $state_banner_ticks_address i32 (i32.const 1132))
 	(global $state_seed_address i32 (i32.const 1136))
 	(global $state_blossom_rotation_address i32 (i32.const 1144))
-	(global $state_bullet_maximum_distance_address i32 (i32.const 1152))
 	(global $state_satellite_active_address i32 (i32.const 26656))
 	(global $state_satellite_direction_address i32 (i32.const 26660))
 	(global $state_satellite_x_address i32 (i32.const 26664))
@@ -645,26 +644,9 @@
 
 	;; Shared visual and damage extent for UFO/Voyager explosions; target hull
 	;; radii are added at collision sites so the drawn danger area stays honest.
-	;; Recomputed rather than cached because a blast is rare and short-lived,
-	;; unlike the per-tick projectile range beneath it.
+	;; Recomputed rather than cached because a blast is rare and short-lived.
 	(func $hazardous_blast_radius (result i64)
 		call $viewport_reference global.get $hazardous_blast_fraction call $fixed_mul)
-
-	;; Caches the viewport-dependent projectile range at lifecycle boundaries;
-	;; bullets then need no invariant square root during their tick updates.
-	(func $refresh_bullet_maximum_distance
-		global.get $state_bullet_maximum_distance_address
-		call $viewport_reference i64.const 2 i64.div_u i64.store)
-
-	;; Converts a newly fired bullet's constant speed and cached range into one
-	;; deterministic countdown, using ceiling division to retain the old expiry tick.
-	(func $bullet_lifetime_ticks (param $vx i64) (param $vy i64) (result i64)
-		(local $distance_per_tick i64) (local $maximum_distance i64)
-		local.get $vx local.get $vy call $fixed_hypot call $per_tick local.set $distance_per_tick
-		global.get $state_bullet_maximum_distance_address i64.load local.set $maximum_distance
-		local.get $distance_per_tick i64.const 0 i64.le_s (if (then i64.const 1 return))
-		local.get $maximum_distance local.get $distance_per_tick i64.add i64.const 1 i64.sub
-		local.get $distance_per_tick i64.div_u)
 
 	;; Leads a moving target with two deterministic fixed-point time-of-flight
 	;; refinements, then adds the shooter's velocity to projectile world motion.
@@ -903,7 +885,6 @@
 		global.get $state_rng_address local.get $normalized_seed i32.store
 		global.get $state_width_address local.get $width i64.store
 		global.get $state_height_address local.get $height i64.store
-		call $refresh_bullet_maximum_distance
 		global.get $state_ship_x_address local.get $width i64.const 2 i64.div_s i64.store
 		global.get $state_ship_y_address local.get $height i64.const 2 i64.div_s i64.store
 		global.get $state_ship_vx_address i64.const 0 i64.store
@@ -999,9 +980,7 @@
 								global.get $state_ship_vx_address i64.load global.get $state_ship_dx_address i64.load local.get $speed call $fixed_mul i64.add i64.store
 								local.get $address i32.const 32 i32.add
 								global.get $state_ship_vy_address i64.load global.get $state_ship_dy_address i64.load local.get $speed call $fixed_mul i64.add i64.store
-								local.get $address i32.const 40 i32.add
-								local.get $address i32.const 24 i32.add i64.load
-								local.get $address i32.const 32 i32.add i64.load call $bullet_lifetime_ticks i64.store
+								local.get $address i32.const 40 i32.add i64.const 0 i64.store
 								global.get $state_last_fire_address global.get $state_tick_address i32.load i32.store
 								i32.const 1 f32.const 1 f32.const 1 i32.const 0 call $audio drop)))))))
 
@@ -1524,17 +1503,40 @@
 				local.get $address i32.const 32 i32.add i64.load local.set $vy
 				local.get $address i32.const 8 i32.add
 				local.get $address i32.const 8 i32.add i64.load local.get $vx call $per_tick i64.add
-				i64.const -25000000 global.get $state_width_address i64.load i64.const 25000000 i64.add call $wrap i64.store
+				i64.store
 				local.get $address i32.const 16 i32.add
 				local.get $address i32.const 16 i32.add i64.load local.get $vy call $per_tick i64.add
-				i64.const -25000000 global.get $state_height_address i64.load i64.const 25000000 i64.add call $wrap i64.store
-				local.get $address i32.const 40 i32.add i64.load local.set $vx
-				;; A zero lifetime is reserved for hand-built fixtures and inert restored
-				;; records; production fire always installs a positive countdown.
-				local.get $vx i64.const 0 i64.gt_s
-				(if (then
-					local.get $address i32.const 40 i32.add local.get $vx i64.const 1 i64.sub local.tee $vx i64.store
-					local.get $vx i64.eqz (if (then local.get $address i32.const 0 i32.store))))))
+				i64.store
+				;; A projectile ends on a hit or at the viewport edge and never
+				;; wraps, so a shot leaves the screen instead of evaporating in
+				;; open space. The margin lets it exit fully rather than blinking
+				;; out while still partly drawn.
+				local.get $address i32.const 8 i32.add i64.load
+				i64.const -25000000 i64.lt_s
+				local.get $address i32.const 8 i32.add i64.load
+				global.get $state_width_address i64.load i64.const 25000000 i64.add
+				i64.gt_s i32.or
+				local.get $address i32.const 16 i32.add i64.load
+				i64.const -25000000 i64.lt_s i32.or
+				local.get $address i32.const 16 i32.add i64.load
+				global.get $state_height_address i64.load i64.const 25000000 i64.add
+				i64.gt_s i32.or
+				(if (then local.get $address i32.const 0 i32.store))))
+			local.get $index i32.const 1 i32.add local.set $index br $again)))
+
+	;; Retires a zero-world-velocity shot after every player-target collision
+	;; pass, giving an overlapping target one chance to claim a physically
+	;; reachable cancellation shot without leaking the record forever.
+	(func $retire_inert_bullets
+		(local $index i32) (local $address i32)
+		(block $done (loop $again
+			local.get $index global.get $player_bullet_capacity i32.ge_u br_if $done
+			local.get $index call $bullet_address local.set $address
+			local.get $address i32.load
+			(if (then
+				local.get $address i32.const 24 i32.add i64.load i64.eqz
+				local.get $address i32.const 32 i32.add i64.load i64.eqz i32.and
+				(if (then local.get $address i32.const 0 i32.store))))
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
 
 	(func $update_particles
@@ -2294,6 +2296,7 @@
 		call $check_player_bullet_package_collision
 		call $check_player_bullet_ufo_collision
 		call $check_player_bullet_satellite_collision
+		call $retire_inert_bullets
 		call $check_enemy_bullet_collisions
 		call $check_ufo_collisions
 		call $check_satellite_collisions
@@ -2381,7 +2384,6 @@
 		global.get $state_ship_y_address global.get $state_ship_y_address i64.load local.get $dy i64.add i64.store
 		local.get $dx local.get $dy call $translate_entities
 		global.get $state_width_address local.get $new_width i64.store global.get $state_height_address local.get $new_height i64.store
-		call $refresh_bullet_maximum_distance
 		call $regenerate_stars)
 
 	(func (export "AE_event") (param $kind i32) (param $code i32)

@@ -159,16 +159,15 @@ over follow the source-derived specification.
 ### 6.2 Bullets and weapons
 
 Manual fire respects cooldown and pool capacity. Auto-fire is an explicit game
-mode. Bullets inherit relevant ship motion, expire after their authored
-lifetime, wrap or terminate according to the documented rule, and resolve each
-hit once.
+mode. Bullets inherit relevant ship motion, resolve each swept hit once, never
+wrap, and remain active until they hit something or clear the viewport. A
+25-pixel margin lets the projectile graphic leave fully before retirement.
 
 Extents that must scale with the window key off a single viewport reference:
 the geometric mean of width and height, the side of the square with the same
-area. Projectile range is half that reference and the hazardous blast is 0.27
-of it. The diagonal is deliberately not used, because a portrait phone's
-diagonal is dominated by its height and inflates every derived extent until
-shots outrange the width they cross and blasts span most of the screen.
+area. The hazardous blast is 0.27 of that reference. The diagonal is
+deliberately not used, because a portrait phone's diagonal is dominated by its
+height and makes the blast span too much of the screen.
 
 The semi-secret Death Blossom is once per life when available. It emits a
 radial burst with its own audiovisual sequence and cannot silently exceed pool,

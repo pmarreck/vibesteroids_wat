@@ -52,16 +52,6 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
-	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
-		(local $remaining i64)
-		call $prepare i32.const 1280 i32.const 0 i32.store
-		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1 call $tick drop
-		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
-		i32.const 1280 i32.load
-		i32.const 1 call $tick drop
-		i32.const 1280 i32.load local.get $remaining)
 	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
 		call $prepare
 		i32.const 26656 i32.const 1 i32.store
@@ -135,16 +125,6 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
-	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
-		(local $remaining i64)
-		call $prepare i32.const 1280 i32.const 0 i32.store
-		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1 call $tick drop
-		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
-		i32.const 1280 i32.load
-		i32.const 1 call $tick drop
-		i32.const 1280 i32.load local.get $remaining)
 	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
 		call $prepare
 		i32.const 26656 i32.const 1 i32.store
@@ -213,16 +193,6 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
-	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
-		(local $remaining i64)
-		call $prepare i32.const 1280 i32.const 0 i32.store
-		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1 call $tick drop
-		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
-		i32.const 1280 i32.load
-		i32.const 1 call $tick drop
-		i32.const 1280 i32.load local.get $remaining)
 	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
 		call $prepare
 		i32.const 26656 i32.const 1 i32.store
@@ -290,16 +260,6 @@
 		i32.const 26624 i32.load
 		i32.const 1 call $tick drop
 		i32.const 26624 i32.load)
-	(func (export "bullet_expiry_boundary") (result i32 i32 i64)
-		(local $remaining i64)
-		call $prepare i32.const 1280 i32.const 0 i32.store
-		i32.const 1 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1 call $tick drop
-		i32.const 2 i32.const 4 f32.const 0 f32.const 0 call $event drop
-		i32.const 1320 i64.load local.tee $remaining i32.wrap_i64 i32.const 1 i32.sub call $tick drop
-		i32.const 1280 i32.load
-		i32.const 1 call $tick drop
-		i32.const 1280 i32.load local.get $remaining)
 	(func (export "satellite_ping_boundary") (param $due i32) (result i32 i32)
 		call $prepare
 		i32.const 26656 i32.const 1 i32.store
@@ -342,14 +302,6 @@
 (assert_return (invoke $rate_60000_1001_probe "blast_boundary" (i32.const 71)) (i32.const 1) (i32.const 0))
 (assert_return (invoke $rate_120000_1001_probe "blast_boundary" (i32.const 143)) (i32.const 1) (i32.const 0))
 
-;; Per-shot countdowns preserve the area-referenced expiry boundary while their
-;; exact tick counts scale with each integral or rational simulation rate. The
-;; halving between the 60- and 120-Hz families is the invariant under test; the
-;; absolute counts merely record where the current reference places it.
-(assert_return (invoke $rate_60_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 78))
-(assert_return (invoke $rate_120_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 157))
-(assert_return (invoke $rate_60000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 78))
-(assert_return (invoke $rate_120000_1001_probe "bullet_expiry_boundary") (i32.const 1) (i32.const 0) (i64.const 157))
 
 ;; The delayed phone-home cue resets on the same three simulated seconds at
 ;; integral and NTSC-derived rates, without sleeps or wall-clock observation.
