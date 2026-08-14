@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+
+set -u
+
+root=$(cd "$(dirname "$0")/../.." && pwd)
+production="$root/code.wat"
+failures=0
+
+# This source-level boundary prevents another rgba value from occupying the
+# raw circle flags slot. Every production draw must choose a semantic wrapper;
+# only those two wrappers may call the seven-argument Aedicule import.
+mapfile -t raw_callers < <(
+	awk '
+		$1 == "(func" && substr($2, 1, 1) == "$" {
+			caller = substr($2, 2)
+		}
+		index($0, "call $circle_raw") {
+			print caller
+		}
+	' "$production" | sort -u
+)
+expected_callers=(circle_filled circle_outlined)
+
+if (( ${#raw_callers[@]} != ${#expected_callers[@]} )); then
+	printf 'raw circle caller set has %d members, expected %d\n' \
+		"${#raw_callers[@]}" "${#expected_callers[@]}" >&2
+	failures=$((failures + 1))
+else
+	for index in "${!expected_callers[@]}"; do
+		if [[ ${raw_callers[$index]} != "${expected_callers[$index]}" ]]; then
+			printf 'raw circle caller set differs: got %s, expected %s\n' \
+				"${raw_callers[*]}" "${expected_callers[*]}" >&2
+			failures=$((failures + 1))
+			break
+		fi
+	done
+fi
+
+raw_call_count=$(rg --count --fixed-strings 'call $circle_raw' "$production" || true)
+if [[ $raw_call_count != 2 ]]; then
+	printf 'raw circle call count is %s, expected exactly 2\n' \
+		"${raw_call_count:-0}" >&2
+	failures=$((failures + 1))
+fi
+
+for wrapper in circle_filled circle_outlined; do
+	if ! rg --quiet --fixed-strings "(func \$$wrapper" "$production"; then
+		printf 'semantic circle wrapper is absent: %s\n' "$wrapper" >&2
+		failures=$((failures + 1))
+	fi
+done
+
+# The old local name makes a direct raw call visually ordinary, so reject it
+# even if the approved wrapper set above remains present.
+if rg --quiet --fixed-strings 'func $circle ' "$production" ||
+	rg --quiet --fixed-strings 'call $circle ' "$production"; then
+	printf 'legacy unqualified raw circle name remains\n' >&2
+	failures=$((failures + 1))
+fi
+
+exit "$failures"

@@ -5,6 +5,51 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [ ] Reproduce and assign the new physical touch regression after exact guest
+  `1e04c70` was promoted to Tailscale staging. Preserve the interleaved
+  multi-contact touch/tick behavior as the acceptance test, compare the staged
+  host revision and input-capability path, and fix only the owning side before
+  resuming wrapper work. (Peter playtest, 2026-08-14 16:31 EDT.)
+	- Curiosity poke: the guest package is byte-identical to the touch-working
+	  revision, but cached browser assets, a host diagnostic revision, capability
+	  negotiation, or pause/gate state could still change the observed result.
+	- Peter reproduced the failure in a second browser, ruling out one browser's
+	  cache. Staging delivers eight raw contacts with zero compatibility-pointer
+	  leakage, while the exact guest passes Aedicule's post-action-8 headless
+	  behavioral timeline. The current browser gate injects contacts before
+	  action 8 and therefore never tests active gameplay. (2026-08-14 16:34 EDT.)
+- [x] Audit every Vibesteroids and Aedicule change made since the circle-crash
+  report. Classify each hunk as required behavior, regression evidence,
+  documentation, or unrelated; retain only changes backed by a continuing
+  requirement or failing control. Do not modify the Aedicule tree directly.
+  (Peter request, 2026-08-14 16:32 EDT.)
+	- Curiosity poke: a test can be necessary while its production change is not,
+	  and a package-promotion hunk can be operationally required without changing
+	  runtime semantics.
+	- Vibesteroids production hunks are limited to the required ID-915 fix and
+	  Peter's still-required responsive Help layout; remaining hunks are their
+	  regressions, host-faithful fixture, specifications, plan, and dirtree notes.
+	  Aedicule production changed only the more-specific circle diagnostic and
+	  promoted exact guest, with matching regression/docs/manifest updates. No
+	  touch hunk exists in either shipped range. Current uncommitted changes are
+	  only this audit/diagnosis and Peter's requested, already-RED circle-wrapper
+	  contract. Nothing is unsupported or reverted. (Done 2026-08-14 16:34 EDT.)
+- [x] Make circle argument-role mistakes structurally impossible in ordinary
+  guest code. Add semantic filled/outlined circle wrappers that own the raw
+  flags value, migrate every production call site, and add a source-level
+  contract that fails if a draw routine calls the raw ABI wrapper directly.
+  Send Aedicule the resulting ABI ergonomics evidence without requiring an ABI
+  expansion yet. (Peter request, 2026-08-14 16:27 EDT.)
+	- Curiosity poke: a weak source check could pass vacuously or reject the one
+	  intentional raw boundary; classify the complete raw-call set and require
+	  the exact approved wrapper callers.
+	- The import is now `$circle_raw`; only `$circle_filled` and
+	  `$circle_outlined` can call it, each exactly once with its owned flag. The
+	  set classifier rejects bypasses, missing wrappers, duplicate raw calls, and
+	  the old unqualified name. Full Nix-visible suite/build pass after staging
+	  the new test, and all action-8-first touch SVGs are byte-identical to exact
+	  package `1e04c70`. Aedicule received the measured ABI suggestion without a
+	  requested host expansion. (Done 2026-08-14 16:40 EDT.)
 - [x] Reproduce and fix the live guest stop `invalid or non-finite number in
   circle`, observed while stroking a touch edge to rotate. Add a deterministic
   event-sequence regression before changing guest geometry; ask Aedicule to

@@ -216,7 +216,9 @@ where needed. The instrumented `aedicule.v0` WAST module records emitted scenes,
 audio, effects, and metadata without a custom test-only export in production
 code. Its geometry boundary mirrors Aedicule's finite-coordinate, radius,
 stroke-width, and flags validation, catching argument-slot errors before the
-real host sees a frame.
+real host sees a frame. Production drawing code cannot supply raw circle flags:
+semantic filled/outlined wrappers own those constants, and a source classifier
+requires the raw import's complete caller set to be exactly those two wrappers.
 
 The headless renderer produces an inspectable frame without a desktop:
 
@@ -234,6 +236,7 @@ result/bin/vibesteroids-wat-render --ticks 300 -o frame.svg
 | `tests/run-wast` | RAM-only composer and stock Wasmtime WAST runner |
 | `tests/lint-wat` | Structural fixed-point/float-adapter policy classifier |
 | `tests/cli/aedicule_runtime` | CI gate that runs production WAT through the locked native Aedicule renderer |
+| `tests/cli/circle_argument_roles` | Set classifier that confines raw circle flags to semantic fill/outline wrappers |
 | `flake.nix` | Pinned Mecha Aedicule dependency, WAT artifact, wrapper, checks, and tools |
 | `VIBESTEROIDS_BEHAVIOR_SPEC.md` | Source-derived original behavior and algorithms |
 | `FIDELITY_GAP_MATRIX.md` | Fidelity decisions and remaining work |

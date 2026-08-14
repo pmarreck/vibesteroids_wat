@@ -29,6 +29,7 @@ repository_checks=(
 	./tests/cli/naming_conventions
 	./tests/cli/abi_namespace
 	./tests/cli/aedicule_abi_contract
+	./tests/cli/circle_argument_roles
 	./tests/cli/application_package_layout
 	./tests/cli/flake_composition
 	./tests/cli/run_from_any_directory

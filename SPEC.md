@@ -333,6 +333,8 @@ single fixture could pass vacuously. Scenarios cover schema/configuration, seed
 ranges, rendering intent, controls, fixed-point behavior, firing, collision,
 splitting, score, lives, waves, difficulty, resize, audio, effects, and
 lifecycle. Structural lint independently enforces the float boundary.
+Circle drawing additionally crosses semantic filled/outlined wrappers; only
+those two functions may call raw `AE_circle`, and they own its legal flag values.
 
 Repository classifiers operate over complete forbidden-path and required-tool
 sets. The Nix composition classifier proves that application, frontplane, and
