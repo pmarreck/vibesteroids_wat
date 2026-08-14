@@ -2,6 +2,12 @@
 
 set -u
 
-root=$(cd "$(dirname "$0")" && pwd)
+root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+aedicule_root=${AEDICULE_REPOSITORY:-"$root/../aedicule"}
 
-exec nix run "$root" -- "$@"
+if [[ -x "$aedicule_root/run" ]]; then
+	exec "$aedicule_root/run" --watch "$root/code.wat" "$@"
+fi
+
+exec nix run --no-write-lock-file "$root#frontplane" -- \
+	--watch "$root/code.wat" "$@"

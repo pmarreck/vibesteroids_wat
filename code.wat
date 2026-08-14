@@ -45,6 +45,15 @@
 (module
 	(import "aedicule.v0" "AE_title" (func $title (param i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_menu_item" (func $menu_item (param i32 i32 i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_action" (func $action (param i32 i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_touch_interest"
+		(func $touch_interest (param i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_ui_begin" (func $ui_begin (param i32) (result i32)))
+	(import "aedicule.v0" "AE_ui_end" (func $ui_end (result i32)))
+	(import "aedicule.v0" "AE_control_panel_q16"
+		(func $control_panel_q16 (param i32 i32 i32 i32 i32 i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_button_place_q16"
+		(func $button_place_q16 (param i32 i32 i32 i32 i32 i32 i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_frame_begin" (func $frame_begin (param f32 f32 f32 f32) (result i32)))
 	(import "aedicule.v0" "AE_transform_push" (func $transform_push (param f32 f32 f32 f32 f32 f32) (result i32)))
 	(import "aedicule.v0" "AE_transform_pop" (func $transform_pop (result i32)))
@@ -105,6 +114,8 @@
 	(data (i32.const 672) "LASER  00.0")
 	(data (i32.const 688) "RAPID  00.0")
 	(data (i32.const 704) "assets/audio/satellite-destroyed.flac")
+	(data (i32.const 744) "START GAME")
+	(data (i32.const 760) "RESUME")
 
 	(global $scale i64 (i64.const 1000000))
 	;; Fraction of the viewport reference spanned by a UFO/Voyager explosion. The
@@ -171,26 +182,49 @@
 	(global $flag_help_visible i32 (i32.const 512))
 	(global $flag_suspends_tick i32 (i32.const 528))
 	(global $flag_blocks_blossom_activation i32 (i32.const 656))
-	;; The boot gate. iOS unlocks Web Audio only on a completed tap and never on
-	;; a drag, so play begins behind a button whose sole job is guaranteeing the
-	;; first interaction is a tap. It is a flag rather than a lifecycle value
-	;; because the world behind it keeps advancing through lifecycle 2, the
-	;; existing no-ship state, and dismissal then spawns the ship through the
-	;; ordinary respawn-safety path instead of a second spawn mechanism.
+	;; Start and Resume share one visible gate. Resume has a second bit because it
+	;; freezes simulation, while the boot gate deliberately lets the world drift
+	;; behind the no-ship lifecycle until the player's completed tap.
 	(global $flag_gate i32 (i32.const 1024))
+	(global $flag_resume_gate i32 (i32.const 2048))
+	(global $flag_suspends_simulation i32 (i32.const 2576))
+	;; Retained host UI state is process-local and deliberately excluded from the
+	;; snapshot. A sent mode of -1 forces the next render to publish the complete
+	;; gate document after initialization or hot restore.
+	(global $ui_revision (mut i32) (i32.const 0))
+	(global $ui_sent_gate_mode (mut i32) (i32.const -1))
+	(global $ui_sent_width (mut i64) (i64.const -1))
+	(global $ui_sent_height (mut i64) (i64.const -1))
 	;; Host input edges are intentionally not snapshotted: reload clears them.
 	;; Each thrust source owns one bit so releasing an alias or pointer cannot
 	;; cancel another physical source that remains held.
 	(global $thrust_source_up i32 (i32.const 1))
 	(global $thrust_source_pointer i32 (i32.const 2))
 	(global $thrust_source_letter i32 (i32.const 4))
+	(global $thrust_source_touch i32 (i32.const 8))
 	(global $held_thrust_sources (mut i32) (i32.const 0))
+	;; Fire also has independent physical owners. The touch bit represents the
+	;; derived set of all live edge contacts, not any contact's opaque ID.
+	(global $fire_source_key i32 (i32.const 1))
+	(global $fire_source_pointer i32 (i32.const 2))
+	(global $fire_source_touch i32 (i32.const 4))
+	(global $held_fire_sources (mut i32) (i32.const 0))
 	;; Rotation likewise has two physical sources per direction, the arrow key
 	;; and its letter alias, so each direction needs its own held-source set.
 	(global $rotate_source_arrow i32 (i32.const 1))
 	(global $rotate_source_letter i32 (i32.const 2))
 	(global $held_rotate_left_sources (mut i32) (i32.const 0))
 	(global $held_rotate_right_sources (mut i32) (i32.const 0))
+	;; Touch contacts are transient input adapter state outside AE_state_ptr/len.
+	;; Eight records are ample for human fingers while keeping all loops bounded.
+	;; Record: active/id/zone/pad:i32, start-y/start-dx/start-dy:i64.
+	(global $touch_contacts_base i32 (i32.const 33792))
+	(global $touch_contact_capacity i32 (i32.const 8))
+	(global $touch_contact_stride i32 (i32.const 40))
+	(global $touch_zone_left i32 (i32.const 1))
+	(global $touch_zone_thrust i32 (i32.const 2))
+	(global $touch_zone_right i32 (i32.const 3))
+	(global $touch_zone_pause i32 (i32.const 4))
 
 	(func $load_flags (result i32)
 		global.get $state_flags_address i32.load)
@@ -222,6 +256,22 @@
 		global.get $held_thrust_sources local.get $source i32.const -1 i32.xor i32.and
 		global.set $held_thrust_sources
 		call $refresh_thrust_flag)
+
+	(func $refresh_fire_flag
+		global.get $held_fire_sources i32.eqz
+		(if
+			(then global.get $flag_fire call $clear_flag)
+			(else global.get $flag_fire call $set_flag)))
+
+	(func $hold_fire_source (param $source i32)
+		global.get $held_fire_sources local.get $source i32.or
+		global.set $held_fire_sources
+		call $refresh_fire_flag)
+
+	(func $release_fire_source (param $source i32)
+		global.get $held_fire_sources local.get $source i32.const -1 i32.xor i32.and
+		global.set $held_fire_sources
+		call $refresh_fire_flag)
 
 	(func $refresh_rotate_left_flag
 		global.get $held_rotate_left_sources i32.eqz
@@ -255,10 +305,128 @@
 		global.set $held_rotate_right_sources
 		call $refresh_rotate_right_flag)
 
+	(func $touch_contact_address (param $index i32) (result i32)
+		global.get $touch_contacts_base
+		local.get $index global.get $touch_contact_stride i32.mul i32.add)
+
+	;; Returns zero when an opaque contact ID is not currently active.
+	(func $find_touch_contact (param $id i32) (result i32)
+		(local $index i32) (local $address i32)
+		(block $none
+			(loop $again
+				local.get $index global.get $touch_contact_capacity i32.ge_u br_if $none
+				local.get $index call $touch_contact_address local.set $address
+				local.get $address i32.load
+				local.get $address i32.const 4 i32.add i32.load local.get $id i32.eq
+				i32.and (if (then local.get $address return))
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		i32.const 0)
+
+	(func $find_free_touch_contact (result i32)
+		(local $index i32) (local $address i32)
+		(block $none
+			(loop $again
+				local.get $index global.get $touch_contact_capacity i32.ge_u br_if $none
+				local.get $index call $touch_contact_address local.set $address
+				local.get $address i32.load i32.eqz
+				(if (then local.get $address return))
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		i32.const 0)
+
+	;; Recomputes action ownership over the complete active-contact set. This is
+	;; what lets one finger lift without cancelling another finger in that zone.
+	(func $refresh_touch_action_sources
+		(local $index i32) (local $address i32)
+		(local $has_edge i32) (local $has_thrust i32) (local $zone i32)
+		(block $done
+			(loop $again
+				local.get $index global.get $touch_contact_capacity i32.ge_u br_if $done
+				local.get $index call $touch_contact_address local.set $address
+				local.get $address i32.load
+				(if (then
+					local.get $address i32.const 8 i32.add i32.load local.set $zone
+					local.get $zone global.get $touch_zone_thrust i32.eq
+					(if (then i32.const 1 local.set $has_thrust))
+					local.get $zone global.get $touch_zone_left i32.eq
+					local.get $zone global.get $touch_zone_right i32.eq i32.or
+					(if (then i32.const 1 local.set $has_edge))))
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		local.get $has_edge
+		(if
+			(then global.get $fire_source_touch call $hold_fire_source)
+			(else global.get $fire_source_touch call $release_fire_source))
+		local.get $has_thrust
+		(if
+			(then global.get $thrust_source_touch call $hold_thrust_source)
+			(else global.get $thrust_source_touch call $release_thrust_source)))
+
+	(func $clear_touch_contacts
+		global.get $touch_contacts_base i32.const 0
+		global.get $touch_contact_capacity global.get $touch_contact_stride i32.mul
+		memory.fill
+		global.get $fire_source_touch call $release_fire_source
+		global.get $thrust_source_touch call $release_thrust_source)
+
+	(func $touch_zone (param $x i64) (param $y i64) (result i32)
+		local.get $x i64.const 5 i64.mul
+		global.get $state_width_address i64.load i64.const 2 i64.mul i64.ge_s
+		local.get $x i64.const 5 i64.mul
+		global.get $state_width_address i64.load i64.const 3 i64.mul i64.le_s i32.and
+		local.get $y i64.const 70000000 i64.le_s i32.and
+		(if (then global.get $touch_zone_pause return))
+		local.get $x i64.const 5 i64.mul
+		global.get $state_width_address i64.load i64.lt_s
+		(if (then global.get $touch_zone_left return))
+		local.get $x i64.const 5 i64.mul
+		global.get $state_width_address i64.load i64.const 4 i64.mul i64.gt_s
+		(if (then global.get $touch_zone_right return))
+		global.get $touch_zone_thrust)
+
+	;; A start claims one free bounded record. Duplicate active IDs and overflow
+	;; starts are inert, so neither can steal another contact's zone ownership.
+	(func $handle_touch_start (param $id i32) (param $x i64) (param $y i64)
+		(local $address i32) (local $zone i32)
+		local.get $id call $find_touch_contact i32.eqz
+		(if (then) (else return))
+		local.get $x local.get $y call $touch_zone local.set $zone
+		local.get $zone global.get $touch_zone_pause i32.eq
+		(if (then call $toggle_pause return))
+		call $load_flags global.get $flag_paused i32.and
+		(if (then return))
+		call $find_free_touch_contact local.tee $address i32.eqz
+		(if (then return))
+		local.get $address i32.const 1 i32.store
+		local.get $address i32.const 4 i32.add local.get $id i32.store
+		local.get $address i32.const 8 i32.add local.get $zone i32.store
+		local.get $address i32.const 16 i32.add local.get $y i64.store
+		local.get $address i32.const 24 i32.add
+		global.get $state_ship_dx_address i64.load i64.store
+		local.get $address i32.const 32 i32.add
+		global.get $state_ship_dy_address i64.load i64.store
+		local.get $zone global.get $touch_zone_left i32.eq
+		local.get $zone global.get $touch_zone_right i32.eq i32.or
+		(if (then i32.const 16584 i32.const 0 i32.store))
+		call $refresh_touch_action_sources)
+
+	(func $handle_touch_terminal (param $id i32)
+		(local $address i32)
+		local.get $id call $find_touch_contact local.tee $address i32.eqz
+		(if (then return))
+		local.get $address i32.const 0 i32.store
+		call $refresh_touch_action_sources)
+
+	(func $handle_touch_move (param $id i32) (param $y i64)
+		(local $address i32)
+		local.get $id call $find_touch_contact local.tee $address i32.eqz
+		(if (then return))
+		local.get $address local.get $y call $apply_touch_heading)
+
 	;; Input-down edges are transient host state. Clear them as a class while
 	;; preserving modal gameplay choices across focus loss and hot reload.
 	(func $clear_held_controls
+		call $clear_touch_contacts
 		i32.const 0 global.set $held_thrust_sources
+		i32.const 0 global.set $held_fire_sources
 		i32.const 0 global.set $held_rotate_left_sources
 		i32.const 0 global.set $held_rotate_right_sources
 		global.get $flag_held_controls call $clear_flag)
@@ -281,6 +449,7 @@
 				local.get $kind i32.const 6 i32.eq
 				local.get $kind i32.const 7 i32.eq i32.or
 				local.get $kind i32.const 8 i32.eq i32.or
+				local.get $kind i32.const 11 i32.eq i32.or
 				local.get $kind i32.const 1 i32.eq
 				local.get $code i32.const 5 i32.eq
 				local.get $code i32.const 11 i32.eq i32.or
@@ -296,7 +465,7 @@
 		i32.and)
 
 	(func (export "AE_abi_major") (result i32) i32.const 0)
-	(func (export "AE_abi_minor") (result i32) i32.const 0)
+	(func (export "AE_abi_minor") (result i32) i32.const 10)
 	(func (export "AE_state_ptr") (result i32) global.get $state_base_address)
 	(func (export "AE_state_len") (result i32) i32.const 32768)
 	(func (export "AE_state_schema") (result i32) i32.const 11)
@@ -337,6 +506,11 @@
 		i32.const 0 i32.const 0 i32.const 0 i32.const 0 i32.const 1 call $menu_item drop
 		i32.const 7 i32.const 200 i32.const 15 i32.const 7 i32.const 0 call $menu_item drop
 		i32.const 6 i32.const 48 i32.const 4 i32.const 6 i32.const 0 call $menu_item drop)
+	;; These actions exist only for retained buttons. Menu presentation remains an
+	;; explicit, separate declaration owned by $configure_menu.
+	(func $configure_gate_actions
+		i32.const 8 i32.const 744 i32.const 10 i32.const 0 call $action drop
+		i32.const 9 i32.const 760 i32.const 6 i32.const 0 call $action drop)
 	(func $configure_shot_sound
 		;; Shot: 800 -> 400 -> 200 Hz sine, 0.3 -> 0.01 gain.
 		i32.const 1 i32.const 1 i32.const 0 i32.const 100
@@ -479,7 +653,14 @@
 		i32.const 1 i32.const 704 i32.const 37 i32.const 0 call $sample_asset drop)
 
 	(func (export "AE_configure") (result i32)
+		(local $status i32)
+		;; Raw contacts are required for independent touch ownership. A failed
+		;; opt-in must reject configuration instead of silently restoring the
+		;; compatibility-pointer path and its duplicate/one-contact semantics.
+		i32.const 8 i32.const 0 call $touch_interest local.tee $status
+		(if (then local.get $status return))
 		call $configure_menu
+		call $configure_gate_actions
 		call $configure_shot_sound
 		call $configure_asteroid_explosion_sound
 		call $configure_ship_explosion_sound
@@ -608,6 +789,67 @@
 		local.get $angle local.get $angle call $fixed_mul local.set $square
 		global.get $scale local.get $square i64.const 2 i64.div_s i64.sub
 		local.get $square local.get $square call $fixed_mul i64.const 24 i64.div_s i64.add)
+
+	;; Applies the original `4pi`-per-viewport-height stroke mapping relative to
+	;; one contact's captured heading. Reducing modulo one turn and subdividing
+	;; the residual angle keeps the existing small-angle polynomial accurate and
+	;; bounds a worst-case move to 32 fixed-point rotations.
+	(func $apply_touch_heading (param $address i32) (param $y i64)
+		(local $zone i32) (local $angle i64) (local $magnitude i64)
+		(local $remaining i64) (local $step i64) (local $sine i64) (local $cosine i64)
+		(local $dx i64) (local $dy i64) (local $next_dx i64) (local $next_dy i64)
+		(local $length i64) (local $steps i32) (local $index i32)
+		local.get $address i32.const 8 i32.add i32.load local.set $zone
+		local.get $zone global.get $touch_zone_left i32.eq
+		local.get $zone global.get $touch_zone_right i32.eq i32.or i32.eqz
+		(if (then return))
+		call $load_flags global.get $flag_blossom_active i32.and
+		(if (then return))
+		global.get $state_height_address i64.load i64.const 0 i64.le_s
+		(if (then return))
+		local.get $y local.get $address i32.const 16 i32.add i64.load i64.sub
+		i64.const 12566371 i64.mul
+		global.get $state_height_address i64.load i64.div_s local.set $angle
+		local.get $zone global.get $touch_zone_left i32.eq
+		(if (then i64.const 0 local.get $angle i64.sub local.set $angle))
+		local.get $angle i64.const 6283185 i64.rem_s local.set $angle
+		local.get $angle i64.const 3141593 i64.gt_s
+		(if (then local.get $angle i64.const 6283185 i64.sub local.set $angle))
+		local.get $angle i64.const -3141593 i64.lt_s
+		(if (then local.get $angle i64.const 6283185 i64.add local.set $angle))
+		local.get $address i32.const 24 i32.add i64.load local.set $dx
+		local.get $address i32.const 32 i32.add i64.load local.set $dy
+		local.get $angle local.set $remaining
+		local.get $angle i64.const 0 i64.lt_s
+		(if (result i64)
+			(then i64.const 0 local.get $angle i64.sub)
+			(else local.get $angle))
+		local.set $magnitude
+		local.get $magnitude i64.const 99999 i64.add i64.const 100000 i64.div_u
+		i32.wrap_i64 local.set $steps
+		(block $done
+			(loop $again
+				local.get $index local.get $steps i32.ge_u br_if $done
+				local.get $remaining
+				local.get $steps local.get $index i32.sub i64.extend_i32_u i64.div_s
+				local.set $step
+				local.get $remaining local.get $step i64.sub local.set $remaining
+				local.get $step call $small_sine local.set $sine
+				local.get $step call $small_cosine local.set $cosine
+				local.get $dx local.get $cosine call $fixed_mul
+				local.get $dy local.get $sine call $fixed_mul i64.sub local.set $next_dx
+				local.get $dy local.get $cosine call $fixed_mul
+				local.get $dx local.get $sine call $fixed_mul i64.add local.set $next_dy
+				local.get $next_dx local.set $dx
+				local.get $next_dy local.set $dy
+				local.get $index i32.const 1 i32.add local.set $index br $again))
+		local.get $dx local.get $dy call $fixed_hypot local.tee $length i64.eqz
+		(if (then return))
+		global.get $state_ship_dx_address
+		local.get $dx global.get $scale i64.mul local.get $length i64.div_s i64.store
+		global.get $state_ship_dy_address
+		local.get $dy global.get $scale i64.mul local.get $length i64.div_s i64.store
+		i32.const 16584 i32.const 0 i32.store)
 
 	(func $integer_sqrt (param $value i64) (result i64)
 		(local $estimate i64) (local $next i64)
@@ -879,9 +1121,14 @@
 		local.get $seed local.set $normalized_seed
 		local.get $normalized_seed i32.eqz (if (then i32.const 1 local.set $normalized_seed))
 		global.get $state_tick_address i32.const 0 i32.const 32768 memory.fill
+		global.get $touch_contacts_base i32.const 0
+		global.get $touch_contact_capacity global.get $touch_contact_stride i32.mul
+		memory.fill
 		i32.const 0 global.set $held_thrust_sources
+		i32.const 0 global.set $held_fire_sources
 		i32.const 0 global.set $held_rotate_left_sources
 		i32.const 0 global.set $held_rotate_right_sources
+		i32.const -1 global.set $ui_sent_gate_mode
 		global.get $state_rng_address local.get $normalized_seed i32.store
 		global.get $state_width_address local.get $width i64.store
 		global.get $state_height_address local.get $height i64.store
@@ -921,6 +1168,7 @@
 	;; four edge-latched controls; persistent mode toggles remain snapshotted.
 	(func (export "AE_after_restore") (result i32)
 		call $clear_held_controls
+		i32.const -1 global.set $ui_sent_gate_mode
 		i32.const 0)
 
 	(func $asteroid_count (result i32)
@@ -2230,7 +2478,16 @@
 	;; deliberate: the player chose this moment, and the invulnerability window is
 	;; already the fairness mechanism for arriving next to a rock.
 	(func $dismiss_gate
+		;; A game-over Start begins from the canonical reset path. Reset re-arms
+		;; the boot gate, which this same dismissal then clears before spawning.
+		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
+		(if (then
+			global.get $state_seed_address i32.load
+			global.get $state_width_address i64.load
+			global.get $state_height_address i64.load
+			call $reset))
 		global.get $flag_gate call $clear_flag
+		global.get $flag_resume_gate call $clear_flag
 		global.get $state_lifecycle_address i32.load i32.const 2 i32.eq
 		(if (then
 			global.get $state_lifecycle_address i32.const 0 i32.store
@@ -2244,7 +2501,9 @@
 			global.get $state_lifecycle_ticks_address i32.load i32.const 0 i32.le_s
 			(if (then
 				global.get $state_lives_address i32.load i32.const 0 i32.le_s
-				(if (then global.get $state_lifecycle_address i32.const 3 i32.store)
+				(if (then
+					global.get $state_lifecycle_address i32.const 3 i32.store
+					global.get $flag_gate call $set_flag)
 					(else
 						global.get $state_lifecycle_address i32.const 2 i32.store global.get $state_lifecycle_ticks_address i32.const 0 i32.store
 						global.get $state_ship_x_address global.get $state_width_address i64.load i64.const 2 i64.div_s i64.store
@@ -2271,7 +2530,7 @@
 	(func $step
 		(local $collision i32)
 		global.get $state_tick_address global.get $state_tick_address i32.load i32.const 1 i32.add i32.store
-		call $load_flags global.get $flag_suspends_tick i32.and (if (then return))
+		call $load_flags global.get $flag_suspends_simulation i32.and (if (then return))
 		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
 		(if (then call $load_flags global.get $flag_fire i32.and (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset)) return))
 		call $update_hazardous_blast
@@ -2388,17 +2647,33 @@
 
 	(func (export "AE_event") (param $kind i32) (param $code i32)
 		(param $a f32) (param $b f32) (result i32)
-		(local $mask i32)
-		local.get $kind local.get $code call $event_allowed_while_paused i32.eqz
-		(if (then i32.const 0 return))
-		;; The gate consumes the first key or click outright rather than letting
-		;; it also act, so the tap that unlocks audio cannot double as a thrust
-		;; or a shot the player did not intend.
+		;; A gate consumes gameplay input. Any key-down dismisses it. The native
+		;; control delivers its own semantic action; raw canvas pointer events never
+		;; duplicate the host's click classifier or pressed-state mechanics.
 		call $load_flags global.get $flag_gate i32.and
 		(if (then
 			local.get $kind i32.const 1 i32.eq
+			(if (then call $dismiss_gate i32.const 0 return))
+			local.get $kind i32.const 7 i32.eq
+			(if (then
+				local.get $code i32.const 8 i32.eq
+				call $load_flags global.get $flag_resume_gate i32.and i32.eqz i32.and
+				(if (then call $dismiss_gate i32.const 0 return))
+				local.get $code i32.const 9 i32.eq
+				call $load_flags global.get $flag_resume_gate i32.and i32.eqz i32.eqz i32.and
+				(if (then call $dismiss_gate i32.const 0 return))))
+			local.get $kind i32.const 2 i32.eq
 			local.get $kind i32.const 3 i32.eq i32.or
-			(if (then call $dismiss_gate i32.const 0 return))))
+			local.get $kind i32.const 4 i32.eq i32.or
+			local.get $kind i32.const 5 i32.eq i32.or
+			local.get $kind i32.const 10 i32.eq i32.or
+			local.get $kind i32.const 11 i32.eq i32.or
+			local.get $kind i32.const 12 i32.eq i32.or
+			local.get $kind i32.const 13 i32.eq i32.or
+			local.get $kind i32.const 14 i32.eq i32.or
+			(if (then i32.const 0 return))))
+		local.get $kind local.get $code call $event_allowed_while_paused i32.eqz
+		(if (then i32.const 0 return))
 		local.get $kind i32.const 1 i32.eq
 			(if (then
 				local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
@@ -2419,16 +2694,14 @@
 				(if (then global.get $thrust_source_up call $hold_thrust_source))
 				local.get $code i32.const 13 i32.eq
 				(if (then global.get $thrust_source_letter call $hold_thrust_source))
-				local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
-			local.get $mask i32.eqz
-			(if (then
-				local.get $code i32.const 5 i32.eq (if (then call $toggle_pause))
-				local.get $code i32.const 6 i32.eq (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset))
-				local.get $code i32.const 7 i32.eq (if (then global.get $flag_auto_fire call $toggle_flag))
-				local.get $code i32.const 8 i32.eq (if (then global.get $flag_kid_mode call $toggle_flag))
-				local.get $code i32.const 9 i32.eq (if (then call $activate_death_blossom))
-				local.get $code i32.const 10 i32.eq (if (then global.get $flag_help_visible call $toggle_flag)))
-				(else local.get $mask call $set_flag))))
+				local.get $code i32.const 4 i32.eq
+				(if (then global.get $fire_source_key call $hold_fire_source))
+			local.get $code i32.const 5 i32.eq (if (then call $toggle_pause))
+			local.get $code i32.const 6 i32.eq (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset))
+			local.get $code i32.const 7 i32.eq (if (then global.get $flag_auto_fire call $toggle_flag))
+			local.get $code i32.const 8 i32.eq (if (then global.get $flag_kid_mode call $toggle_flag))
+			local.get $code i32.const 9 i32.eq (if (then call $activate_death_blossom))
+			local.get $code i32.const 10 i32.eq (if (then global.get $flag_help_visible call $toggle_flag))))
 		local.get $kind i32.const 2 i32.eq
 		(if (then
 				local.get $code i32.const 11 i32.eq (if (then i32.const 5 local.set $code))
@@ -2445,8 +2718,8 @@
 				(if (then global.get $thrust_source_up call $release_thrust_source))
 				local.get $code i32.const 13 i32.eq
 				(if (then global.get $thrust_source_letter call $release_thrust_source))
-				local.get $code i32.const 4 i32.eq (if (then global.get $flag_fire local.set $mask))
-			local.get $mask call $clear_flag))
+				local.get $code i32.const 4 i32.eq
+				(if (then global.get $fire_source_key call $release_fire_source))))
 		;; Pointer motion owns heading until a keyboard turn key is pressed.
 		local.get $kind i32.const 3 i32.eq
 		(if (then
@@ -2460,23 +2733,32 @@
 			i32.const 16568 local.get $a call $from_host i64.store
 				i32.const 16576 local.get $b call $from_host i64.store
 				i32.const 16584 i32.const 1 i32.store
-				local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
+				local.get $code i32.const 1 i32.eq
+				(if (then global.get $fire_source_pointer call $hold_fire_source))
 				local.get $code i32.const 2 i32.eq
-				(if (then global.get $thrust_source_pointer call $hold_thrust_source))
-				local.get $mask call $set_flag))
+				(if (then global.get $thrust_source_pointer call $hold_thrust_source))))
 		local.get $kind i32.const 5 i32.eq
 		(if (then
 			i32.const 16568 local.get $a call $from_host i64.store
 				i32.const 16576 local.get $b call $from_host i64.store
 				i32.const 16584 i32.const 1 i32.store
-				local.get $code i32.const 1 i32.eq (if (then global.get $flag_fire local.set $mask))
+				local.get $code i32.const 1 i32.eq
+				(if (then global.get $fire_source_pointer call $release_fire_source))
 				local.get $code i32.const 2 i32.eq
-				(if (then global.get $thrust_source_pointer call $release_thrust_source))
-				local.get $mask call $clear_flag))
+				(if (then global.get $thrust_source_pointer call $release_thrust_source))))
 		;; Aedicule omits zero-delta scroll phases, so every delivered scroll event
 		;; represents an intentional wheel gesture without inspecting f32 payloads.
 		local.get $kind i32.const 10 i32.eq
 		(if (then call $activate_death_blossom))
+		local.get $kind i32.const 11 i32.eq
+		(if (then
+			local.get $code local.get $a call $from_host local.get $b call $from_host
+			call $handle_touch_start))
+		local.get $kind i32.const 12 i32.eq
+		(if (then local.get $code local.get $b call $from_host call $handle_touch_move))
+		local.get $kind i32.const 13 i32.eq
+		local.get $kind i32.const 14 i32.eq i32.or
+		(if (then local.get $code call $handle_touch_terminal))
 		local.get $kind i32.const 6 i32.eq
 		(if (then local.get $a call $from_host local.get $b call $from_host call $resize))
 		local.get $kind i32.const 7 i32.eq
@@ -2485,9 +2767,15 @@
 			local.get $code i32.const 7 i32.eq (if (then global.get $flag_help_visible call $toggle_flag))
 			local.get $code i32.const 6 i32.eq (if (then i32.const 2 i32.const 0 i32.const 0 call $effect drop))))
 		local.get $kind i32.const 8 i32.eq local.get $code i32.eqz i32.and
-		;; Losing focus can strand held edges, but must not rewrite persistent
-		;; player modes, overlays, pause, or the once-per-life weapon charge.
-		(if (then call $clear_held_controls))
+		;; Losing focus can strand held edges. Arm Resume only when another gate is
+		;; not already explaining the modal state, and preserve player modes,
+		;; overlays, pause, and the once-per-life weapon charge beneath it.
+		(if (then
+			call $clear_held_controls
+			call $load_flags global.get $flag_gate i32.and i32.eqz
+			(if (then
+				global.get $flag_gate call $set_flag
+				global.get $flag_resume_gate call $set_flag))))
 		i32.const 0)
 
 	(func $rock_scale (param $address i32) (param $vertex i32) (result i64)
@@ -2869,6 +3157,14 @@
 	(func $help_y (param $reference i64) (result f32)
 		local.get $reference call $help_fixed_y call $to_host)
 
+	;; Game Over owns the viewport centre, so its Start button moves down by 96
+	;; logical pixels. Start-at-boot and Resume use the centre directly.
+	(func $gate_button_center_y (result i64)
+		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
+		(if (result i64)
+			(then global.get $state_height_address i64.load i64.const 2 i64.div_s i64.const 96000000 i64.add)
+			(else global.get $state_height_address i64.load i64.const 2 i64.div_s)))
+
 	;; Draws the approved two-column Help panel after the world, using a filled
 	;; vector backdrop so every keyboard and pointer row remains legible.
 	(func $draw_help_overlay
@@ -2938,6 +3234,54 @@
 		i32.const 2037 local.get $center i64.const 13000000 i64.sub call $to_host i64.const 598 call $help_y local.get $center i64.const 5000000 i64.sub call $to_host i64.const 590 call $help_y f32.const 2 i32.const 0xff5cf4ff call $line drop
 		i32.const 2038 local.get $center i64.const 5000000 i64.add call $to_host i64.const 580 call $help_y local.get $center i64.const 13000000 i64.add call $to_host i64.const 572 call $help_y f32.const 2 i32.const 0xff5cf4ff call $line drop
 		i32.const 53 i32.const 512 i32.const 26 local.get $center call $to_host i64.const 636 call $help_y f32.const 17 i32.const 0xffcf5cff i32.const 1 call $text drop)
+
+	;; Converts canonical millionths-of-a-logical-pixel geometry to the retained
+	;; UI protocol's signed Q16.16 coordinates without introducing new float math.
+	(func $fixed_to_q16 (param $value i64) (result i32)
+		local.get $value i64.const 65536 i64.mul global.get $scale i64.div_s i32.wrap_i64)
+
+	(func $gate_mode (result i32)
+		call $load_flags global.get $flag_gate i32.and i32.eqz
+		(if (then i32.const 0 return))
+		call $load_flags global.get $flag_resume_gate i32.and
+		(if (result i32) (then i32.const 2) (else i32.const 1)))
+
+	;; Publishes a complete retained document only when gate mode or viewport
+	;; geometry changes. Aedicule's real button owns centering, rounded styling,
+	;; hover/press feedback, accessibility, click classification, and occlusion.
+	(func $publish_gate_ui
+		(local $mode i32) (local $status i32) (local $action_id i32)
+		(local $width i64) (local $height i64) (local $x i32) (local $y i32)
+		call $gate_mode local.set $mode
+		global.get $state_width_address i64.load local.set $width
+		global.get $state_height_address i64.load local.set $height
+		local.get $mode global.get $ui_sent_gate_mode i32.eq
+		local.get $width global.get $ui_sent_width i64.eq i32.and
+		local.get $height global.get $ui_sent_height i64.eq i32.and
+		(if (then return))
+		global.get $ui_revision i32.const 1 i32.add global.set $ui_revision
+		global.get $ui_revision call $ui_begin local.set $status
+		local.get $mode i32.eqz i32.eqz
+		(if (then
+			local.get $width i64.const 2 i64.div_s i64.const 160000000 i64.sub
+			call $fixed_to_q16 local.set $x
+			call $gate_button_center_y i64.const 44000000 i64.sub
+			call $fixed_to_q16 local.set $y
+			i32.const 1 local.get $x local.get $y
+			i32.const 20971520 i32.const 5767168 i32.const 0 i32.const 0
+			call $control_panel_q16 local.get $status i32.or local.set $status
+			i32.const 8 local.set $action_id
+			local.get $mode i32.const 2 i32.eq
+			(if (then i32.const 9 local.set $action_id))
+			i32.const 1 i32.const 1 local.get $action_id local.get $x local.get $y
+			i32.const 20971520 i32.const 5767168 i32.const 0
+			call $button_place_q16 local.get $status i32.or local.set $status))
+		call $ui_end local.get $status i32.or local.set $status
+		local.get $status i32.eqz
+		(if (then
+			local.get $mode global.set $ui_sent_gate_mode
+			local.get $width global.set $ui_sent_width
+			local.get $height global.set $ui_sent_height)))
 
 	;; Draws the blast as a triangular 1.2-second pulse with alternating hot
 	;; orange cores, giving deterministic expansion, contraction, and flicker.
@@ -3032,7 +3376,9 @@
 			global.get $state_invulnerability_address i32.load i32.eqz global.get $state_tick_address i32.load i32.const 8 i32.and i32.eqz i32.or
 			(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const -1 call $thrust_is_presented call $draw_ship)))
 			(else local.get $index i32.const 2 i32.eq
-				(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))
+				(if (then
+					call $load_flags global.get $flag_gate i32.and i32.eqz
+					(if (then i32.const 1 global.get $state_ship_x_address i64.load global.get $state_ship_y_address i64.load global.get $state_ship_dx_address i64.load global.get $state_ship_dy_address i64.load i64.const 1000000 i32.const 0x777f8c99 i32.const 0 call $draw_ship))))))
 		i32.const 0 local.set $index
 		(block $bullets_done (loop $bullets
 			local.get $index global.get $player_bullet_capacity i32.ge_u br_if $bullets_done
@@ -3081,5 +3427,6 @@
 		(if (then call $draw_help_overlay))
 		global.get $state_lifecycle_address i32.load i32.const 3 i32.eq
 		(if (then i32.const 34 i32.const 108 i32.const 9 global.get $state_width_address i64.load i64.const 2 i64.div_s call $to_host global.get $state_height_address i64.load i64.const 2 i64.div_s call $to_host f32.const 40 i32.const 0xff5c73ff i32.const 1 call $text drop))
+		call $publish_gate_ui
 		call $frame_end drop i32.const 0)
 )

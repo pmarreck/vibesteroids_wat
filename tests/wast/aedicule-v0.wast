@@ -7,6 +7,12 @@
 	(global $title_len (mut i32) (i32.const 0))
 	(global $menu_count (mut i32) (i32.const 0))
 	(global $menu_mask (mut i32) (i32.const 0))
+	(global $action_count (mut i32) (i32.const 0))
+	(global $action_mask (mut i32) (i32.const 0))
+	(global $action_declaration_errors (mut i32) (i32.const 0))
+	(global $touch_interest_count (mut i32) (i32.const 0))
+	(global $touch_interest_limit (mut i32) (i32.const 0))
+	(global $touch_interest_flags (mut i32) (i32.const -1))
 	(global $synth_1 (mut i32) (i32.const 0))
 	(global $synth_2 (mut i32) (i32.const 0))
 	(global $synth_3 (mut i32) (i32.const 0))
@@ -50,6 +56,7 @@
 	(global $bad_asteroid_vertices (mut i32) (i32.const 0))
 	(global $asteroid_circles (mut i32) (i32.const 0))
 	(global $reserve_paths (mut i32) (i32.const 0))
+	(global $main_ship_paths (mut i32) (i32.const 0))
 	(global $reserve_count_text_valid (mut i32) (i32.const 0))
 	(global $bullet_circles (mut i32) (i32.const 0))
 	(global $star_circles (mut i32) (i32.const 0))
@@ -77,6 +84,19 @@
 	(global $help_pointer_input_x (mut f32) (f32.const 0))
 	(global $help_pointer_action_x (mut f32) (f32.const 0))
 	(global $help_keyboard_alias_copy_mask (mut i32) (i32.const 0))
+	(global $gate_copy_kind (mut i32) (i32.const 0))
+	(global $gate_border_lines (mut i32) (i32.const 0))
+	(global $gate_top (mut f32) (f32.const 0))
+	(global $game_over_bottom (mut f32) (f32.const 0))
+	(global $ui_open (mut i32) (i32.const 0))
+	(global $ui_snapshot_count (mut i32) (i32.const 0))
+	(global $ui_panel_count (mut i32) (i32.const 0))
+	(global $ui_button_count (mut i32) (i32.const 0))
+	(global $ui_button_action (mut i32) (i32.const -1))
+	(global $ui_button_x (mut i32) (i32.const 0))
+	(global $ui_button_y (mut i32) (i32.const 0))
+	(global $ui_button_width (mut i32) (i32.const 0))
+	(global $ui_button_height (mut i32) (i32.const 0))
 	(global $power_hud_kind (mut i32) (i32.const -1))
 	(global $power_hud_text_valid (mut i32) (i32.const 0))
 	(global $power_hud_text_y (mut f32) (f32.const 0))
@@ -93,6 +113,12 @@
 		i32.const 0 global.set $title_len
 		i32.const 0 global.set $menu_count
 		i32.const 0 global.set $menu_mask
+		i32.const 0 global.set $action_count
+		i32.const 0 global.set $action_mask
+		i32.const 0 global.set $action_declaration_errors
+		i32.const 0 global.set $touch_interest_count
+		i32.const 0 global.set $touch_interest_limit
+		i32.const -1 global.set $touch_interest_flags
 		i32.const 0 global.set $synth_1
 		i32.const 0 global.set $synth_2
 		i32.const 0 global.set $synth_3
@@ -131,6 +157,7 @@
 		i32.const 0 global.set $bad_asteroid_vertices
 		i32.const 0 global.set $asteroid_circles
 		i32.const 0 global.set $reserve_paths
+		i32.const 0 global.set $main_ship_paths
 		i32.const 0 global.set $reserve_count_text_valid
 		i32.const 0 global.set $bullet_circles
 		i32.const 0 global.set $star_circles
@@ -158,6 +185,19 @@
 		f32.const 0 global.set $help_pointer_input_x
 		f32.const 0 global.set $help_pointer_action_x
 		i32.const 0 global.set $help_keyboard_alias_copy_mask
+		i32.const 0 global.set $gate_copy_kind
+		i32.const 0 global.set $gate_border_lines
+		f32.const 0 global.set $gate_top
+		f32.const 0 global.set $game_over_bottom
+		i32.const 0 global.set $ui_open
+		i32.const 0 global.set $ui_snapshot_count
+		i32.const 0 global.set $ui_panel_count
+		i32.const 0 global.set $ui_button_count
+		i32.const -1 global.set $ui_button_action
+		i32.const 0 global.set $ui_button_x
+		i32.const 0 global.set $ui_button_y
+		i32.const 0 global.set $ui_button_width
+		i32.const 0 global.set $ui_button_height
 		i32.const -1 global.set $power_hud_kind
 		i32.const 0 global.set $power_hud_text_valid
 		f32.const 0 global.set $power_hud_text_y
@@ -181,6 +221,11 @@
 	(func (export "test_menu_count") (result i32) global.get $menu_count)
 	(func (export "test_menu_seen") (param $id i32) (result i32)
 		global.get $menu_mask i32.const 1 local.get $id i32.shl i32.and i32.eqz i32.eqz)
+	(func (export "test_action_count") (result i32) global.get $action_count)
+	(func (export "test_action_seen") (param $id i32) (result i32)
+		global.get $action_mask i32.const 1 local.get $id i32.shl i32.and i32.eqz i32.eqz)
+	(func (export "test_action_declaration_errors") (result i32)
+		global.get $action_declaration_errors)
 	(func (export "test_synth_count") (param $id i32) (result i32)
 		local.get $id i32.const 1 i32.eq (if (then global.get $synth_1 return))
 		local.get $id i32.const 2 i32.eq (if (then global.get $synth_2 return))
@@ -238,6 +283,7 @@
 	(func (export "test_bad_asteroid_vertices") (result i32) global.get $bad_asteroid_vertices)
 	(func (export "test_asteroid_circles") (result i32) global.get $asteroid_circles)
 	(func (export "test_reserve_paths") (result i32) global.get $reserve_paths)
+	(func (export "test_main_ship_paths") (result i32) global.get $main_ship_paths)
 	(func (export "test_reserve_count_text_valid") (result i32) global.get $reserve_count_text_valid)
 	(func (export "test_bullet_circles") (result i32) global.get $bullet_circles)
 	(func (export "test_star_circles") (result i32) global.get $star_circles)
@@ -263,6 +309,20 @@
 	(func (export "test_blossom_help_valid") (result i32) global.get $blossom_help_valid)
 	(func (export "test_help_copy_mask") (result i32) global.get $help_copy_mask)
 	(func (export "test_help_frame_lines") (result i32) global.get $help_frame_lines)
+	(func (export "test_gate_copy_kind") (result i32) global.get $gate_copy_kind)
+	(func (export "test_gate_border_lines") (result i32) global.get $gate_border_lines)
+	(func (export "test_game_over_gate_separated") (result i32)
+		global.get $ui_button_y f32.convert_i32_s f32.const 65536 f32.div
+		global.get $game_over_bottom f32.gt)
+	(func (export "test_ui_snapshot_count") (result i32) global.get $ui_snapshot_count)
+	(func (export "test_ui_panel_count") (result i32) global.get $ui_panel_count)
+	(func (export "test_ui_button_count") (result i32) global.get $ui_button_count)
+	(func (export "test_ui_button_action") (result i32) global.get $ui_button_action)
+	(func (export "test_ui_button_geometry_valid") (param $expected_y i32) (result i32)
+		global.get $ui_button_x i32.const 23068672 i32.eq
+		global.get $ui_button_y local.get $expected_y i32.eq i32.and
+		global.get $ui_button_width i32.const 20971520 i32.eq i32.and
+		global.get $ui_button_height i32.const 5767168 i32.eq i32.and)
 	(func (export "test_help_columns_valid") (result i32)
 		global.get $help_column_inputs i32.const 13 i32.eq
 		global.get $help_column_actions i32.const 13 i32.eq i32.and
@@ -338,6 +398,64 @@
 	(func (export "AE_menu_item") (param $id i32) (param i32 i32 i32 i32) (result i32)
 		global.get $menu_count i32.const 1 i32.add global.set $menu_count
 		global.get $menu_mask i32.const 1 local.get $id i32.shl i32.or global.set $menu_mask
+		i32.const 0)
+	(func (export "AE_action")
+		(param $id i32) (param $ptr i32) (param $len i32) (param $flags i32) (result i32)
+		global.get $action_count i32.const 1 i32.add global.set $action_count
+		global.get $action_mask i32.const 1 local.get $id i32.shl i32.or global.set $action_mask
+		local.get $id i32.const 8 i32.eq
+		(if
+			(then
+				local.get $ptr i32.const 744 i32.ne
+				local.get $len i32.const 10 i32.ne i32.or
+				local.get $flags i32.eqz i32.eqz i32.or
+				(if (then global.get $action_declaration_errors i32.const 1 i32.add global.set $action_declaration_errors)))
+			(else
+				local.get $id i32.const 9 i32.ne
+				local.get $ptr i32.const 760 i32.ne i32.or
+				local.get $len i32.const 6 i32.ne i32.or
+				local.get $flags i32.eqz i32.eqz i32.or
+				(if (then global.get $action_declaration_errors i32.const 1 i32.add global.set $action_declaration_errors))))
+		i32.const 0)
+	(func (export "AE_touch_interest")
+		(param $limit i32) (param $flags i32) (result i32)
+		global.get $touch_interest_count i32.const 1 i32.add
+		global.set $touch_interest_count
+		local.get $limit global.set $touch_interest_limit
+		local.get $flags global.set $touch_interest_flags
+		i32.const 0)
+	(func (export "test_touch_interest_valid") (result i32)
+		global.get $touch_interest_count i32.const 1 i32.eq
+		global.get $touch_interest_limit i32.const 8 i32.eq i32.and
+		global.get $touch_interest_flags i32.eqz i32.and)
+	(func (export "AE_ui_begin") (param i32) (result i32)
+		global.get $ui_open (if (then call $record_lifecycle_error))
+		i32.const 1 global.set $ui_open
+		global.get $ui_snapshot_count i32.const 1 i32.add global.set $ui_snapshot_count
+		i32.const 0 global.set $ui_panel_count
+		i32.const 0 global.set $ui_button_count
+		i32.const -1 global.set $ui_button_action
+		i32.const 0)
+	(func (export "AE_ui_end") (result i32)
+		global.get $ui_open i32.eqz (if (then call $record_lifecycle_error))
+		i32.const 0 global.set $ui_open
+		i32.const 0)
+	(func (export "AE_control_panel_q16")
+		(param i32 i32 i32 i32 i32 i32 i32) (result i32)
+		global.get $ui_open i32.eqz (if (then call $record_lifecycle_error))
+		global.get $ui_panel_count i32.const 1 i32.add global.set $ui_panel_count
+		i32.const 0)
+	(func (export "AE_button_place_q16")
+		(param i32 i32) (param $action i32)
+		(param $x i32) (param $y i32) (param $width i32) (param $height i32)
+		(param i32) (result i32)
+		global.get $ui_open i32.eqz (if (then call $record_lifecycle_error))
+		global.get $ui_button_count i32.const 1 i32.add global.set $ui_button_count
+		local.get $action global.set $ui_button_action
+		local.get $x global.set $ui_button_x
+		local.get $y global.set $ui_button_y
+		local.get $width global.set $ui_button_width
+		local.get $height global.set $ui_button_height
 		i32.const 0)
 	(func (export "AE_frame_begin") (param $red f32) (param f32 f32 f32) (result i32)
 		global.get $frame_open global.get $path_open i32.or
@@ -416,6 +534,8 @@
 		global.get $current_path_key i32.const 53 i32.lt_u i32.and
 		local.get $valid i32.and
 		(if (then global.get $reserve_paths i32.const 1 i32.add global.set $reserve_paths))
+		global.get $current_path_key i32.const 1 i32.eq local.get $valid i32.and
+		(if (then global.get $main_ship_paths i32.const 1 i32.add global.set $main_ship_paths))
 		global.get $current_path_key i32.const 900 i32.eq local.get $valid i32.and
 		(if (then global.get $ufo_paths i32.const 1 i32.add global.set $ufo_paths))
 		global.get $current_path_key i32.const 910 i32.eq local.get $valid i32.and
@@ -456,6 +576,11 @@
 		local.get $key i32.const 2020 i32.ge_u local.get $key i32.const 2028 i32.lt_u i32.and
 		local.get $valid i32.and
 		(if (then global.get $power_hud_primitives i32.const 1 i32.add global.set $power_hud_primitives))
+		local.get $key i32.const 2041 i32.ge_u local.get $key i32.const 2045 i32.lt_u i32.and
+		local.get $valid i32.and
+		(if (then
+			global.get $gate_border_lines i32.const 1 i32.add global.set $gate_border_lines
+			local.get $key i32.const 2041 i32.eq (if (then local.get $y1 global.set $gate_top))))
 		local.get $key i32.const 950 i32.ge_u local.get $key i32.const 953 i32.lt_u i32.and
 		local.get $valid i32.and
 		(if (then global.get $satellite_lines i32.const 1 i32.add global.set $satellite_lines))
@@ -584,6 +709,14 @@
 			local.get $len i32.const 6 i32.le_u i32.and
 			local.get $ptr local.get $len i32.add i32.const 550 i32.eq i32.and
 			global.set $reserve_count_text_valid))
+		local.get $key i32.const 75 i32.eq
+		(if (then
+			local.get $ptr i32.const 744 i32.eq local.get $len i32.const 10 i32.eq i32.and
+			(if (then i32.const 1 global.set $gate_copy_kind))
+			local.get $ptr i32.const 760 i32.eq local.get $len i32.const 6 i32.eq i32.and
+			(if (then i32.const 2 global.set $gate_copy_kind))))
+		local.get $key i32.const 34 i32.eq
+		(if (then local.get $y local.get $size f32.add global.set $game_over_bottom))
 		i32.const 0)
 	(func (export "AE_frame_end") (result i32)
 		global.get $frame_open i32.eqz

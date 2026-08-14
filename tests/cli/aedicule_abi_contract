@@ -7,6 +7,7 @@ specification="$root/SPEC.md"
 contract_phrases=(
 	'aedicule.v0'
 	'AE_event(kind, code, a, b)'
+	'AE_touch_interest(8, 0)'
 	'AE_tick_rate(current_numerator, current_denominator) -> (120, 1)'
 	'Schema 11 is 32,768 bytes.'
 	'code = refresh_numerator_hz'

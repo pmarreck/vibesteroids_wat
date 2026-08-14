@@ -19,15 +19,117 @@ implementation history remains recoverable in Git through commit `8df6b11`.
   asteroids drift behind it with no ship spawned; dismissal spawns the ship
   through the ordinary respawn-safety path; a button click or any key dismisses
   it on desktop.
-	- [ ] Focus loss needs nothing new from Aedicule; it already arrives as
-	  `AE_event` kind 8 with code 0, and the gate stays up until dismissed, so
-	  no focus-gain event is required either.
-- [ ] Port the original touch control grammar against Aedicule `1b4cde7`:
-  outer 20% strips stroke-rotate and fire on contact, the middle 60% thrusts,
-  and registered motion kind 1 delivers one Death Blossom event per physical
-  shake. Keep the tap fallback because silence is the denied/no-sensor signal.
-  Decide whether to require ABI minor 7 or keep motion best-effort above the
-  required device-flags ABI minor 6.
+	- [x] Focus loss needs nothing new from Aedicule; it already arrives as
+	  `AE_event` kind 8 with code 0. Peter decided on 2026-08-05 that this
+	  "Resume" gate freezes simulation until dismissal, preventing death while
+	  the player is away. A distinct Resume bit now joins the existing modal
+	  suspension mask, and the resuming input is consumed. Deterministic tests
+	  cover freezing, semantic action selection, game-over restart, absent boot
+	  ship, and raw-pointer rejection. (Done 2026-08-05 18:41 EDT; native-button
+	  boundary revised 2026-08-11 12:32 EDT.)
+	- [ ] Obtain Peter's live visual approval for Start, Resume, and the separated
+	  game-over placement, then mark the gate tranche complete. First playtest
+	  found that `START GAME` sits below vertical center and the button corners
+	  are square, with no pressed-state feedback. Replace the canvas imitation
+	  with Aedicule's real `AE_button_place_q16`, which already owns centering,
+	  rounded styling, interaction feedback, accessibility, and gesture occlusion.
+	  Blocked on a standalone action declaration because current button labels
+	  come only from permanent `AE_menu_item` entries; requested via
+	  `../aedicule/inbox/2026-08-05-from-vibesteroids_wat-standalone-button-actions.md`.
+	  Peter explicitly authorized Aedicule to wire through a `gpui-component`
+	  button control if the existing surface cannot meet this contract; do not
+	  recreate platform button behavior in guest canvas code. Button action
+	  declarations must never create menu items implicitly; menus remain a
+	  separate, explicit declaration surface. (Peter, 2026-08-05 19:08 EDT.)
+	  (Peter, 2026-08-05 19:00 EDT.)
+	- [x] Pin Aedicule ABI v0.8 at final public commit
+	  `0b28ef751ed0ab65d368c877ade035f4aa66d4fc`, superseding the two
+	  earlier August 5 pins. TDD the standalone Start/Resume action declarations,
+	  retained button placement, kind-7 activation, and removal of the provisional
+	  canvas hit-testing/rendering. The complete suite and optimized build pass;
+	  Peter's live visual approval remains the parent item's final gate before
+	  committing. (Done 2026-08-11 12:32 EDT.)
+	- Curiosity poke: keyboard dismissal must coexist with a host-owned button
+	  without allowing stale pointer events or a hidden placed action to restart
+	  the game twice.
+- [x] Make `./run` prefer a live Aedicule checkout while retaining a reproducible
+  pinned fallback. Resolve the project root from the script, honor
+  `AEDICULE_REPOSITORY`, prefer executable `../aedicule/run`, otherwise run the
+	  locked `#frontplane`, watch `code.wat`, pass extra arguments unchanged, cover
+	  the classifier in CI, and reconcile `README.md`. Requested by
+	  `ulam-flower-wat` on 2026-08-11. The complete suite and optimized build pass.
+	  (Done 2026-08-11 12:32 EDT.)
+	- Curiosity poke: an explicitly configured but invalid
+	  `AEDICULE_REPOSITORY` must have deterministic fallback behavior and paths
+	  containing spaces must survive argument forwarding.
+- [x] Receive Aedicule's disposition for source-checkout web launches. The
+  preferred sibling `../aedicule/run --web` compiled successfully on 2026-08-11
+  but exited because its development environment did not expose the bundled Web
+  runtime. This is host launcher packaging, so the live Vibesteroids review uses
+  the exact pinned Nix frontplane meanwhile. Aedicule accepted ownership and a
+  TDD fix contract; no fix SHA exists yet. (Disposition received 2026-08-11;
+  processed 2026-08-12 18:36 EDT.)
+- [ ] Implement Peter's approved multi-contact mobile improvement: an edge
+  contact owns stroke rotation plus held fire while an independent center
+  contact owns held thrust. Preserve keyboard/fine-pointer mappings, the
+  original 20/60/20 zones, and the `4pi`-per-viewport-height stroke mapping.
+  Registered motion kind 1 delivers Death Blossom; keep a visible touch
+  fallback because silence is the denied/no-sensor signal. (Approved
+  2026-08-13 12:58 EDT.)
+	- [x] Send Aedicule the exact touch-contact, compatibility-suppression,
+	  cancellation, capability, pause, and integration-proof requirements using
+	  `llmsend`. (Done 2026-08-13 13:00 EDT.)
+	- [x] Receive Aedicule's TDD disposition and final immutable green pin.
+	  Aedicule accepted the complete ownership contract, then shipped raw-contact
+	  delivery, AVP lifetime occlusion, compatibility-pointer suppression, real
+	  Chromium proof, and ordered `--touch`/`--advance` timelines at
+	  `5f68591`. (Accepted 2026-08-13; final pin received 2026-08-14.)
+	- [x] RED/GREEN deterministic WAST coverage for center thrust, both edge
+	  directions, edge-fire cadence, simultaneous and same-zone contacts,
+	  independent end and cancel, bounded overflow and slot reuse, focus cleanup,
+	  and unknown/duplicate contact safety. The first RED failed on absent edge
+	  ownership; the second RED failed on the absent top-center pause classifier.
+	  The composed WAST and complete `./test` suite are green. (Done 2026-08-13
+	  13:09 EDT.)
+	- [x] Implement a bounded guest contact table keyed by opaque page-local IDs;
+	  IDs have no meaning and never survive end, cancel, focus loss, or restore.
+	  A bounded fixed-point stroke rotation applies the original `4pi` mapping
+	  without a floating-point gameplay path. (Done 2026-08-13 13:09 EDT.)
+	- [x] Pin Aedicule `5f68591`, import and require
+	  `AE_touch_interest(8, 0)`, declare ABI minor 10, update every WAST host,
+	  and add a game-behavior actual-binary timeline gate. The oracle must assert
+	  gameplay state/rendering across interleaved contacts and ticks, never mere
+	  host event counts. The new gate failed with 14 behavioral errors against
+	  the prior package, then passed against the source correction and final host
+	  pin; the complete suite and optimized build pass. (Done 2026-08-14 13:33
+	  EDT.)
+	- [x] Peter live-tested Aedicule's staging-only opt-in shim on iPhone Safari
+	  and reported "It works." This validates simultaneous mobile control on the
+	  final host behavior but does not replace landing the guest source correction
+	  or the repository-owned actual-binary gate. (2026-08-14 13:22 EDT.)
+	- [ ] Commit and push the matching immutable source/package savepoint after
+	  its complete suite and optimized build pass. Report source SHA, exact `.aed`
+	  path/bytes/SHA-256, WAT SHA-256, Aedicule pin, and the still-open
+	  Start/Resume visual-approval uncertainty to Aedicule.
+	- [ ] Implement Aedicule's six guest-owned mobile refinements TDD-first:
+		- [ ] Latch coarse-pointer mode from device-change bit 0 and raw touch;
+		  pausing in that mode also opens Help.
+		- [ ] Render touch-control help only in coarse/touch mode, within the
+		  vertically bounded overlay.
+		- [ ] Import/register `AE_motion_interest(1, 0, 0)` and route event
+		  kind 16/code 1 through the existing Death Blossom eligibility gates.
+		- [ ] Increase deterministic gift frequency by a bounded, documented amount.
+		- [ ] Add a visible bow to the gift; Peter supplies final visual acceptance.
+		- [ ] Defer saucer and satellite spawns when the candidate region overlaps
+		  or will soon be crossed by any asteroid, with bounded retries.
+	  Curiosity poke: coarse-mode state must not become a global "mobile" switch;
+	  hybrid keyboard/pointer/touch ownership stays concurrent, and predictive
+	  spawn safety must classify sets of trajectories without starvation.
+	- [ ] Process the five authoritative Aedicule notes into `inbox/processed/`
+	  after their contracts, supersessions, and required replies are reflected in
+	  implementation and documentation. (Added 2026-08-14 13:22 EDT.)
+	- Curiosity poke: ending one contact must not clear an action still owned by
+	  another contact, and compatibility pointer echoes must never double-fire.
 - [ ] Confirm Aedicule `1b4cde7` is CI-green, then pin it. Peter's playtest
   against `61f287f` is finished and the rebuild hold is lifted. The new pin
   supersedes `2ca03e5` and includes device-change delivery, the ghost-tap fix,
@@ -273,10 +375,7 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- Curiosity poke: does its blast radius create deliberate asteroid-grouping
 	  tactics without letting accidental chain clears dominate ordinary play?
 - [ ] After Aedicule deploys touch `AE_event` kinds 11--14, pin that runtime and
-  restore the original mobile control grammar using opaque, page-local contact
-  IDs: center 60% hold thrusts; outer 20% strips map vertical strokes to
-  opposite rotation directions; edge rotation fires at the ordinary rate;
-  touch end and cancel release only that contact's actions.
+  complete the approved multi-contact work item near the top of this plan.
 	- [x] Receive the touch/device-flags runtime pin. `1b4cde7` supersedes the
 	  earlier `2ca03e5`; Aedicule reported CI pending when it sent the pin on
 	  2026-08-05, so confirm green before adopting it.
@@ -286,9 +385,8 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- [x] Receive Aedicule's disposition accepting both the semantic-capability
 	  event and the raw multi-contact ownership boundary; exact assignments and
 	  immutable pin remain pending host RED/GREEN work. (2026-07-24 10:42 EDT)
-	- [ ] RED/GREEN deterministic WAST coverage for center thrust, both edge
-	  directions, edge-fire cadence, simultaneous contacts, and end/cancel
-	  release without stuck actions.
+	- [x] RED/GREEN deterministic WAST coverage is tracked by the primary
+	  multi-contact work item above.
 	- [ ] Trigger Death Blossom from registered Aedicule motion kind 1. The host
 	  owns the 15 m/s² shake threshold and 1500 ms cooldown and emits event kind
 	  16/code 1; keep a tap affordance for devices that deny motion permission.

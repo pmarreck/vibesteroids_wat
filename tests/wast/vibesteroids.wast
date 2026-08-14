@@ -18,6 +18,9 @@
 	(import "test.host" "test_title_len" (func $host_title_len (result i32)))
 	(import "test.host" "test_menu_count" (func $host_menu_count (result i32)))
 	(import "test.host" "test_menu_seen" (func $host_menu_seen (param i32) (result i32)))
+	(import "test.host" "test_action_count" (func $host_action_count (result i32)))
+	(import "test.host" "test_action_seen" (func $host_action_seen (param i32) (result i32)))
+	(import "test.host" "test_action_declaration_errors" (func $host_action_declaration_errors (result i32)))
 	(import "test.host" "test_synth_count" (func $host_synth_count (param i32) (result i32)))
 	(import "test.host" "test_invalid_synth_voices" (func $host_invalid_synth_voices (result i32)))
 	(import "test.host" "test_short_boom_voices" (func $host_short_boom_voices (result i32)))
@@ -35,6 +38,7 @@
 	(import "test.host" "test_bad_asteroid_vertices" (func $host_bad_asteroid_vertices (result i32)))
 	(import "test.host" "test_asteroid_circles" (func $host_asteroid_circles (result i32)))
 	(import "test.host" "test_reserve_paths" (func $host_reserve_paths (result i32)))
+	(import "test.host" "test_main_ship_paths" (func $host_main_ship_paths (result i32)))
 	(import "test.host" "test_reserve_count_text_valid" (func $host_reserve_count_text_valid (result i32)))
 	(import "test.host" "test_star_circles" (func $host_star_circles (result i32)))
 	(import "test.host" "test_ufo_paths" (func $host_ufo_paths (result i32)))
@@ -51,6 +55,14 @@
 	(import "test.host" "test_blossom_help_valid" (func $host_blossom_help_valid (result i32)))
 	(import "test.host" "test_help_copy_mask" (func $host_help_copy_mask (result i32)))
 	(import "test.host" "test_help_frame_lines" (func $host_help_frame_lines (result i32)))
+	(import "test.host" "test_gate_copy_kind" (func $host_gate_copy_kind (result i32)))
+	(import "test.host" "test_gate_border_lines" (func $host_gate_border_lines (result i32)))
+	(import "test.host" "test_game_over_gate_separated" (func $host_game_over_gate_separated (result i32)))
+	(import "test.host" "test_ui_snapshot_count" (func $host_ui_snapshot_count (result i32)))
+	(import "test.host" "test_ui_panel_count" (func $host_ui_panel_count (result i32)))
+	(import "test.host" "test_ui_button_count" (func $host_ui_button_count (result i32)))
+	(import "test.host" "test_ui_button_action" (func $host_ui_button_action (result i32)))
+	(import "test.host" "test_ui_button_geometry_valid" (func $host_ui_button_geometry_valid (param i32) (result i32)))
 	(import "test.host" "test_help_columns_valid" (func $host_help_columns_valid (result i32)))
 	(import "test.host" "test_help_fits_height" (func $host_help_fits_height (param f32) (result i32)))
 	(import "test.host" "test_help_max_y" (func $host_help_max_y (result f32)))
@@ -229,6 +241,44 @@
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
 		call $host_reset_frame
 		call $render)
+	(func (export "render_start_gate") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		call $host_reset_frame
+		call $render)
+	(func (export "render_resume_gate") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
+		i32.const 8 i32.const 0 f32.const 0 f32.const 0 call $event drop
+		call $host_reset_frame
+		call $render)
+	(func (export "render_game_over_gate") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
+		i32.const 1124 i32.const 3 i32.store
+		i32.const 1108 i32.const 1024 i32.store
+		call $host_reset_frame
+		call $render)
+	(func (export "render_start_gate_twice") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		call $host_reset_frame
+		call $render drop
+		call $render)
+	(func (export "render_resized_start_gate") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		call $render drop
+		i32.const 6 i32.const 0 f32.const 1200 f32.const 900 call $event drop
+		call $host_reset_frame
+		call $render)
+	(func (export "render_dismissed_start_gate") (result i32)
+		call $configure drop
+		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init drop
+		call $render drop
+		i32.const 1 i32.const 3 f32.const 0 f32.const 0 call $event drop
+		call $host_reset_frame
+		call $render)
 	(func (export "render_thrust") (result i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
@@ -333,6 +383,9 @@
 	(func (export "pointer_event") (param $kind i32) (param $code i32)
 		(param $x f32) (param $y f32) (result i32)
 		local.get $kind local.get $code local.get $x local.get $y call $event)
+	(func (export "touch_event") (param $kind i32) (param $contact_id i32)
+		(param $x f32) (param $y f32) (result i32)
+		local.get $kind local.get $contact_id local.get $x local.get $y call $event)
 	(func (export "viewport") (param $width f32) (param $height f32) (result i32)
 		i32.const 6 i32.const 0 local.get $width local.get $height call $event)
 	;; Compares the rendered blast against itself at two equal-area viewports.
@@ -392,6 +445,8 @@
 	;; behind it must keep advancing through the ordinary no-ship state.
 	(func (export "gate_visible") (result i32)
 		i32.const 1108 i32.load i32.const 1024 i32.and i32.const 0 i32.ne)
+	(func (export "resume_gate_visible") (result i32)
+		i32.const 1108 i32.load i32.const 2048 i32.and i32.const 0 i32.ne)
 	;; Classifies whether the rock field actually advances across the given span,
 	;; distinguishing an overlay from a pause. Any single rock moving is enough,
 	;; and comparing a checksum avoids depending on which rock that is.
@@ -447,6 +502,9 @@
 	(func (export "host_title_len") (result i32) call $host_title_len)
 	(func (export "host_menu_count") (result i32) call $host_menu_count)
 	(func (export "host_menu_seen") (param i32) (result i32) local.get 0 call $host_menu_seen)
+	(func (export "host_action_count") (result i32) call $host_action_count)
+	(func (export "host_action_seen") (param i32) (result i32) local.get 0 call $host_action_seen)
+	(func (export "host_action_declaration_errors") (result i32) call $host_action_declaration_errors)
 	(func (export "host_synth_count") (param i32) (result i32) local.get 0 call $host_synth_count)
 	(func (export "host_invalid_synth_voices") (result i32) call $host_invalid_synth_voices)
 	(func (export "host_short_boom_voices") (result i32) call $host_short_boom_voices)
@@ -462,6 +520,7 @@
 	(func (export "host_bad_asteroid_vertices") (result i32) call $host_bad_asteroid_vertices)
 	(func (export "host_asteroid_circles") (result i32) call $host_asteroid_circles)
 	(func (export "host_reserve_paths") (result i32) call $host_reserve_paths)
+	(func (export "host_main_ship_paths") (result i32) call $host_main_ship_paths)
 	(func (export "host_reserve_count_text_valid") (result i32) call $host_reserve_count_text_valid)
 	(func (export "host_star_circles") (result i32) call $host_star_circles)
 	(func (export "host_ufo_paths") (result i32) call $host_ufo_paths)
@@ -478,6 +537,15 @@
 	(func (export "host_blossom_help_valid") (result i32) call $host_blossom_help_valid)
 	(func (export "host_help_copy_mask") (result i32) call $host_help_copy_mask)
 	(func (export "host_help_frame_lines") (result i32) call $host_help_frame_lines)
+	(func (export "host_gate_copy_kind") (result i32) call $host_gate_copy_kind)
+	(func (export "host_gate_border_lines") (result i32) call $host_gate_border_lines)
+	(func (export "host_game_over_gate_separated") (result i32) call $host_game_over_gate_separated)
+	(func (export "host_ui_snapshot_count") (result i32) call $host_ui_snapshot_count)
+	(func (export "host_ui_panel_count") (result i32) call $host_ui_panel_count)
+	(func (export "host_ui_button_count") (result i32) call $host_ui_button_count)
+	(func (export "host_ui_button_action") (result i32) call $host_ui_button_action)
+	(func (export "host_ui_button_geometry_valid") (param i32) (result i32)
+		local.get 0 call $host_ui_button_geometry_valid)
 	(func (export "host_help_columns_valid") (result i32) call $host_help_columns_valid)
 	(func (export "host_help_fits_height") (param f32) (result i32)
 		local.get 0 call $host_help_fits_height)
@@ -724,6 +792,10 @@
 (assert_return (invoke $vibesteroids_tests "host_menu_seen" (i32.const 1)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_menu_seen" (i32.const 6)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_menu_seen" (i32.const 7)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_action_count") (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "host_action_seen" (i32.const 8)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_action_seen" (i32.const 9)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_action_declaration_errors") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 1)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 2)) (i32.const 2))
 (assert_return (invoke $vibesteroids_tests "host_synth_count" (i32.const 3)) (i32.const 3))

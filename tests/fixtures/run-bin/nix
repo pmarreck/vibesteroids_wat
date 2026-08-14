@@ -2,7 +2,14 @@
 
 set -u
 
-expected=(run "$EXPECTED_PROJECT_ROOT" -- --watch "$EXPECTED_PLUGIN")
+if [[ ${0##*/} == run ]]; then
+	expected=(--watch "$EXPECTED_PLUGIN" --web --seed "seed with spaces")
+else
+	expected=(
+		run --no-write-lock-file "$EXPECTED_PROJECT_ROOT#frontplane" --
+		--watch "$EXPECTED_PLUGIN" --web --seed "seed with spaces"
+	)
+fi
 actual=("$@")
 failures=0
 

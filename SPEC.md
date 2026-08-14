@@ -46,7 +46,7 @@ Aedicule:
 
 ~~~text
 AE_abi_major() -> 0
-AE_abi_minor() -> 0
+AE_abi_minor() -> 8
 AE_configure()
 AE_init(seed_lo, seed_hi, viewport_w, viewport_h)
 AE_event(kind, code, a, b)
@@ -106,9 +106,12 @@ the design being tested.
 
 ## 5. Game lifecycle and controls
 
-The game starts with a seeded ship, starfield, lives, score zero, level one, and
-the opening rock wave. Fixed ticks advance only when not paused or game-over,
-except for deliberately specified presentation/lifecycle timers.
+The game starts behind a `START GAME` gate with a seeded starfield, lives, score
+zero, level one, and the opening rock wave. The ship is absent while rocks drift
+behind the gate. Aedicule presents a real native button from the guest's
+standalone `START GAME` action. Its semantic action event, or any key-down, is
+consumed and spawns the protected ship through the ordinary respawn path. The
+same action appears below `GAME OVER` and begins a canonical fresh game.
 
 Physical-key mapping is guest-owned:
 
@@ -129,19 +132,41 @@ Pointer mapping is also guest-owned. Motion updates a target point; the ship
 turns toward it at the same bounded angular rate used by gameplay and snaps only
 when another fixed step would overshoot. Holding the primary button fires,
 holding the secondary button thrusts, and any delivered nonzero scroll gesture
-activates Death Blossom when eligible. Button releases and focus loss clear the
-corresponding held state.
+activates Death Blossom when eligible. Button releases clear the corresponding
+held state.
+
+Touch-contact mapping is also guest-owned and coexists with keyboard and fine
+pointer input. ABI minor 10 requires the configure-time
+`AE_touch_interest(8, 0)` opt-in; a rejection fails configuration instead of
+silently restoring compatibility-pointer lowering. Event kinds 11 through 14
+represent start, move, end, and cancel; their opaque IDs are compared only for
+equality and live in an eight-record transient table outside the snapshot. A
+contact's starting X selects its zone:
+the outer 20% strips own held fire plus vertical-stroke heading, and the middle
+60% owns held thrust. Stroke displacement maps linearly over `4pi` radians per
+viewport height from the heading captured at contact start. Each terminal edge
+releases only its matching owner, while focus loss, Pause, reset, and restore
+clear the complete contact table. Duplicate starts, unknown moves/terminals,
+and overflow starts are inert. The top-center 40--60% strip through logical Y
+70 remains the guest pause toggle. Aedicule `5f68591` delivers the ordered raw
+stream before fixed ticks, suppresses touch-derived compatibility pointers,
+preserves real mouse input and AVP-owned contacts, and supplies the deterministic
+actual-binary timeline used by this repository's runtime check.
 
 Key-up stops held actions. Each physical source owns its action independently:
 thrust is held by Up, W, or the secondary pointer button, and each rotation
 direction is held by its arrow key or its letter alias. An action ends only when
 its last held source releases, so letting go of one alias never cancels another
 that is still down. Pressing a letter alias takes heading authority from pointer
-aim exactly as its arrow does. Focus loss clears all held controls. Entering
-Pause also clears held gameplay controls; while paused, gameplay keys, pointer
+aim exactly as its arrow does. Focus loss clears all held controls, raises a
+`RESUME` gate, and freezes simulation until the host button's semantic action
+or any key-down dismisses it. That resuming input is consumed. Entering Pause also
+clears held gameplay controls; while paused, gameplay keys, pointer
 motion/buttons, wheel, and player-mode toggles are ignored. Unpause, native
 menu/button commands, resize, and focus housekeeping remain live. New Game
-resets from the configured seed. Help and pause must not corrupt input state.
+resets from the configured seed. Help, pause, Start, and Resume must not corrupt
+input state. The guest never interprets raw canvas pointer edges as gate clicks;
+Aedicule owns click completion, pressed feedback, occlusion, and accessibility.
 
 ## 6. Core behaviors
 
@@ -239,6 +264,10 @@ starfield and translates all world objects by `new_center - old_center`,
 preserving trajectories rather than stretching them.
 
 The HUD clearly exposes score, level, lives, mode/status, help, and game over.
+Start and Resume use a guest-declared retained Aedicule button backed by two
+standalone actions that create no menu items. The host owns label centering,
+rounded platform styling, pressed feedback, accessibility, and gesture
+occlusion; game-over copy remains above its Start button without overlap.
 While a timed gift is active, a text-plus-icon badge identifies `LASER` or
 `RAPID` and displays the ceil-rounded remaining time in tenths; it disappears
 at expiry. Help uses a filled two-column keyboard/pointer panel.
@@ -303,9 +332,11 @@ Ordinary game changes should use:
 ./run
 ~~~
 
-For live source editing, run the frontplane with `--watch code.wat`. For
-frontplane co-development, use a command-line `--override-input` to an adjacent
-checkout; never commit a path input.
+`./run` watches `code.wat`, prefers an executable adjacent Aedicule checkout,
+honors `AEDICULE_REPOSITORY`, and otherwise selects the locked
+`packages.frontplane` output without writing the lock file. Build-time
+frontplane experiments may still use command-line `--override-input`; never
+commit a path input.
 
 ## 10. Gameplay enhancement policy
 
@@ -325,6 +356,5 @@ mechanics still require scope discipline.
 - online multiplayer or service dependencies;
 - unbounded entities or general ECS machinery;
 - translation work during the POC;
-- touch/shake parity before Aedicule deploys its specified multi-contact event
-  contract;
+- platform identity switches in place of concurrent input capabilities;
 - claiming a production-ready game or stable frontplane ABI.

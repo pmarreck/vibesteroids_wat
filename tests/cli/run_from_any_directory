@@ -3,12 +3,59 @@
 set -u
 
 root=$(cd "$(dirname "$0")/../.." && pwd)
-plugin="$root/code.wat"
+sandbox=$(mktemp -d "$TMPDIR/vibesteroids-run.XXXXXX")
+trap 'rm -rf "$sandbox"' EXIT
+fixture="$root/tests/fixtures/run-bin/nix"
+extra_args=(--web --seed "seed with spaces")
 
-(
-	cd "$TMPDIR" || exit 1
-	PATH="$root/tests/fixtures/run-bin:$PATH" \
-		EXPECTED_PROJECT_ROOT="$root" \
-		EXPECTED_PLUGIN="$plugin" \
-		"$root/run" --watch "$plugin"
-)
+failures=0
+
+run_launcher() {
+	local expected_root=$1
+	local aedicule_repository=$2
+	local label=$3
+	local status
+
+	(
+		cd "$TMPDIR" || exit 1
+		if [[ $aedicule_repository == __UNSET__ ]]; then
+			env -u AEDICULE_REPOSITORY \
+				PATH="$root/tests/fixtures/run-bin:$PATH" \
+				EXPECTED_PROJECT_ROOT="$expected_root" \
+				EXPECTED_PLUGIN="$expected_root/code.wat" \
+				"$expected_root/run" "${extra_args[@]}"
+		else
+			PATH="$root/tests/fixtures/run-bin:$PATH" \
+			EXPECTED_PROJECT_ROOT="$expected_root" \
+			EXPECTED_PLUGIN="$expected_root/code.wat" \
+			AEDICULE_REPOSITORY="$aedicule_repository" \
+				"$expected_root/run" "${extra_args[@]}"
+		fi
+	)
+	status=$?
+	if (( status != 0 )); then
+		printf '%s launcher returned %d\n' "$label" "$status" >&2
+		failures=$((failures + 1))
+	fi
+}
+
+# An explicit source checkout wins, including paths and forwarded values with
+# spaces. Its launcher receives the canonical watched guest before extras.
+mkdir -p "$sandbox/configured aedicule"
+ln -s "$fixture" "$sandbox/configured aedicule/run"
+run_launcher "$root" "$sandbox/configured aedicule" configured
+
+# An unusable explicit checkout falls back deterministically to the locked
+# frontplane output without mutating flake.lock.
+run_launcher "$root" "$sandbox/missing aedicule" fallback
+
+# With no override, the project-relative sibling checkout is preferred. Copying
+# the launcher into a synthetic layout proves its root comes from the script,
+# never from the caller's working directory.
+mkdir -p "$sandbox/layout/vibesteroids_wat" "$sandbox/layout/aedicule"
+cp "$root/run" "$sandbox/layout/vibesteroids_wat/run"
+chmod +x "$sandbox/layout/vibesteroids_wat/run"
+ln -s "$fixture" "$sandbox/layout/aedicule/run"
+run_launcher "$sandbox/layout/vibesteroids_wat" __UNSET__ sibling
+
+exit "$failures"

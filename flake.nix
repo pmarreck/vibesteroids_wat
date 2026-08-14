@@ -68,7 +68,7 @@
 				in {
 					package = self.packages.${system}.default;
 					runtime = pkgs.runCommand "vibesteroids_wat_aedicule_runtime" {
-						nativeBuildInputs = [ frontplane ];
+						nativeBuildInputs = [ frontplane pkgs.bash pkgs.ripgrep ];
 					} ''
 						mkdir -p $out
 						if ! aedicule-render \
@@ -81,6 +81,29 @@
 							cat $TMPDIR/runtime.stderr >&2
 							exit 1
 						fi
+						if ! aedicule-render \
+							${application}/share/vibesteroids_wat \
+							--activate-action 8 --ticks 1 \
+							-o $out/started.svg 2>$TMPDIR/action.stderr; then
+							cat $TMPDIR/action.stderr >&2
+							exit 1
+						fi
+						if test -s $TMPDIR/action.stderr; then
+							cat $TMPDIR/action.stderr >&2
+							exit 1
+						fi
+						if rg --fixed-strings --quiet 'data-command-id="1"' $out/frame.svg; then
+							echo 'boot gate rendered the player ship before activation' >&2
+							exit 1
+						fi
+						if ! rg --fixed-strings --quiet 'data-command-id="1"' $out/started.svg; then
+							echo 'standalone Start action did not spawn the player ship' >&2
+							exit 1
+						fi
+						bash ${./tests/integration/aedicule_touch_timeline} \
+							${frontplane}/bin/aedicule-render \
+							${application}/share/vibesteroids_wat \
+							$out/touch-timeline
 					'';
 					wast = pkgs.stdenvNoCC.mkDerivation {
 						pname = "vibesteroids_wat_wast";

@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+
+set -u
+
+if (( $# != 3 )); then
+	printf 'usage: %s AEDICULE_RENDER APPLICATION OUTPUT_DIRECTORY\n' "$0" >&2
+	exit 2
+fi
+
+renderer=$1
+application=$2
+output=$3
+failures=0
+
+mkdir -p "$output"
+
+fail() {
+	printf '%s\n' "$1" >&2
+	failures=$((failures + 1))
+}
+
+render_case() {
+	local name=$1
+	shift
+	local stdout="$output/$name.stdout"
+	local stderr="$output/$name.stderr"
+	local svg="$output/$name.svg"
+
+	"$renderer" "$application" --seed 24301 --width 430 --height 775 \
+		--activate-action 8 "$@" -o "$svg" >"$stdout" 2>"$stderr"
+	local status=$?
+	if (( status != 0 )); then
+		fail "touch timeline case failed ($status): $name"
+		return
+	fi
+	if [[ -s $stdout ]]; then
+		fail "touch timeline case wrote unexpected stdout: $name"
+	fi
+	if [[ -s $stderr ]]; then
+		fail "touch timeline case wrote unexpected stderr: $name"
+	fi
+}
+
+require_text() {
+	local file=$1
+	local text=$2
+	local description=$3
+	if [[ ! -f $file ]] || ! rg --fixed-strings --quiet "$text" "$file"; then
+		fail "$description"
+	fi
+}
+
+reject_text() {
+	local file=$1
+	local text=$2
+	local description=$3
+	if [[ -f $file ]] && rg --fixed-strings --quiet "$text" "$file"; then
+		fail "$description"
+	fi
+}
+
+render_case baseline --ticks 21
+render_case collapsed \
+	--touch start,41,40,400 \
+	--touch start,42,215,400 \
+	--touch end,41,40,400 \
+	--touch cancel,42,215,400 \
+	--advance 21
+render_case left-stroke \
+	--touch start,41,40,400 \
+	--touch move,41,40,303.125 \
+	--advance 1 \
+	--touch end,41,40,303.125
+render_case right-stroke \
+	--touch start,43,390,400 \
+	--touch move,43,390,303.125 \
+	--advance 1 \
+	--touch end,43,390,303.125
+render_case edge-ended-center-held \
+	--touch start,41,40,400 \
+	--touch start,42,215,400 \
+	--advance 20 \
+	--touch end,41,40,400 \
+	--advance 1
+render_case center-cancelled-edge-held \
+	--touch start,41,40,400 \
+	--touch start,42,215,400 \
+	--advance 20 \
+	--touch cancel,42,215,400 \
+	--advance 1
+render_case paused --touch start,44,215,40
+
+require_text "$output/baseline.svg" 'data-command-id="1"' \
+	'baseline did not render the player ship'
+reject_text "$output/baseline.svg" 'data-command-id="100"' \
+	'baseline fired without an input owner'
+reject_text "$output/baseline.svg" 'data-command-id="4"' \
+	'baseline thrust without an input owner'
+
+if [[ ! -f $output/collapsed.svg ]] ||
+	! cmp --silent "$output/baseline.svg" "$output/collapsed.svg"; then
+	fail 'contacts terminated before every tick changed the baseline; timeline ordering is not controlled'
+fi
+
+require_text "$output/left-stroke.svg" \
+	'<circle data-command-id="100" cx="237.83482"' \
+	'left-edge upward stroke did not rotate fire to the expected rightward heading'
+require_text "$output/right-stroke.svg" \
+	'<circle data-command-id="100" cx="192.16518"' \
+	'right-edge upward stroke did not rotate fire to the expected leftward heading'
+
+require_text "$output/edge-ended-center-held.svg" 'data-command-id="100"' \
+	'simultaneous edge contact did not hold fire'
+require_text "$output/edge-ended-center-held.svg" 'data-command-id="4"' \
+	'ending the edge contact incorrectly cleared center-owned thrust'
+require_text "$output/center-cancelled-edge-held.svg" 'data-command-id="100"' \
+	'cancelling the center contact incorrectly cleared edge-owned fire'
+reject_text "$output/center-cancelled-edge-held.svg" 'data-command-id="4"' \
+	'cancelled center contact left thrust active'
+
+require_text "$output/paused.svg" \
+	'<text data-command-id="33"' \
+	'top-center touch did not render the Pause state'
+require_text "$output/paused.svg" '>PAUSED</text>' \
+	'top-center touch rendered the wrong Pause indication'
+
+if (( failures > 255 )); then
+	exit 255
+fi
+exit "$failures"

@@ -61,6 +61,7 @@ shell_scripts=(
 	tests/fixtures/runtime-bin/nix
 	tests/fixtures/wast-bin/awk
 	tests/fixtures/wast-bin/wasmtime
+	tests/integration/aedicule_touch_timeline
 )
 run_check shellcheck "${shell_scripts[@]}"
 

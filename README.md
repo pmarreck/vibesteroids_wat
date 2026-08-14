@@ -95,25 +95,39 @@ Controls:
 New Game, Help / Controls, Reload, and Quit are also exposed through native
 window actions.
 
+The guest opts into Aedicule's ordered raw-contact stream for eight simultaneous
+contacts. A left/right-edge contact fires and maps vertical motion over `4pi`
+radians per viewport height. Independent middle contacts thrust, and lifting or
+cancelling one finger leaves every other contact's action active. The top-center
+touch zone retains pause/resume. WAST, an actual-binary touch/tick timeline, and
+Peter's iPhone Safari playtest cover the mapping.
+
 ## Live-edit the running game
 
-Launch the source tree under observation:
+The application launcher watches the source `code.wat` automatically. It first
+uses an executable `../aedicule/run`, which makes adjacent host changes live
+without changing this repository's lock file:
 
 ```console
-nix run github:pmarreck/aedicule/yolo -- --watch "$PWD/code.wat"
+./run
 ```
 
-Or use an adjacent frontplane checkout:
+Set `AEDICULE_REPOSITORY` to choose another source checkout. Any additional
+arguments are forwarded after the canonical `--watch` pair:
 
 ```console
-../aedicule/run --watch "$PWD/code.wat"
+AEDICULE_REPOSITORY="$HOME/Code/aedicule" ./run --web
 ```
 
-The application-owned launcher is independent of the caller's working
-directory and uses the pinned Aedicule revision:
+If the selected checkout has no executable launcher, `./run` falls back to the
+exact `packages.frontplane` revision in `flake.lock` via `nix run
+--no-write-lock-file`. Project and watched-file paths come from the launcher's
+own location, so invocation works from any current directory.
+
+The equivalent direct pinned invocation is:
 
 ```console
-./run --watch "$PWD/code.wat"
+nix run --no-write-lock-file "$PWD#frontplane" -- --watch "$PWD/code.wat"
 ```
 
 Mecha Aedicule compiles each saved candidate separately, validates and
@@ -166,7 +180,9 @@ Current deliberate limits:
 
 - the packaged simulation rate is 120 Hz, with equal-time integral and
   NTSC-derived rational-rate WAST proof;
-- touch/shake browser controls have no deployed native equivalent yet;
+- input-modality discovery currently exposes coarse-primary-pointer state and
+  observed raw touch, not Aedicule's planned complete capability bitset for
+  every hybrid device;
 - presentation and tuning remain POC quality; and
 - gameplay additions should be validated as experiments, not added merely
   because the frontplane can express them.

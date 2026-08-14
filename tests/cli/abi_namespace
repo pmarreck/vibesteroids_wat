@@ -29,6 +29,7 @@ legacy_tokens=(
 host_imports=(
 	'title'
 	'menu_item'
+	'touch_interest'
 	'frame_begin'
 	'transform_push'
 	'transform_pop'
