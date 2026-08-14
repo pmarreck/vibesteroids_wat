@@ -111,8 +111,9 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  after its complete suite and optimized build passed. Commits `ad8534e` and
 	  `ac7dd2b` also added the exact Mechatron Prime target manifest and badge.
 	  (Done 2026-08-14 13:43 EDT.)
-	- [ ] Report the final refinement source SHA, exact `.aed` path/bytes/SHA-256,
+	- [x] Report the final refinement source SHA, exact `.aed` path/bytes/SHA-256,
 	  WAT SHA-256, Aedicule pin, and open visual-approval items to Aedicule.
+	  Delivered through the durable inbox workflow. (Done 2026-08-14 14:07 EDT.)
 	- [ ] Implement Aedicule's six guest-owned mobile refinements TDD-first:
 		- [x] Keep every new WAST and actual-runtime scenario exemplary: comments
 		  name the user-visible contract, the failure mode it catches, and any
@@ -131,14 +132,17 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 		- [ ] Obtain Peter's live visual acceptance for the gift bow.
 		- [x] Defer saucer and satellite spawns when the candidate region overlaps
 		  or will soon be crossed by any asteroid, with bounded retries.
-		- [ ] Pass the complete suite and optimized package build, then commit,
+		- [x] Pass the complete suite and optimized package build, then commit,
 		  push, and verify the exact revision through Mechatron Prime CI.
+		  Commit `e8efd62` passed CI in 18 seconds. (Done 2026-08-14 14:06 EDT.)
 	  Curiosity poke: coarse-mode state must not become a global "mobile" switch;
 	  hybrid keyboard/pointer/touch ownership stays concurrent, and predictive
 	  spawn safety must classify sets of trajectories without starvation.
-	- [ ] Process the five authoritative Aedicule notes into `inbox/processed/`
-	  after their contracts, supersessions, and required replies are reflected in
-	  implementation and documentation. (Added 2026-08-14 13:22 EDT.)
+	- [x] Fold the five authoritative Aedicule notes into implementation and
+	  documentation, reply with the green pin, then move the completed envelopes
+	  and obsolete `inbox/processed/` archive recoverably to
+	  `~/.Trash/vibesteroids_wat-inbox-20260814-1407` under the current llmsend
+	  policy. (Done 2026-08-14 14:07 EDT.)
 	- Curiosity poke: ending one contact must not clear an action still owned by
 	  another contact, and compatibility pointer echoes must never double-fire.
 - [x] Retire the pending Aedicule `1b4cde7` pin task. The tested raw-contact
