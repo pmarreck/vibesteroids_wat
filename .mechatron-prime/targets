@@ -1,0 +1,5 @@
+# Build the shareable game package and every Linux runtime/behavior check.
+packages.x86_64-linux.aed
+checks.x86_64-linux.package
+checks.x86_64-linux.runtime
+checks.x86_64-linux.wast

@@ -4,6 +4,7 @@ depth=3
 
 annotate=[
 	.github/workflows/ci.yml = GitHub Actions gate for every flake check plus the complete repository test suite
+	.mechatron-prime/targets = Exact Mechatron Prime targets for the distributable package, runtime touch gate, and WAST checks.
 	CODE_REVIEW.md = Thirteen-dimension audit with severity-ranked findings, exact source references, and tracked dispositions.
 	FIDELITY_GAP_MATRIX.md = Source-to-WAT implementation ledger, deliberate deviations, remaining fidelity gaps, and completion gate
 	GAMEPLAY_DESIGN_RESEARCH.md = Sourced Asteroids and Blasteroids engagement analysis, scope guards, prioritized improvements, and falsifiable playtests
