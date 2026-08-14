@@ -1,5 +1,16 @@
 ;; Source-derived Vibesteroids mechanics expressed through the public guest ABI.
 
+;; Motion registration is an exact configure-time contract, and refusal must
+;; abort configuration. These paired controls catch an ignored host error as
+;; well as wrong kind/rate/flags or duplicate registration.
+(assert_return
+	(invoke $vibesteroids_tests "configure_with_motion_status" (i32.const 37))
+	(i32.const 37))
+(assert_return (invoke $vibesteroids_tests "configure_only") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "host_motion_interest_valid")
+	(i32.const 1))
+
 (assert_return (invoke $vibesteroids_tests "seeded_fields_differ") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "initial_asteroid_ranges_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "initial_asteroid_velocities_valid") (i32.const 1))
@@ -572,10 +583,64 @@
 (assert_return (invoke $vibesteroids_tests "host_text_seen" (i32.const 40)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_blossom_help_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_help_copy_mask") (i32.const 63))
+(assert_return (invoke $vibesteroids_tests "host_touch_help_copy_mask") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_help_frame_lines") (i32.const 5))
 (assert_return (invoke $vibesteroids_tests "host_help_columns_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_help_max_y") (f32.const 669))
 (assert_return (invoke $vibesteroids_tests "host_help_keyboard_alias_copy_mask") (i32.const 3))
+
+;; Device mode is a set classifier: fine-only desktop Pause remains concise,
+;; while coarse-primary and observed-touch modes open the touch-aware Help.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "device_change"
+		(i32.const 0) (f32.const 1024) (f32.const 768))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 16)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 512)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 528)) (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "device_change"
+		(i32.const 1) (f32.const 1024) (f32.const 768))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 528)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_help_copy_mask") (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "host_touch_help_copy_mask") (i32.const 511))
+(assert_return (invoke $vibesteroids_tests "host_help_columns_valid") (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "host_help_fits_height" (f32.const 768))
+	(i32.const 1))
+;; Auto-opened Help closes on resume so it cannot keep simulation suspended.
+(assert_return (invoke $vibesteroids_tests "touch_event" (i32.const 11) (i32.const 90) (f32.const 512) (f32.const 50)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 528)) (i32.const 0))
+;; Pause owns only Help that it auto-opened. A player-opened Help overlay must
+;; survive the pause/resume round trip instead of disappearing unexpectedly.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "device_change"
+		(i32.const 1) (f32.const 1024) (f32.const 768))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 7) (i32.const 7)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 528)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 16)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 512)) (i32.const 1))
+;; A real raw contact is definitive even when the primary pointer reports fine.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "device_change"
+		(i32.const 0) (f32.const 1024) (f32.const 768))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "touch_event" (i32.const 11) (i32.const 91) (f32.const 512) (f32.const 384)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "touch_event" (i32.const 13) (i32.const 91) (f32.const 512) (f32.const 384)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 528)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 245)) (i32.const 0x41))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 253)) (i32.const 0x44))
 (assert_return (invoke $vibesteroids_tests "data_u8" (i32.const 267)) (i32.const 0x57))
@@ -706,6 +771,31 @@
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 256)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 5)) (i32.const 1))
+
+;; A registered shake uses the same eligibility function as keyboard and wheel.
+;; Unknown motion codes, Pause, the boot gate, and an exhausted charge are
+;; negative controls against treating every sensor event as an unconditional weapon.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_effects"))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 16) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 256)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_audio_seen" (i32.const 5)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 16) (i32.const 2)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 384)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 16) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 256)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "reset_gated") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 16) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 128)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 256)) (i32.const 1))
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 84) (i32.const 0)))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 16) (i32.const 1)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "state_bits" (i32.const 84) (i32.const 384)) (i32.const 0))
 
 ;; Kid Mode preserves lives and suppresses the ordinary score/lives HUD on collision.
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))

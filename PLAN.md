@@ -107,21 +107,32 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  and reported "It works." This validates simultaneous mobile control on the
 	  final host behavior but does not replace landing the guest source correction
 	  or the repository-owned actual-binary gate. (2026-08-14 13:22 EDT.)
-	- [ ] Commit and push the matching immutable source/package savepoint after
-	  its complete suite and optimized build pass. Report source SHA, exact `.aed`
-	  path/bytes/SHA-256, WAT SHA-256, Aedicule pin, and the still-open
-	  Start/Resume visual-approval uncertainty to Aedicule.
+	- [x] Commit and push the matching immutable touch source/package savepoint
+	  after its complete suite and optimized build passed. Commits `ad8534e` and
+	  `ac7dd2b` also added the exact Mechatron Prime target manifest and badge.
+	  (Done 2026-08-14 13:43 EDT.)
+	- [ ] Report the final refinement source SHA, exact `.aed` path/bytes/SHA-256,
+	  WAT SHA-256, Aedicule pin, and open visual-approval items to Aedicule.
 	- [ ] Implement Aedicule's six guest-owned mobile refinements TDD-first:
-		- [ ] Latch coarse-pointer mode from device-change bit 0 and raw touch;
+		- [x] Keep every new WAST and actual-runtime scenario exemplary: comments
+		  name the user-visible contract, the failure mode it catches, and any
+		  independent positive/negative control. Avoid comments that merely restate
+		  the assertion syntax. (Peter, 2026-08-14 13:46 EDT; done 14:02 EDT.)
+		- [x] Latch coarse-pointer mode from device-change bit 0 and raw touch;
 		  pausing in that mode also opens Help.
-		- [ ] Render touch-control help only in coarse/touch mode, within the
+		- [x] Render touch-control help only in coarse/touch mode, within the
 		  vertically bounded overlay.
-		- [ ] Import/register `AE_motion_interest(1, 0, 0)` and route event
+		- [x] Import/register `AE_motion_interest(1, 0, 0)` and route event
 		  kind 16/code 1 through the existing Death Blossom eligibility gates.
-		- [ ] Increase deterministic gift frequency by a bounded, documented amount.
-		- [ ] Add a visible bow to the gift; Peter supplies final visual acceptance.
-		- [ ] Defer saucer and satellite spawns when the candidate region overlaps
+		- [x] Increase deterministic gift frequency by shortening both schedule
+		  endpoints and the mean by 20%, from 45--120 to 36--96 seconds.
+		- [x] Add two closed bow loops and an attached knot to the gift, with
+		  deterministic primitive/geometry checks.
+		- [ ] Obtain Peter's live visual acceptance for the gift bow.
+		- [x] Defer saucer and satellite spawns when the candidate region overlaps
 		  or will soon be crossed by any asteroid, with bounded retries.
+		- [ ] Pass the complete suite and optimized package build, then commit,
+		  push, and verify the exact revision through Mechatron Prime CI.
 	  Curiosity poke: coarse-mode state must not become a global "mobile" switch;
 	  hybrid keyboard/pointer/touch ownership stays concurrent, and predictive
 	  spawn safety must classify sets of trajectories without starvation.
@@ -130,10 +141,9 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  implementation and documentation. (Added 2026-08-14 13:22 EDT.)
 	- Curiosity poke: ending one contact must not clear an action still owned by
 	  another contact, and compatibility pointer echoes must never double-fire.
-- [ ] Confirm Aedicule `1b4cde7` is CI-green, then pin it. Peter's playtest
-  against `61f287f` is finished and the rebuild hold is lifted. The new pin
-  supersedes `2ca03e5` and includes device-change delivery, the ghost-tap fix,
-  gesture-end audio unlock, and ABI-v0.7 registered motion input.
+- [x] Retire the pending Aedicule `1b4cde7` pin task. The tested raw-contact
+  release `5f68591` supersedes it and is pinned with ABI minor 10.
+  (Superseded 2026-08-14.)
 - [x] Standing policy from Peter, 2026-08-05: Aedicule's demo manifest always
   tracks the latest demos, so send a new `.aed` pin pair after each tranche
   worth demoing rather than waiting to be asked. First pair sent for

@@ -48,6 +48,8 @@
 	(import "aedicule.v0" "AE_action" (func $action (param i32 i32 i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_touch_interest"
 		(func $touch_interest (param i32 i32) (result i32)))
+	(import "aedicule.v0" "AE_motion_interest"
+		(func $motion_interest (param i32 i32 i32) (result i32)))
 	(import "aedicule.v0" "AE_ui_begin" (func $ui_begin (param i32) (result i32)))
 	(import "aedicule.v0" "AE_ui_end" (func $ui_end (result i32)))
 	(import "aedicule.v0" "AE_control_panel_q16"
@@ -116,6 +118,15 @@
 	(data (i32.const 704) "assets/audio/satellite-destroyed.flac")
 	(data (i32.const 744) "START GAME")
 	(data (i32.const 760) "RESUME")
+	(data (i32.const 768) "TOUCH")
+	(data (i32.const 776) "LEFT/RIGHT EDGE")
+	(data (i32.const 792) "FIRE")
+	(data (i32.const 800) "EDGE STROKE")
+	(data (i32.const 812) "ROTATE")
+	(data (i32.const 820) "MIDDLE HOLD")
+	(data (i32.const 832) "THRUST")
+	(data (i32.const 840) "TOP CENTER")
+	(data (i32.const 852) "PAUSE / RESUME")
 
 	(global $scale i64 (i64.const 1000000))
 	;; Fraction of the viewport reference spanned by a UFO/Voyager explosion. The
@@ -225,6 +236,12 @@
 	(global $touch_zone_thrust i32 (i32.const 2))
 	(global $touch_zone_right i32 (i32.const 3))
 	(global $touch_zone_pause i32 (i32.const 4))
+	;; Device modality is host state, not gameplay snapshot state. An observed raw
+	;; contact remains useful on a hybrid device even if its primary pointer later
+	;; changes from coarse to fine.
+	(global $coarse_pointer_mode (mut i32) (i32.const 0))
+	(global $touch_mode_seen (mut i32) (i32.const 0))
+	(global $pause_opened_help (mut i32) (i32.const 0))
 
 	(func $load_flags (result i32)
 		global.get $state_flags_address i32.load)
@@ -386,6 +403,7 @@
 	;; starts are inert, so neither can steal another contact's zone ownership.
 	(func $handle_touch_start (param $id i32) (param $x i64) (param $y i64)
 		(local $address i32) (local $zone i32)
+		i32.const 1 global.set $touch_mode_seen
 		local.get $id call $find_touch_contact i32.eqz
 		(if (then) (else return))
 		local.get $x local.get $y call $touch_zone local.set $zone
@@ -431,12 +449,29 @@
 		i32.const 0 global.set $held_rotate_right_sources
 		global.get $flag_held_controls call $clear_flag)
 
+	(func $touch_help_mode (result i32)
+		global.get $coarse_pointer_mode global.get $touch_mode_seen i32.or)
+
 	;; Pause is an input boundary: entering it releases every held gameplay edge
-	;; so a later resume cannot resurrect thrust, fire, or rotation.
+	;; so a later resume cannot resurrect thrust, fire, or rotation. Touch Help is
+	;; paired with Pause and removed on resume only when Pause opened it.
 	(func $toggle_pause
 		global.get $flag_paused call $toggle_flag
 		call $load_flags global.get $flag_paused i32.and
-		(if (then call $clear_held_controls)))
+		(if
+			(then
+				call $clear_held_controls
+				i32.const 0 global.set $pause_opened_help
+				call $touch_help_mode
+				(if (then
+					call $load_flags global.get $flag_help_visible i32.and i32.eqz
+					(if (then
+						global.get $flag_help_visible call $set_flag
+						i32.const 1 global.set $pause_opened_help)))))
+			(else
+				global.get $pause_opened_help
+				(if (then global.get $flag_help_visible call $clear_flag))
+				i32.const 0 global.set $pause_opened_help)))
 
 	;; Classifies the only events that remain meaningful behind Pause. Native
 	;; commands, viewport/focus housekeeping, and the unpause key stay live;
@@ -658,6 +693,11 @@
 		;; opt-in must reject configuration instead of silently restoring the
 		;; compatibility-pointer path and its duplicate/one-contact semantics.
 		i32.const 8 i32.const 0 call $touch_interest local.tee $status
+		(if (then local.get $status return))
+		;; Shake is an optional physical route to the same once-per-life action.
+		;; Registration failure is explicit; visible keyboard, wheel, and touch
+		;; routes still document the action when a device supplies no events.
+		i32.const 1 i32.const 0 i32.const 0 call $motion_interest local.tee $status
 		(if (then local.get $status return))
 		call $configure_menu
 		call $configure_gate_actions
@@ -971,6 +1011,12 @@
 		call $rand_u32 i32.const 4501 i32.rem_u i32.const 2700 i32.add
 		call $ticks_from_sixty)
 
+	;; Destructible gifts recur sooner than hazardous actors: scaling both old
+	;; endpoints by 80% yields an inclusive 36--96 second independent interval.
+	(func $random_package_spawn_ticks (result i32)
+		call $rand_u32 i32.const 3601 i32.rem_u i32.const 2160 i32.add
+		call $ticks_from_sixty)
+
 	(func $ensure_component (param $value i64) (result i64)
 		(local $adjusted i64) (local $cap i64)
 		local.get $value local.set $adjusted
@@ -1154,11 +1200,16 @@
 		call $regenerate_stars
 		call $spawn_wave
 		i32.const 16512 call $random_spawn_ticks i32.store
-		i32.const 16516 call $random_spawn_ticks i32.store
+		i32.const 16516 call $random_package_spawn_ticks i32.store
 		global.get $state_satellite_spawn_countdown_address call $random_spawn_ticks i32.store)
 
 	(func (export "AE_init") (param $seed_low i32) (param $seed_high i32)
 		(param $width f32) (param $height f32) (result i32)
+		;; These describe the current host instance, not snapshotted game state.
+		;; A fresh instance relearns them from device-change or raw-touch events.
+		i32.const 0 global.set $coarse_pointer_mode
+		i32.const 0 global.set $touch_mode_seen
+		i32.const 0 global.set $pause_opened_help
 		local.get $seed_low local.get $seed_high i32.xor
 		local.get $width call $from_host local.get $height call $from_host call $reset
 		i32.const 0)
@@ -1442,6 +1493,86 @@
 		local.get $distance_x local.get $distance_x i64.mul
 		local.get $distance_y local.get $distance_y i64.mul i64.add
 		local.get $r local.get $r i64.mul i64.le_s)
+
+	;; Compares one actor/asteroid relative trajectory over the next two seconds.
+	;; The explicit current-position check also covers a zero-length relative path,
+	;; which the projection helper intentionally treats as non-segmental.
+	(func $foreign_trajectory_unsafe
+		(param $actor_x i64) (param $actor_y i64)
+		(param $actor_end_x i64) (param $actor_end_y i64)
+		(param $asteroid_x i64) (param $asteroid_y i64)
+		(param $asteroid_end_x i64) (param $asteroid_end_y i64)
+		(param $radius i64) (result i32)
+		local.get $actor_x local.get $actor_y
+		local.get $asteroid_x local.get $asteroid_y local.get $radius call $distance_lt
+		(if (then i32.const 1 return))
+		local.get $asteroid_x local.get $actor_x i64.sub
+		local.get $asteroid_y local.get $actor_y i64.sub
+		local.get $asteroid_end_x local.get $actor_end_x i64.sub
+		local.get $asteroid_end_y local.get $actor_end_y i64.sub
+		i64.const 0 i64.const 0 local.get $radius call $segment_circle_hit)
+
+	;; Classifies the complete active asteroid set against a proposed foreign
+	;; actor entry. Nine toroidal asteroid images preserve near-future wraparound;
+	;; a ten-pixel fairness margin absorbs whole-pixel projection and small turns.
+	(func $foreign_spawn_safe
+		(param $candidate_x i64) (param $candidate_y i64)
+		(param $candidate_vx i64) (param $candidate_vy i64)
+		(param $candidate_radius i64) (result i32)
+		(local $index i32) (local $asteroid i32)
+		(local $actor_end_x i64) (local $actor_end_y i64)
+		(local $asteroid_x i64) (local $asteroid_y i64)
+		(local $asteroid_end_x i64) (local $asteroid_end_y i64)
+		(local $period_x i64) (local $period_y i64) (local $radius i64)
+		(local $x_offset i32) (local $y_offset i32)
+		local.get $candidate_x local.get $candidate_vx i64.const 2 i64.mul i64.add local.set $actor_end_x
+		local.get $candidate_y local.get $candidate_vy i64.const 2 i64.mul i64.add local.set $actor_end_y
+		global.get $state_width_address i64.load i64.const 100000000 i64.add local.set $period_x
+		global.get $state_height_address i64.load i64.const 100000000 i64.add local.set $period_y
+		(block $done (loop $asteroids
+			local.get $index i32.const 32 i32.ge_u br_if $done
+			local.get $index call $asteroid_address local.set $asteroid
+			local.get $asteroid i32.load
+			(if (then
+				local.get $candidate_radius
+				local.get $asteroid i32.const 48 i32.add i64.load i64.add
+				i64.const 10000000 i64.add local.set $radius
+				i32.const -1 local.set $x_offset
+				(block $x_done (loop $x_images
+					local.get $x_offset i32.const 1 i32.gt_s br_if $x_done
+					i32.const -1 local.set $y_offset
+					(block $y_done (loop $y_images
+						local.get $y_offset i32.const 1 i32.gt_s br_if $y_done
+						local.get $asteroid i32.const 16 i32.add i64.load
+						local.get $x_offset i64.extend_i32_s local.get $period_x i64.mul i64.add
+						local.set $asteroid_x
+						local.get $asteroid i32.const 24 i32.add i64.load
+						local.get $y_offset i64.extend_i32_s local.get $period_y i64.mul i64.add
+						local.set $asteroid_y
+						local.get $asteroid_x
+						local.get $asteroid i32.const 32 i32.add i64.load i64.const 2 i64.mul i64.add
+						local.set $asteroid_end_x
+						local.get $asteroid_y
+						local.get $asteroid i32.const 40 i32.add i64.load i64.const 2 i64.mul i64.add
+						local.set $asteroid_end_y
+						local.get $candidate_x local.get $candidate_y
+						local.get $actor_end_x local.get $actor_end_y
+						local.get $asteroid_x local.get $asteroid_y
+						local.get $asteroid_end_x local.get $asteroid_end_y local.get $radius
+						call $foreign_trajectory_unsafe
+						(if (then i32.const 0 return))
+						local.get $y_offset i32.const 1 i32.add local.set $y_offset
+						br $y_images))
+					local.get $x_offset i32.const 1 i32.add local.set $x_offset
+					br $x_images))))
+			local.get $index i32.const 1 i32.add local.set $index
+			br $asteroids))
+		i32.const 1)
+
+	;; An unsafe proposal waits one simulated second before drawing a fresh
+	;; candidate, bounding retry work without eventually forcing an unfair entry.
+	(func $foreign_spawn_retry_ticks (result i32)
+		i32.const 60 call $ticks_from_sixty)
 
 	;; Snapshots the 32 pre-fire asteroid slots, then lets one finite beam pierce
 	;; all members without recursively targeting children created by splitting.
@@ -2060,25 +2191,33 @@
 	;; an independently seeded rotation sign and no appearance notification.
 	(func $spawn_satellite
 		(local $direction i32) (local $spin i32) (local $height_range i64)
+		(local $x i64) (local $y i64) (local $vx i64) (local $vy i64)
 		call $rand_u32 i32.const 1 i32.and
 		(if (result i32) (then i32.const 1) (else i32.const -1)) local.set $direction
 		call $rand_u32 i32.const 1 i32.and
 		(if (result i32) (then i32.const 1) (else i32.const -1)) local.set $spin
-		global.get $state_satellite_active_address i32.const 1 i32.store
-		global.get $state_satellite_direction_address local.get $direction i32.store
-		global.get $state_satellite_x_address
 		local.get $direction i32.const 1 i32.eq
 		(if (result i64)
 			(then i64.const -80000000)
 			(else global.get $state_width_address i64.load i64.const 80000000 i64.add))
-		i64.store
+		local.set $x
 		global.get $state_height_address i64.load i64.const 200000000 i64.sub local.set $height_range
 		local.get $height_range i64.const 0 i64.lt_s (if (then i64.const 0 local.set $height_range))
-		global.get $state_satellite_y_address
-		call $rand_unit local.get $height_range call $fixed_mul i64.const 100000000 i64.add i64.store
-		global.get $state_satellite_vx_address
-		local.get $direction i64.extend_i32_s i64.const 42000000 i64.mul i64.store
-		global.get $state_satellite_vy_address call $rand_signed i64.const 12000000 call $fixed_mul i64.store
+		call $rand_unit local.get $height_range call $fixed_mul i64.const 100000000 i64.add local.set $y
+		local.get $direction i64.extend_i32_s i64.const 42000000 i64.mul local.set $vx
+		call $rand_signed i64.const 12000000 call $fixed_mul local.set $vy
+		local.get $x local.get $y local.get $vx local.get $vy i64.const 60000000
+		call $foreign_spawn_safe i32.eqz
+		(if (then
+			global.get $state_satellite_spawn_countdown_address
+			call $foreign_spawn_retry_ticks i32.store
+			return))
+		global.get $state_satellite_active_address i32.const 1 i32.store
+		global.get $state_satellite_direction_address local.get $direction i32.store
+		global.get $state_satellite_x_address local.get $x i64.store
+		global.get $state_satellite_y_address local.get $y i64.store
+		global.get $state_satellite_vx_address local.get $vx i64.store
+		global.get $state_satellite_vy_address local.get $vy i64.store
 		global.get $state_satellite_dx_address i64.const 1000000 i64.store
 		global.get $state_satellite_dy_address i64.const 0 i64.store
 		global.get $state_satellite_radius_address i64.const 60000000 i64.store
@@ -2175,7 +2314,7 @@
 		i32.const 16464 i32.load
 		(if (then
 			i32.const 16464 i32.const 0 i32.store
-			i32.const 16516 call $random_spawn_ticks i32.store
+			i32.const 16516 call $random_package_spawn_ticks i32.store
 			i32.const 11 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)))
 
 	;; Moves one finite package traversal, reflecting its small vertical drift at
@@ -2216,7 +2355,7 @@
 			(if (then
 				i32.const 16464 i32.const 0 i32.store
 				i32.const 16592 call $rand_u32 i32.const 1 i32.and i32.store
-				i32.const 16516 call $random_spawn_ticks i32.store
+				i32.const 16516 call $random_package_spawn_ticks i32.store
 				i32.const 16520 i32.const 1200 call $ticks_from_sixty i32.store
 				i32.const 10 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)))))
 
@@ -2232,25 +2371,35 @@
 	;; until this instance leaves play, preventing overlapping UFOs.
 	(func $spawn_ufo
 		(local $direction i32) (local $height_range i64)
+		(local $x i64) (local $y i64) (local $vx i64) (local $radius i64)
 		i32.const 16560 i32.const 16560 i32.load i32.const 1 i32.add i32.store
 		call $rand_u32 i32.const 1 i32.and
 		(if (result i32) (then i32.const 1) (else i32.const -1)) local.set $direction
-		i32.const 16032 i32.const 1 i32.store
-		i32.const 16036 local.get $direction i32.store
-		i32.const 16040
 		local.get $direction i32.const 1 i32.eq
 		(if (result i64)
 			(then i64.const -30000000)
 			(else global.get $state_width_address i64.load i64.const 30000000 i64.add))
-		i64.store
+		local.set $x
 		global.get $state_height_address i64.load i64.const 200000000 i64.sub local.set $height_range
 		local.get $height_range i64.const 0 i64.lt_s
 		(if (then i64.const 0 local.set $height_range))
-		i32.const 16048 call $rand_unit local.get $height_range call $fixed_mul
-		i64.const 100000000 i64.add i64.store
-		i32.const 16056 local.get $direction i64.extend_i32_s
-		i64.const 140000000 call $ufo_scale_per_visit i64.mul i64.store
-		i32.const 16064 call $ufo_radius i64.store
+		call $rand_unit local.get $height_range call $fixed_mul
+		i64.const 100000000 i64.add local.set $y
+		local.get $direction i64.extend_i32_s
+		i64.const 140000000 call $ufo_scale_per_visit i64.mul local.set $vx
+		call $ufo_radius local.set $radius
+		local.get $x local.get $y local.get $vx i64.const 0 local.get $radius
+		call $foreign_spawn_safe i32.eqz
+		(if (then
+			i32.const 16560 i32.const 16560 i32.load i32.const 1 i32.sub i32.store
+			i32.const 16512 call $foreign_spawn_retry_ticks i32.store
+			return))
+		i32.const 16032 i32.const 1 i32.store
+		i32.const 16036 local.get $direction i32.store
+		i32.const 16040 local.get $x i64.store
+		i32.const 16048 local.get $y i64.store
+		i32.const 16056 local.get $vx i64.store
+		i32.const 16064 local.get $radius i64.store
 		i32.const 16072 call $ufo_fire_interval_ticks i32.store
 		i32.const 8 f32.const 0.8 f32.const 1 i32.const 0 call $audio drop)
 
@@ -2671,6 +2820,7 @@
 			local.get $kind i32.const 12 i32.eq i32.or
 			local.get $kind i32.const 13 i32.eq i32.or
 			local.get $kind i32.const 14 i32.eq i32.or
+			local.get $kind i32.const 16 i32.eq i32.or
 			(if (then i32.const 0 return))))
 		local.get $kind local.get $code call $event_allowed_while_paused i32.eqz
 		(if (then i32.const 0 return))
@@ -2750,6 +2900,11 @@
 		;; represents an intentional wheel gesture without inspecting f32 payloads.
 		local.get $kind i32.const 10 i32.eq
 		(if (then call $activate_death_blossom))
+		;; Registered shake kind 1 spends the same once-per-life charge; routing
+		;; through the shared eligibility function keeps modal and lifecycle rules
+		;; identical across keyboard, wheel, and sensor inputs.
+		local.get $kind i32.const 16 i32.eq local.get $code i32.const 1 i32.eq i32.and
+		(if (then call $activate_death_blossom))
 		local.get $kind i32.const 11 i32.eq
 		(if (then
 			local.get $code local.get $a call $from_host local.get $b call $from_host
@@ -2760,7 +2915,9 @@
 		local.get $kind i32.const 14 i32.eq i32.or
 		(if (then local.get $code call $handle_touch_terminal))
 		local.get $kind i32.const 6 i32.eq
-		(if (then local.get $a call $from_host local.get $b call $from_host call $resize))
+		(if (then
+			local.get $code i32.const 1 i32.and global.set $coarse_pointer_mode
+			local.get $a call $from_host local.get $b call $from_host call $resize))
 		local.get $kind i32.const 7 i32.eq
 		(if (then
 			local.get $code i32.const 1 i32.eq (if (then global.get $state_seed_address i32.load global.get $state_width_address i64.load global.get $state_height_address i64.load call $reset))
@@ -3049,8 +3206,8 @@
 			local.get $x i64.const 24000000 i64.add call $to_host local.get $y call $to_host
 			f32.const 1 i32.const 0xffffffff call $line drop)))
 
-	;; Draws a locale-neutral wrapped parcel glyph with ribbon crossbars; keeping
-	;; it vector-only avoids introducing untranslated status text.
+	;; Draws a locale-neutral wrapped parcel glyph with ribbon crossbars and two
+	;; closed bow loops; vector-only decoration avoids untranslated status text.
 	(func $draw_package
 		(local $x i64) (local $y i64)
 		i32.const 16464 i32.load
@@ -3067,7 +3224,23 @@
 			f32.const 2 i32.const 0x5ee7ffff call $line drop
 			i32.const 912 local.get $x i64.const 12000000 i64.sub call $to_host local.get $y call $to_host
 			local.get $x i64.const 12000000 i64.add call $to_host local.get $y call $to_host
-			f32.const 2 i32.const 0x5ee7ffff call $line drop)))
+			f32.const 2 i32.const 0x5ee7ffff call $line drop
+			;; Mirrored closed loops stay attached to the knot and parcel lid, so the
+			;; decoration reads as a tied bow rather than unrelated particles.
+			i32.const 913 call $path_begin drop
+			local.get $x i64.const 2000000 i64.sub call $to_host local.get $y i64.const 12000000 i64.sub call $to_host call $path_move drop
+			local.get $x i64.const 10000000 i64.sub call $to_host local.get $y i64.const 19000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 9000000 i64.sub call $to_host local.get $y i64.const 10000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 2000000 i64.sub call $to_host local.get $y i64.const 12000000 i64.sub call $to_host call $path_line drop
+			call $path_close drop f32.const 1.5 i32.const 0xffcf5cff i32.const 0x5ee7ffff i32.const 0 call $path_end drop
+			i32.const 914 call $path_begin drop
+			local.get $x i64.const 2000000 i64.add call $to_host local.get $y i64.const 12000000 i64.sub call $to_host call $path_move drop
+			local.get $x i64.const 10000000 i64.add call $to_host local.get $y i64.const 19000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 9000000 i64.add call $to_host local.get $y i64.const 10000000 i64.sub call $to_host call $path_line drop
+			local.get $x i64.const 2000000 i64.add call $to_host local.get $y i64.const 12000000 i64.sub call $to_host call $path_line drop
+			call $path_close drop f32.const 1.5 i32.const 0xffcf5cff i32.const 0x5ee7ffff i32.const 0 call $path_end drop
+			i32.const 915 local.get $x call $to_host local.get $y i64.const 12000000 i64.sub call $to_host
+			f32.const 3 f32.const 1 i32.const 0xffcf5cff i32.const 0x5ee7ffff call $circle drop)))
 
 	;; Renders a brief cyan-white afterimage from the exact finite segment used
 	;; for collision resolution, making the no-wrap boundary visually explicit.
@@ -3165,8 +3338,9 @@
 			(then global.get $state_height_address i64.load i64.const 2 i64.div_s i64.const 96000000 i64.add)
 			(else global.get $state_height_address i64.load i64.const 2 i64.div_s)))
 
-	;; Draws the approved two-column Help panel after the world, using a filled
-	;; vector backdrop so every keyboard and pointer row remains legible.
+	;; Draws the approved two-column Help panel after the world. Its second column
+	;; describes the active touch grammar after coarse-device or raw-contact
+	;; evidence; ordinary fine-only desktop keeps the pointer grammar.
 	(func $draw_help_overlay
 		(local $center i64) (local $keyboard_input i64) (local $keyboard_action i64)
 		(local $pointer_input i64) (local $pointer_action i64)
@@ -3197,7 +3371,10 @@
 		i32.const 2014 f32.const 88 i64.const 150 call $help_y global.get $state_width_address i64.load i64.const 88000000 i64.sub call $to_host i64.const 150 call $help_y f32.const 1 i32.const 0x31536bff call $line drop
 		i32.const 40 i32.const 224 i32.const 8 local.get $center call $to_host i64.const 125 call $help_y f32.const 36 i32.const 0x5ee7ffff i32.const 1 call $text drop
 		i32.const 54 i32.const 560 i32.const 8 local.get $keyboard_input call $to_host i64.const 190 call $help_y f32.const 18 i32.const 0xffcf5cff i32.const 0 call $text drop
-		i32.const 55 i32.const 568 i32.const 7 local.get $pointer_input call $to_host i64.const 190 call $help_y f32.const 18 i32.const 0xffcf5cff i32.const 0 call $text drop
+		call $touch_help_mode
+		(if
+			(then i32.const 55 i32.const 768 i32.const 5 local.get $pointer_input call $to_host i64.const 190 call $help_y f32.const 18 i32.const 0xffcf5cff i32.const 0 call $text drop)
+			(else i32.const 55 i32.const 568 i32.const 7 local.get $pointer_input call $to_host i64.const 190 call $help_y f32.const 18 i32.const 0xffcf5cff i32.const 0 call $text drop))
 		i32.const 41 i32.const 240 i32.const 14 local.get $keyboard_input call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
 		i32.const 62 i32.const 255 i32.const 6 local.get $keyboard_action call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
 		i32.const 42 i32.const 264 i32.const 4 local.get $keyboard_input call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
@@ -3216,14 +3393,26 @@
 		i32.const 69 i32.const 439 i32.const 7 local.get $keyboard_action call $to_host i64.const 482 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
 		i32.const 49 i32.const 448 i32.const 6 local.get $keyboard_input call $to_host i64.const 518 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
 		i32.const 70 i32.const 463 i32.const 4 local.get $keyboard_action call $to_host i64.const 518 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
-		i32.const 56 i32.const 576 i32.const 4 local.get $pointer_input call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
-		i32.const 71 i32.const 589 i32.const 3 local.get $pointer_action call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
-		i32.const 57 i32.const 592 i32.const 9 local.get $pointer_input call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
-		i32.const 72 i32.const 605 i32.const 4 local.get $pointer_action call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
-		i32.const 58 i32.const 616 i32.const 10 local.get $pointer_input call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
-		i32.const 73 i32.const 629 i32.const 6 local.get $pointer_action call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
-		i32.const 59 i32.const 640 i32.const 6 local.get $pointer_input call $to_host i64.const 338 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
-		i32.const 74 i32.const 653 i32.const 7 local.get $pointer_action call $to_host i64.const 338 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+		call $touch_help_mode
+		(if
+			(then
+				i32.const 56 i32.const 776 i32.const 15 local.get $pointer_input call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 71 i32.const 792 i32.const 4 local.get $pointer_action call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+				i32.const 57 i32.const 800 i32.const 11 local.get $pointer_input call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 72 i32.const 812 i32.const 6 local.get $pointer_action call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+				i32.const 58 i32.const 820 i32.const 11 local.get $pointer_input call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 73 i32.const 832 i32.const 6 local.get $pointer_action call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+				i32.const 59 i32.const 840 i32.const 10 local.get $pointer_input call $to_host i64.const 338 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 74 i32.const 852 i32.const 14 local.get $pointer_action call $to_host i64.const 338 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop)
+			(else
+				i32.const 56 i32.const 576 i32.const 4 local.get $pointer_input call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 71 i32.const 589 i32.const 3 local.get $pointer_action call $to_host i64.const 230 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+				i32.const 57 i32.const 592 i32.const 9 local.get $pointer_input call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 72 i32.const 605 i32.const 4 local.get $pointer_action call $to_host i64.const 266 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+				i32.const 58 i32.const 616 i32.const 10 local.get $pointer_input call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 73 i32.const 629 i32.const 6 local.get $pointer_action call $to_host i64.const 302 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop
+				i32.const 59 i32.const 640 i32.const 6 local.get $pointer_input call $to_host i64.const 338 call $help_y f32.const 17 i32.const 0xffffffff i32.const 0 call $text drop
+				i32.const 74 i32.const 653 i32.const 7 local.get $pointer_action call $to_host i64.const 338 call $help_y f32.const 17 i32.const 0x9bb8d1ff i32.const 0 call $text drop))
 		i32.const 2030 local.get $center call $to_host i64.const 585 call $help_y f32.const 6 f32.const 0 i32.const 0xff5cf4ff i32.const 1 call $circle drop
 		i32.const 2031 local.get $center i64.const 18000000 i64.sub call $to_host i64.const 585 call $help_y local.get $center i64.const 7000000 i64.sub call $to_host i64.const 585 call $help_y f32.const 2 i32.const 0xff5cf4ff call $line drop
 		i32.const 2032 local.get $center i64.const 7000000 i64.add call $to_host i64.const 585 call $help_y local.get $center i64.const 18000000 i64.add call $to_host i64.const 585 call $help_y f32.const 2 i32.const 0xff5cf4ff call $line drop

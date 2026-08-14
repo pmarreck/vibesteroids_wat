@@ -14,6 +14,10 @@
 	(import "test.host" "test_reset_config" (func $host_reset_config))
 	(import "test.host" "test_reset_frame" (func $host_reset_frame))
 	(import "test.host" "test_reset_effects" (func $host_reset_effects))
+	(import "test.host" "test_motion_interest_valid"
+		(func $host_motion_interest_valid (result i32)))
+	(import "test.host" "test_set_motion_interest_status"
+		(func $host_set_motion_interest_status (param i32)))
 	(import "test.host" "test_title_ptr" (func $host_title_ptr (result i32)))
 	(import "test.host" "test_title_len" (func $host_title_len (result i32)))
 	(import "test.host" "test_menu_count" (func $host_menu_count (result i32)))
@@ -44,6 +48,10 @@
 	(import "test.host" "test_ufo_paths" (func $host_ufo_paths (result i32)))
 	(import "test.host" "test_enemy_bullet_circles" (func $host_enemy_bullet_circles (result i32)))
 	(import "test.host" "test_package_paths" (func $host_package_paths (result i32)))
+	(import "test.host" "test_package_bow_paths"
+		(func $host_package_bow_paths (result i32)))
+	(import "test.host" "test_package_bow_knots"
+		(func $host_package_bow_knots (result i32)))
 	(import "test.host" "test_satellite_paths" (func $host_satellite_paths (result i32)))
 	(import "test.host" "test_satellite_lines" (func $host_satellite_lines (result i32)))
 	(import "test.host" "test_satellite_circles" (func $host_satellite_circles (result i32)))
@@ -54,6 +62,8 @@
 	(import "test.host" "test_blossom_marks" (func $host_blossom_marks (result i32)))
 	(import "test.host" "test_blossom_help_valid" (func $host_blossom_help_valid (result i32)))
 	(import "test.host" "test_help_copy_mask" (func $host_help_copy_mask (result i32)))
+	(import "test.host" "test_touch_help_copy_mask"
+		(func $host_touch_help_copy_mask (result i32)))
 	(import "test.host" "test_help_frame_lines" (func $host_help_frame_lines (result i32)))
 	(import "test.host" "test_gate_copy_kind" (func $host_gate_copy_kind (result i32)))
 	(import "test.host" "test_gate_border_lines" (func $host_gate_border_lines (result i32)))
@@ -121,11 +131,11 @@
 		call $configure drop
 		local.get $seed i32.const 0 f32.const 1024 f32.const 768 call $init_playable)
 	(func (export "after_restore") (result i32) call $after_restore)
-	;; Classifies all independent spawn schedules over a deterministic seed set,
-	;; preventing one lucky fixture from vacuously satisfying a changed range.
-	(func (export "spawn_schedules_within")
+	;; Classifies the unchanged hazardous-actor schedules over a deterministic
+	;; seed set, preventing one lucky fixture from hiding a range regression.
+	(func (export "hazard_schedules_within")
 		(param $minimum i32) (param $maximum i32) (param $seed_count i32) (result i32)
-		(local $seed i32) (local $ufo i32) (local $package i32) (local $satellite i32)
+		(local $seed i32) (local $ufo i32) (local $satellite i32)
 		call $configure drop
 		(block $valid (loop $seeds
 			local.get $seed local.get $seed_count i32.ge_u
@@ -133,17 +143,32 @@
 			local.get $seed i32.const 1 i32.add i32.const 0
 			f32.const 1024 f32.const 768 call $init_playable drop
 			i32.const 16512 i32.load local.set $ufo
-			i32.const 16516 i32.load local.set $package
 			i32.const 26732 i32.load local.set $satellite
 			local.get $ufo local.get $minimum i32.lt_s
 			local.get $ufo local.get $maximum i32.gt_s i32.or
-			local.get $package local.get $minimum i32.lt_s i32.or
-			local.get $package local.get $maximum i32.gt_s i32.or
 			local.get $satellite local.get $minimum i32.lt_s i32.or
 			local.get $satellite local.get $maximum i32.gt_s i32.or
 			(if (then i32.const 0 return))
 			local.get $seed i32.const 1 i32.add local.set $seed
 				br $seeds))
+		i32.const 1)
+	;; Classifies gift schedules independently because destroyed gifts justify a
+	;; shorter cadence without also making hazardous actors more frequent.
+	(func (export "package_schedules_within")
+		(param $minimum i32) (param $maximum i32) (param $seed_count i32) (result i32)
+		(local $seed i32) (local $package i32)
+		call $configure drop
+		(block $valid (loop $seeds
+			local.get $seed local.get $seed_count i32.ge_u
+			(if (then i32.const 1 return))
+			local.get $seed i32.const 1 i32.add i32.const 0
+			f32.const 1024 f32.const 768 call $init_playable drop
+			i32.const 16516 i32.load local.set $package
+			local.get $package local.get $minimum i32.lt_s
+			local.get $package local.get $maximum i32.gt_s i32.or
+			(if (then i32.const 0 return))
+			local.get $seed i32.const 1 i32.add local.set $seed
+			br $seeds))
 		i32.const 1)
 	;; Couples each seeded satellite traversal sign to its entry edge and proves
 	;; that clockwise and counter-clockwise initial spins both occur across a set.
@@ -155,6 +180,8 @@
 			local.get $seed local.get $seed_count i32.ge_u br_if $valid
 			local.get $seed i32.const 1 i32.add i32.const 0
 			f32.const 1024 f32.const 768 call $init_playable drop
+			call $clear_test_asteroids
+			call $place_safe_decoy
 			i32.const 26732 i32.const 1 i32.store
 			i32.const 1 call $tick drop
 			i32.const 26656 i32.load i32.eqz (if (then i32.const 0 return))
@@ -188,6 +215,8 @@
 			local.get $seed local.get $seed_count i32.ge_u br_if $valid
 			local.get $seed i32.const 1 i32.add i32.const 0
 			f32.const 1024 f32.const 768 call $init_playable drop
+			call $clear_test_asteroids
+			call $place_safe_decoy
 			i32.const 16512 i32.const 1 i32.store
 			i32.const 16516 i32.const 1 i32.store
 			i32.const 1 call $tick drop
@@ -236,6 +265,12 @@
 	(func (export "configure_only") (result i32)
 		call $host_reset_config
 		call $configure)
+	(func (export "configure_with_motion_status") (param $status i32) (result i32)
+		call $host_reset_config
+		local.get $status call $host_set_motion_interest_status
+		call $configure)
+	(func (export "host_motion_interest_valid") (result i32)
+		call $host_motion_interest_valid)
 	(func (export "render_initial") (result i32)
 		call $configure drop
 		i32.const 0x5eed i32.const 0 f32.const 1024 f32.const 768 call $init_playable drop
@@ -349,6 +384,130 @@
 			local.get $index local.get $capacity i32.ge_u br_if $done
 			i32.const 1024 local.get $base i32.add local.get $index local.get $stride i32.mul i32.add i32.const 1 i32.store
 			local.get $index i32.const 1 i32.add local.set $index br $again)))
+	;; Spawn-safety fixtures clear the whole rock pool, then construct explicit
+	;; trajectory sets without calling production RNG or collision helpers.
+	(func $clear_test_asteroids
+		i32.const 4352 i32.const 0 i32.const 2560 memory.fill)
+	(func $place_test_asteroid
+		(param $index i32) (param $x i64) (param $y i64) (param $radius i64)
+		(local $address i32)
+		i32.const 4352 local.get $index i32.const 80 i32.mul i32.add local.set $address
+		local.get $address i32.const 1 i32.store
+		local.get $address i32.const 16 i32.add local.get $x i64.store
+		local.get $address i32.const 24 i32.add local.get $y i64.store
+		local.get $address i32.const 32 i32.add i64.const 0 i64.store
+		local.get $address i32.const 40 i32.add i64.const 0 i64.store
+		local.get $address i32.const 48 i32.add local.get $radius i64.store)
+	(func $begin_spawn_fixture (param $seed i32)
+		call $configure drop
+		local.get $seed i32.const 0 f32.const 1024 f32.const 768
+		call $init_playable drop
+		call $clear_test_asteroids)
+	(func $place_safe_decoy
+		i32.const 1 i64.const 512000000 i64.const 384000000 i64.const 5000000
+		call $place_test_asteroid)
+	(func (export "fill_safe_decoy_asteroids") (param $count i32)
+		(local $index i32)
+		(block $done (loop $again
+			local.get $index local.get $count i32.ge_u br_if $done
+			local.get $index i64.const 512000000 i64.const 384000000 i64.const 5000000
+			call $place_test_asteroid
+			local.get $index i32.const 1 i32.add local.set $index
+			br $again)))
+
+	;; Classifies a set of UFO entry trajectories: a decoy-only set is safe, a
+	;; current overlap and a future crossing defer, and the one-second retry bound
+	;; admits a newly safe candidate without polling on every fixed tick.
+	(func (export "ufo_spawn_safety_cases") (result i32)
+		(local $candidate_x i64) (local $candidate_y i64)
+		(local $direction i32) (local $mask i32)
+		i32.const 0x51afe call $begin_spawn_fixture
+		call $place_safe_decoy
+		i32.const 16512 i32.const 1 i32.store
+		i32.const 1 call $tick drop
+		i32.const 16032 i32.load
+		(if (then local.get $mask i32.const 1 i32.or local.set $mask))
+		i32.const 16040 i64.load local.set $candidate_x
+		i32.const 16048 i64.load local.set $candidate_y
+		i32.const 16036 i32.load local.set $direction
+
+		i32.const 0x51afe call $begin_spawn_fixture
+		call $place_safe_decoy
+		i32.const 0 local.get $candidate_x local.get $candidate_y i64.const 20000000
+		call $place_test_asteroid
+		i32.const 16512 i32.const 1 i32.store
+		i32.const 1 call $tick drop
+		i32.const 16032 i32.load i32.eqz
+		i32.const 16512 i32.load i32.const 120 i32.eq i32.and
+		(if (then local.get $mask i32.const 2 i32.or local.set $mask))
+
+		i32.const 0x51afe call $begin_spawn_fixture
+		call $place_safe_decoy
+		i32.const 0
+		local.get $candidate_x local.get $direction i64.extend_i32_s
+		i64.const 100000000 i64.mul i64.add
+		local.get $candidate_y i64.const 20000000 call $place_test_asteroid
+		i32.const 16512 i32.const 1 i32.store
+		i32.const 1 call $tick drop
+		i32.const 16032 i32.load i32.eqz
+		i32.const 16512 i32.load i32.const 120 i32.eq i32.and
+		(if (then local.get $mask i32.const 4 i32.or local.set $mask))
+		i32.const 119 call $tick drop
+		i32.const 16032 i32.load i32.eqz
+		i32.const 16512 i32.load i32.const 1 i32.eq i32.and
+		i32.const 4352 i32.const 0 i32.store
+		i32.const 1 call $tick drop
+		i32.const 16032 i32.load i32.eqz i32.eqz i32.and
+		(if (then local.get $mask i32.const 8 i32.or local.set $mask))
+		local.get $mask)
+
+	;; Voyager uses the same set classifier and retry bound at its larger hull
+	;; radius and lower traversal speed. A 40-pixel offset remains a current
+	;; overlap inside the asteroid wrap boundary; 110 pixels is future-only.
+	(func (export "satellite_spawn_safety_cases") (result i32)
+		(local $candidate_x i64) (local $candidate_y i64)
+		(local $direction i32) (local $mask i32)
+		i32.const 0x73a11 call $begin_spawn_fixture
+		call $place_safe_decoy
+		i32.const 26732 i32.const 1 i32.store
+		i32.const 1 call $tick drop
+		i32.const 26656 i32.load
+		(if (then local.get $mask i32.const 1 i32.or local.set $mask))
+		i32.const 26664 i64.load local.set $candidate_x
+		i32.const 26672 i64.load local.set $candidate_y
+		i32.const 26660 i32.load local.set $direction
+
+		i32.const 0x73a11 call $begin_spawn_fixture
+		call $place_safe_decoy
+		i32.const 0
+		local.get $candidate_x local.get $direction i64.extend_i32_s
+		i64.const 40000000 i64.mul i64.add
+		local.get $candidate_y i64.const 20000000 call $place_test_asteroid
+		i32.const 26732 i32.const 1 i32.store
+		i32.const 1 call $tick drop
+		i32.const 26656 i32.load i32.eqz
+		i32.const 26732 i32.load i32.const 120 i32.eq i32.and
+		(if (then local.get $mask i32.const 2 i32.or local.set $mask))
+
+		i32.const 0x73a11 call $begin_spawn_fixture
+		call $place_safe_decoy
+		i32.const 0
+		local.get $candidate_x local.get $direction i64.extend_i32_s
+		i64.const 110000000 i64.mul i64.add
+		local.get $candidate_y i64.const 20000000 call $place_test_asteroid
+		i32.const 26732 i32.const 1 i32.store
+		i32.const 1 call $tick drop
+		i32.const 26656 i32.load i32.eqz
+		i32.const 26732 i32.load i32.const 120 i32.eq i32.and
+		(if (then local.get $mask i32.const 4 i32.or local.set $mask))
+		i32.const 119 call $tick drop
+		i32.const 26656 i32.load i32.eqz
+		i32.const 26732 i32.load i32.const 1 i32.eq i32.and
+		i32.const 4352 i32.const 0 i32.store
+		i32.const 1 call $tick drop
+		i32.const 26656 i32.load i32.eqz i32.eqz i32.and
+		(if (then local.get $mask i32.const 8 i32.or local.set $mask))
+		local.get $mask)
 	;; Fills the 64-slot legacy region with real, slowly moving projectiles so a
 	;; pool-capacity fixture does not depend on inert records surviving a tick.
 	(func (export "fill_legacy_bullet_pool")
@@ -386,6 +545,9 @@
 	(func (export "touch_event") (param $kind i32) (param $contact_id i32)
 		(param $x f32) (param $y f32) (result i32)
 		local.get $kind local.get $contact_id local.get $x local.get $y call $event)
+	(func (export "device_change") (param $flags i32) (param $width f32)
+		(param $height f32) (result i32)
+		i32.const 6 local.get $flags local.get $width local.get $height call $event)
 	(func (export "viewport") (param $width f32) (param $height f32) (result i32)
 		i32.const 6 i32.const 0 local.get $width local.get $height call $event)
 	;; Compares the rendered blast against itself at two equal-area viewports.
@@ -526,6 +688,10 @@
 	(func (export "host_ufo_paths") (result i32) call $host_ufo_paths)
 	(func (export "host_enemy_bullet_circles") (result i32) call $host_enemy_bullet_circles)
 	(func (export "host_package_paths") (result i32) call $host_package_paths)
+	(func (export "host_package_bow_paths") (result i32)
+		call $host_package_bow_paths)
+	(func (export "host_package_bow_knots") (result i32)
+		call $host_package_bow_knots)
 	(func (export "host_satellite_paths") (result i32) call $host_satellite_paths)
 	(func (export "host_satellite_lines") (result i32) call $host_satellite_lines)
 	(func (export "host_satellite_circles") (result i32) call $host_satellite_circles)
@@ -536,6 +702,8 @@
 	(func (export "host_blossom_marks") (result i32) call $host_blossom_marks)
 	(func (export "host_blossom_help_valid") (result i32) call $host_blossom_help_valid)
 	(func (export "host_help_copy_mask") (result i32) call $host_help_copy_mask)
+	(func (export "host_touch_help_copy_mask") (result i32)
+		call $host_touch_help_copy_mask)
 	(func (export "host_help_frame_lines") (result i32) call $host_help_frame_lines)
 	(func (export "host_gate_copy_kind") (result i32) call $host_gate_copy_kind)
 	(func (export "host_gate_border_lines") (result i32) call $host_gate_border_lines)

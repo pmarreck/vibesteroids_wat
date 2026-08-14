@@ -13,6 +13,11 @@
 	(global $touch_interest_count (mut i32) (i32.const 0))
 	(global $touch_interest_limit (mut i32) (i32.const 0))
 	(global $touch_interest_flags (mut i32) (i32.const -1))
+	(global $motion_interest_count (mut i32) (i32.const 0))
+	(global $motion_interest_kind (mut i32) (i32.const 0))
+	(global $motion_interest_rate (mut i32) (i32.const -1))
+	(global $motion_interest_flags (mut i32) (i32.const -1))
+	(global $motion_interest_status (mut i32) (i32.const 0))
 	(global $synth_1 (mut i32) (i32.const 0))
 	(global $synth_2 (mut i32) (i32.const 0))
 	(global $synth_3 (mut i32) (i32.const 0))
@@ -63,6 +68,8 @@
 	(global $ufo_paths (mut i32) (i32.const 0))
 	(global $enemy_bullet_circles (mut i32) (i32.const 0))
 	(global $package_paths (mut i32) (i32.const 0))
+	(global $package_bow_paths (mut i32) (i32.const 0))
+	(global $package_bow_knots (mut i32) (i32.const 0))
 	(global $satellite_paths (mut i32) (i32.const 0))
 	(global $satellite_lines (mut i32) (i32.const 0))
 	(global $satellite_circles (mut i32) (i32.const 0))
@@ -76,6 +83,7 @@
 	(global $blossom_marks (mut i32) (i32.const 0))
 	(global $blossom_help_valid (mut i32) (i32.const 0))
 	(global $help_copy_mask (mut i32) (i32.const 0))
+	(global $touch_help_copy_mask (mut i32) (i32.const 0))
 	(global $help_frame_lines (mut i32) (i32.const 0))
 	(global $help_column_inputs (mut i32) (i32.const 0))
 	(global $help_column_actions (mut i32) (i32.const 0))
@@ -119,6 +127,11 @@
 		i32.const 0 global.set $touch_interest_count
 		i32.const 0 global.set $touch_interest_limit
 		i32.const -1 global.set $touch_interest_flags
+		i32.const 0 global.set $motion_interest_count
+		i32.const 0 global.set $motion_interest_kind
+		i32.const -1 global.set $motion_interest_rate
+		i32.const -1 global.set $motion_interest_flags
+		i32.const 0 global.set $motion_interest_status
 		i32.const 0 global.set $synth_1
 		i32.const 0 global.set $synth_2
 		i32.const 0 global.set $synth_3
@@ -164,6 +177,8 @@
 		i32.const 0 global.set $ufo_paths
 		i32.const 0 global.set $enemy_bullet_circles
 		i32.const 0 global.set $package_paths
+		i32.const 0 global.set $package_bow_paths
+		i32.const 0 global.set $package_bow_knots
 		i32.const 0 global.set $satellite_paths
 		i32.const 0 global.set $satellite_lines
 		i32.const 0 global.set $satellite_circles
@@ -177,6 +192,7 @@
 		i32.const 0 global.set $blossom_marks
 		i32.const 0 global.set $blossom_help_valid
 		i32.const 0 global.set $help_copy_mask
+		i32.const 0 global.set $touch_help_copy_mask
 		i32.const 0 global.set $help_frame_lines
 		i32.const 0 global.set $help_column_inputs
 		i32.const 0 global.set $help_column_actions
@@ -290,6 +306,10 @@
 	(func (export "test_ufo_paths") (result i32) global.get $ufo_paths)
 	(func (export "test_enemy_bullet_circles") (result i32) global.get $enemy_bullet_circles)
 	(func (export "test_package_paths") (result i32) global.get $package_paths)
+	(func (export "test_package_bow_paths") (result i32)
+		global.get $package_bow_paths)
+	(func (export "test_package_bow_knots") (result i32)
+		global.get $package_bow_knots)
 	(func (export "test_satellite_paths") (result i32) global.get $satellite_paths)
 	(func (export "test_satellite_lines") (result i32) global.get $satellite_lines)
 	(func (export "test_satellite_circles") (result i32) global.get $satellite_circles)
@@ -308,6 +328,8 @@
 	(func (export "test_blossom_marks") (result i32) global.get $blossom_marks)
 	(func (export "test_blossom_help_valid") (result i32) global.get $blossom_help_valid)
 	(func (export "test_help_copy_mask") (result i32) global.get $help_copy_mask)
+	(func (export "test_touch_help_copy_mask") (result i32)
+		global.get $touch_help_copy_mask)
 	(func (export "test_help_frame_lines") (result i32) global.get $help_frame_lines)
 	(func (export "test_gate_copy_kind") (result i32) global.get $gate_copy_kind)
 	(func (export "test_gate_border_lines") (result i32) global.get $gate_border_lines)
@@ -428,6 +450,21 @@
 		global.get $touch_interest_count i32.const 1 i32.eq
 		global.get $touch_interest_limit i32.const 8 i32.eq i32.and
 		global.get $touch_interest_flags i32.eqz i32.and)
+	(func (export "AE_motion_interest")
+		(param $kind i32) (param $rate i32) (param $flags i32) (result i32)
+		global.get $motion_interest_count i32.const 1 i32.add
+		global.set $motion_interest_count
+		local.get $kind global.set $motion_interest_kind
+		local.get $rate global.set $motion_interest_rate
+		local.get $flags global.set $motion_interest_flags
+		global.get $motion_interest_status)
+	(func (export "test_motion_interest_valid") (result i32)
+		global.get $motion_interest_count i32.const 1 i32.eq
+		global.get $motion_interest_kind i32.const 1 i32.eq i32.and
+		global.get $motion_interest_rate i32.eqz i32.and
+		global.get $motion_interest_flags i32.eqz i32.and)
+	(func (export "test_set_motion_interest_status") (param $status i32)
+		local.get $status global.set $motion_interest_status)
 	(func (export "AE_ui_begin") (param i32) (result i32)
 		global.get $ui_open (if (then call $record_lifecycle_error))
 		i32.const 1 global.set $ui_open
@@ -517,6 +554,9 @@
 		(if (then i32.const 5 local.set $minimum_lines))
 		global.get $current_path_key i32.const 910 i32.eq
 		(if (then i32.const 3 local.set $minimum_lines))
+		global.get $current_path_key i32.const 913 i32.eq
+		global.get $current_path_key i32.const 914 i32.eq i32.or
+		(if (then i32.const 3 local.set $minimum_lines))
 		global.get $current_path_moves i32.eqz
 		global.get $current_path_lines local.get $minimum_lines i32.lt_u i32.or
 		(if
@@ -540,6 +580,11 @@
 		(if (then global.get $ufo_paths i32.const 1 i32.add global.set $ufo_paths))
 		global.get $current_path_key i32.const 910 i32.eq local.get $valid i32.and
 		(if (then global.get $package_paths i32.const 1 i32.add global.set $package_paths))
+		global.get $current_path_key i32.const 913 i32.eq
+		global.get $current_path_key i32.const 914 i32.eq i32.or local.get $valid i32.and
+		(if (then
+			global.get $package_bow_paths i32.const 1 i32.add
+			global.set $package_bow_paths))
 		global.get $current_path_key i32.const 934 i32.ge_u
 		global.get $current_path_key i32.const 955 i32.lt_u i32.and local.get $valid i32.and
 		(if (then global.get $satellite_paths i32.const 1 i32.add global.set $satellite_paths))
@@ -608,6 +653,10 @@
 		(if (then global.get $enemy_bullet_circles i32.const 1 i32.add global.set $enemy_bullet_circles))
 		local.get $key i32.const 920 i32.eq local.get $valid i32.and
 		(if (then global.get $blossom_marks i32.const 1 i32.add global.set $blossom_marks))
+		local.get $key i32.const 915 i32.eq local.get $valid i32.and
+		(if (then
+			global.get $package_bow_knots i32.const 1 i32.add
+			global.set $package_bow_knots))
 		local.get $key i32.const 930 i32.ge_u local.get $key i32.const 932 i32.lt_u i32.and
 		local.get $valid i32.and
 		(if (then
@@ -693,6 +742,33 @@
 		local.get $key i32.const 59 i32.eq
 		(if (then local.get $ptr i32.const 640 i32.eq local.get $len i32.const 6 i32.eq i32.and
 			(if (then global.get $help_copy_mask i32.const 32 i32.or global.set $help_copy_mask))))
+		local.get $key i32.const 55 i32.eq
+		(if (then local.get $ptr i32.const 768 i32.eq local.get $len i32.const 5 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 1 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 56 i32.eq
+		(if (then local.get $ptr i32.const 776 i32.eq local.get $len i32.const 15 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 2 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 71 i32.eq
+		(if (then local.get $ptr i32.const 792 i32.eq local.get $len i32.const 4 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 4 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 57 i32.eq
+		(if (then local.get $ptr i32.const 800 i32.eq local.get $len i32.const 11 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 8 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 72 i32.eq
+		(if (then local.get $ptr i32.const 812 i32.eq local.get $len i32.const 6 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 16 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 58 i32.eq
+		(if (then local.get $ptr i32.const 820 i32.eq local.get $len i32.const 11 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 32 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 73 i32.eq
+		(if (then local.get $ptr i32.const 832 i32.eq local.get $len i32.const 6 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 64 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 59 i32.eq
+		(if (then local.get $ptr i32.const 840 i32.eq local.get $len i32.const 10 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 128 i32.or global.set $touch_help_copy_mask))))
+		local.get $key i32.const 74 i32.eq
+		(if (then local.get $ptr i32.const 852 i32.eq local.get $len i32.const 14 i32.eq i32.and
+			(if (then global.get $touch_help_copy_mask i32.const 256 i32.or global.set $touch_help_copy_mask))))
 		local.get $key i32.const 60 i32.eq
 		(if (then
 			i32.const 0 global.set $power_hud_kind

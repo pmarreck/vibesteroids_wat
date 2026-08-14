@@ -92,6 +92,7 @@ Controls:
 | Hold primary mouse button | Fire |
 | Hold secondary mouse button | Thrust |
 | Mouse wheel / trackpad scroll | Activate Death Blossom when available |
+| Shake a motion-capable device | Activate Death Blossom when available |
 
 New Game, Help / Controls, Reload, and Quit are also exposed through native
 window actions.
@@ -100,8 +101,9 @@ The guest opts into Aedicule's ordered raw-contact stream for eight simultaneous
 contacts. A left/right-edge contact fires and maps vertical motion over `4pi`
 radians per viewport height. Independent middle contacts thrust, and lifting or
 cancelling one finger leaves every other contact's action active. The top-center
-touch zone retains pause/resume. WAST, an actual-binary touch/tick timeline, and
-Peter's iPhone Safari playtest cover the mapping.
+touch zone retains pause/resume; pausing after coarse-pointer or raw-touch use
+also opens the touch-specific Controls panel. WAST, an actual-binary touch/tick
+timeline, and Peter's iPhone Safari playtest cover the mapping.
 
 ## Live-edit the running game
 
@@ -160,14 +162,16 @@ Implemented:
 - auto-fire, Kid Mode, and the semi-secret Death Blossom;
 - independently scheduled disc UFOs with predictive, random, and defensive
   fire, physical collisions, a 2,000-point bounty, and hazardous viewport-scaled
-  expanding blasts whose asteroid score follows player-kill attribution;
-- destructible drifting packages that randomly grant either 20 seconds of
-  finite, non-wrapping multi-target laser fire or doubled bounded fire rate,
+  expanding blasts whose asteroid score follows player-kill attribution; unsafe
+  asteroid entry trajectories defer for a bounded retry;
+- destructible drifting packages scheduled 20% sooner and drawn as bowed gifts;
+  each randomly grants either 20 seconds of finite, non-wrapping multi-target
+  laser fire or doubled bounded fire rate,
   with an icon-and-text tenths countdown for the active reward;
 - a compact, slowly rotating derelict Voyager that defers arrival during dense
-  waves, pings faintly, pulses cyan, and turns deliberate player fire into an
-  asteroid-scoring multi-rock reactor blast while accidental contact scores
-  nothing;
+  waves or unsafe asteroid entry trajectories, pings faintly, pulses cyan, and
+  turns deliberate player fire into an asteroid-scoring multi-rock reactor
+  blast while accidental contact scores nothing;
 - guest-declared shot, laser, thrust, explosion, extra-life, Death Blossom,
   alert, notification, phone-home ping, and layered 1.2-second-or-longer BOOM
   synths, plus bounded packaged FLAC playback after player-triggered Voyager
@@ -204,9 +208,11 @@ for the Asteroids/Blasteroids engagement research and playtest proposals.
 - repository-boundary and Nix-composition classifiers; and
 - ShellCheck over every executable test/build script.
 
-Application behavior stays in WAST, not Rust. The instrumented `aedicule.v0` WAST
-module records emitted scenes, audio, effects, and metadata without a custom
-test-only export in production code.
+Application behavior stays in WAST, not Rust. Scenario comments name the
+user-visible contract, the regression each group catches, and paired controls
+where needed. The instrumented `aedicule.v0` WAST module records emitted scenes,
+audio, effects, and metadata without a custom test-only export in production
+code.
 
 The headless renderer produces an inspectable frame without a desktop:
 

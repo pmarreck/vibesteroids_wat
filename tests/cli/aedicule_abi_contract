@@ -5,9 +5,12 @@ set -u
 root=$(cd "$(dirname "$0")/../.." && pwd)
 specification="$root/SPEC.md"
 contract_phrases=(
+	# Required capability opt-ins belong in the written example contract, not
+	# solely in code where another guest author would have to reverse-engineer them.
 	'aedicule.v0'
 	'AE_event(kind, code, a, b)'
 	'AE_touch_interest(8, 0)'
+	'AE_motion_interest(1, 0, 0)'
 	'AE_tick_rate(current_numerator, current_denominator) -> (120, 1)'
 	'Schema 11 is 32,768 bytes.'
 	'code = refresh_numerator_hz'

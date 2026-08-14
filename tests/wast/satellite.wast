@@ -1,11 +1,16 @@
 ;; Voyager has its own deterministic 45--120-second schedule and seeded signs.
 (assert_return
-	(invoke $vibesteroids_tests "spawn_schedules_within"
+	(invoke $vibesteroids_tests "hazard_schedules_within"
 		(i32.const 5400) (i32.const 14400) (i32.const 64))
 	(i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "satellite_entries_valid" (i32.const 64))
 	(i32.const 1))
+;; Voyager repeats the safe/overlap/future set classifier at its own hull size
+;; and speed, including the same deterministic one-second retry boundary.
+(assert_return
+	(invoke $vibesteroids_tests "satellite_spawn_safety_cases")
+	(i32.const 15))
 
 ;; A due appearance remains pending at the threshold, then enters as soon as
 ;; the active asteroid set falls below fifteen. This is deliberately not a
@@ -18,7 +23,9 @@
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25632)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25708)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "clear_active" (i32.const 3328) (i32.const 80) (i32.const 32)))
-(assert_return (invoke $vibesteroids_tests "fill_active" (i32.const 3328) (i32.const 80) (i32.const 14)))
+;; Fourteen stationary center-screen decoys preserve the count threshold while
+;; independently proving that a safe trajectory set may admit the candidate.
+(assert_return (invoke $vibesteroids_tests "fill_safe_decoy_asteroids" (i32.const 14)))
 (assert_return (invoke $vibesteroids_tests "tick" (i32.const 1)) (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "state_i32" (i32.const 25632)) (i32.const 1))
 

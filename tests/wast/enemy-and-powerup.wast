@@ -1,12 +1,25 @@
-;; Enemy and package scheduling begins with independently seeded 45--120
-;; simulated-second countdowns. Forced countdowns keep the proof fast.
+;; Hazardous actors retain independently seeded 45--120-second countdowns,
+;; while destructible gifts recur every 36--96 seconds (20% shorter at both
+;; endpoints). Seed-set classifiers
+;; catch accidental coupling or a lucky single countdown; forced due times below
+;; keep the behavioral proof fast.
 (assert_return
-	(invoke $vibesteroids_tests "spawn_schedules_within"
+	(invoke $vibesteroids_tests "hazard_schedules_within"
 		(i32.const 5400) (i32.const 14400) (i32.const 64))
+	(i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "package_schedules_within"
+		(i32.const 4320) (i32.const 11520) (i32.const 64))
 	(i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "foreign_actor_edges_valid" (i32.const 64))
 	(i32.const 1))
+;; This set classifier covers safe, overlapping, and future-crossing asteroid
+;; trajectories plus the exact retry boundary. A single-position predicate or
+;; retry-every-tick implementation cannot produce the complete mask.
+(assert_return
+	(invoke $vibesteroids_tests "ufo_spawn_safety_cases")
+	(i32.const 15))
 (assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
@@ -14,7 +27,7 @@
 	(i32.const 1))
 (assert_return
 	(invoke $vibesteroids_tests "state_i32_between"
-		(i32.const 15492) (i32.const 5400) (i32.const 14400))
+		(i32.const 15492) (i32.const 4320) (i32.const 11520))
 	(i32.const 1))
 
 ;; Independent schedules may expire together; neither actor suppresses the other.
@@ -259,6 +272,11 @@
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_package_paths") (i32.const 1))
+;; The parcel silhouette remains independently recognizable, while two closed
+;; loop paths and a knot make the new bow mechanically present. Peter remains
+;; the visual oracle for whether those primitives read as a bow in motion.
+(assert_return (invoke $vibesteroids_tests "host_package_bow_paths") (i32.const 2))
+(assert_return (invoke $vibesteroids_tests "host_package_bow_knots") (i32.const 1))
 
 (assert_return (invoke $vibesteroids_tests "state_set_i32" (i32.const 15440) (i32.const 1)))
 (assert_return (invoke $vibesteroids_tests "state_set_i64" (i32.const 15448) (i64.const 100000000)))

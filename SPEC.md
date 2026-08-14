@@ -135,6 +135,11 @@ holding the secondary button thrusts, and any delivered nonzero scroll gesture
 activates Death Blossom when eligible. Button releases clear the corresponding
 held state.
 
+Motion-gesture mapping is guest-owned after host classification. Configuration
+registers `AE_motion_interest(1, 0, 0)` and propagates a host rejection. Event
+kind 16/code 1 routes through the ordinary Death Blossom eligibility function;
+the host owns acceleration threshold, cooldown, permission, and event pacing.
+
 Touch-contact mapping is also guest-owned and coexists with keyboard and fine
 pointer input. ABI minor 10 requires the configure-time
 `AE_touch_interest(8, 0)` opt-in; a rejection fails configuration instead of
@@ -152,6 +157,12 @@ and overflow starts are inert. The top-center 40--60% strip through logical Y
 stream before fixed ticks, suppresses touch-derived compatibility pointers,
 preserves real mouse input and AVP-owned contacts, and supplies the deterministic
 actual-binary timeline used by this repository's runtime check.
+
+Device-change code bit 0 latches coarse-primary-pointer mode, while any raw
+touch start records observed touch use. Entering Pause in either mode also
+opens Help with the touch zones and stroke grammar. Resume closes that overlay
+only when Pause opened it; manually opened Help remains player-owned. Fine-only
+desktop Pause retains the keyboard/pointer panel behavior.
 
 Key-up stops held actions. Each physical source owns its action independently:
 thrust is held by Up, W, or the secondary pointer button, and each rotation
@@ -208,8 +219,10 @@ difficulty envelope, and spawns the next bounded wave.
 
 ### 6.4 Enemy ship, random-power package, and derelict satellite
 
-The game independently schedules one enemy saucer and one collectible package
-at uniformly selected intervals from 45 through 120 simulated seconds. A new
+The game independently schedules one enemy saucer at uniformly selected
+intervals from 45 through 120 simulated seconds and one collectible package
+from 36 through 96 seconds. Both package endpoints and its mean wait are 20%
+shorter than the former shared interval. A new
 interval begins after the corresponding object leaves play, so neither feature
 can overlap another instance of itself. All scheduling randomness is seeded and
 snapshotted.
@@ -228,11 +241,18 @@ manufacture points. The 1.2-second presentation expands and contracts to the
 same gameplay radius through the fixed clock, while damage is resolved once at
 detonation so newly split children survive the parent blast.
 
+Before a saucer becomes active, the guest classifies every asteroid's relative
+trajectory over the next two simulated seconds. Current overlap or projected
+intersection, including asteroid wraparound images and a ten-pixel fairness
+margin, defers the proposal. A fresh candidate is drawn after one simulated
+second, bounding retry work without eventually forcing an unsafe entry.
+
 The package drifts across the viewport without wrapping and does not collide
 with rocks. Player bullets, lasers, and enemy shots can destroy it; leaving the
 screen or being shot emits the same failure cue. Player contact selects one of
 two seeded rewards for 20 simulated seconds: laser fire or doubled bounded fire
-rate. Collection emits its own success cue.
+rate. Collection emits its own success cue. Its vector parcel includes ribbon
+crossbars, two attached bow loops, and a central knot.
 
 A laser is a finite segment from the muzzle to the first viewport boundary: it
 never wraps, tests all targets present when fired, and may destroy multiple
@@ -241,7 +261,8 @@ short cyan afterimage makes the otherwise instantaneous command visible.
 
 A third independent 45--120-second schedule controls a derelict Voyager-like
 satellite. A due appearance remains pending while 15 or more rocks are active,
-then enters as soon as the count falls below 15; no once-per-level limit exists.
+then considers the same two-second asteroid-trajectory classifier and
+one-second retry used by the saucer; no once-per-level limit exists.
 It may overlap the saucer and package, crosses without wrapping, drifts and
 rotates slowly in either seeded direction, and has no arrival cue. A faint
 pitch-stable sonar ping with two diminishing delayed reflections starts after
@@ -303,7 +324,9 @@ RAM from:
 3. a registration directive; and
 4. application behavior and gameplay scenarios.
 
-Stock `wasmtime wast` executes it. Scenarios cover schema/configuration, seed
+Stock `wasmtime wast` executes it. Intent comments state the behavior and
+failure mode for each scenario group, including independent controls when a
+single fixture could pass vacuously. Scenarios cover schema/configuration, seed
 ranges, rendering intent, controls, fixed-point behavior, firing, collision,
 splitting, score, lives, waves, difficulty, resize, audio, effects, and
 lifecycle. Structural lint independently enforces the float boundary.

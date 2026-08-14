@@ -41,6 +41,8 @@ render_case() {
 	fi
 }
 
+# Keep the oracle on visible gameplay semantics. A host may count every event
+# correctly while still ordering contacts after ticks or losing action ownership.
 require_text() {
 	local file=$1
 	local text=$2
@@ -59,6 +61,9 @@ reject_text() {
 	fi
 }
 
+# The baseline and collapsed-contact case are paired controls. Contacts whose
+# complete lifetime precedes the first tick must leave the rendered game byte-for-byte
+# unchanged, proving Aedicule preserves event-before-tick ordering.
 render_case baseline --ticks 21
 render_case collapsed \
 	--touch start,41,40,400 \
@@ -66,6 +71,9 @@ render_case collapsed \
 	--touch end,41,40,400 \
 	--touch cancel,42,215,400 \
 	--advance 21
+
+# Opposite edge strokes must produce opposite headings as well as firing. Exact
+# bullet coordinates catch swapped zones, missing stroke rotation, and double delivery.
 render_case left-stroke \
 	--touch start,41,40,400 \
 	--touch move,41,40,303.125 \
@@ -76,6 +84,9 @@ render_case right-stroke \
 	--touch move,43,390,303.125 \
 	--advance 1 \
 	--touch end,43,390,303.125
+
+# Interleaved contacts prove action ownership is per contact: releasing or
+# cancelling one finger cannot clear an action still held by another finger.
 render_case edge-ended-center-held \
 	--touch start,41,40,400 \
 	--touch start,42,215,400 \
@@ -88,6 +99,8 @@ render_case center-cancelled-edge-held \
 	--advance 20 \
 	--touch cancel,42,215,400 \
 	--advance 1
+
+# The top-center region is the reachable touch fallback for pause/resume.
 render_case paused --touch start,44,215,40
 
 require_text "$output/baseline.svg" 'data-command-id="1"' \

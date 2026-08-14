@@ -17,6 +17,7 @@
 	(import "test.host" "test_geometry_errors" (func $host_geometry_errors (result i32)))
 	(import "test.host" "test_lifecycle_errors" (func $host_lifecycle_errors (result i32)))
 	(import "test.host" "test_touch_interest_valid" (func $host_touch_interest_valid (result i32)))
+	(import "test.host" "test_motion_interest_valid" (func $host_motion_interest_valid (result i32)))
 	(import "test.host" "AE_frame_begin" (func $host_frame_begin (param f32 f32 f32 f32) (result i32)))
 	(import "test.host" "AE_transform_push" (func $host_transform_push (param f32 f32 f32 f32 f32 f32) (result i32)))
 	(import "test.host" "AE_transform_pop" (func $host_transform_pop (result i32)))
@@ -38,6 +39,7 @@
 		call $state_schema i32.const 11 i32.ne (if (then i32.const 5 return))
 		call $configure (if (then i32.const 6 return))
 		call $host_touch_interest_valid i32.eqz (if (then i32.const 13 return))
+		call $host_motion_interest_valid i32.eqz (if (then i32.const 14 return))
 		i32.const 0x5eedcafe i32.const 0 f32.const 1024 f32.const 768 call $init
 		(if (then i32.const 7 return))
 		i32.const 9 i32.const 60000 f32.const 1001 f32.const 0 call $event

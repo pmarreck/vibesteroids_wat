@@ -27,9 +27,12 @@ legacy_tokens=(
 	'fp_state_schema'
 )
 host_imports=(
+	# Keep this set synchronized with required guest capabilities so a removed
+	# import fails independently of the behavioral WAST host.
 	'title'
 	'menu_item'
 	'touch_interest'
+	'motion_interest'
 	'frame_begin'
 	'transform_push'
 	'transform_pop'
