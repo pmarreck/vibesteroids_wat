@@ -44,6 +44,7 @@
 	(global $duplicate_stable_ids (mut i32) (i32.const 0))
 	(global $first_duplicate_stable_id (mut i32) (i32.const -1))
 	(global $geometry_errors (mut i32) (i32.const 0))
+	(global $first_invalid_circle_id (mut i32) (i32.const -1))
 	(global $lifecycle_errors (mut i32) (i32.const 0))
 	(global $frame_open (mut i32) (i32.const 0))
 	(global $path_open (mut i32) (i32.const 0))
@@ -91,6 +92,13 @@
 	(global $help_max_y (mut f32) (f32.const 0))
 	(global $help_pointer_input_x (mut f32) (f32.const 0))
 	(global $help_pointer_action_x (mut f32) (f32.const 0))
+	(global $help_keyboard_header_x (mut f32) (f32.const 0))
+	(global $help_keyboard_input_x (mut f32) (f32.const 0))
+	(global $help_keyboard_action_x (mut f32) (f32.const 0))
+	(global $help_keyboard_last_y (mut f32) (f32.const 0))
+	(global $help_second_header_x (mut f32) (f32.const 0))
+	(global $help_second_header_y (mut f32) (f32.const 0))
+	(global $help_second_first_y (mut f32) (f32.const 0))
 	(global $help_keyboard_alias_copy_mask (mut i32) (i32.const 0))
 	(global $gate_copy_kind (mut i32) (i32.const 0))
 	(global $gate_border_lines (mut i32) (i32.const 0))
@@ -161,6 +169,7 @@
 		i32.const 0 global.set $duplicate_stable_ids
 		i32.const -1 global.set $first_duplicate_stable_id
 		i32.const 0 global.set $geometry_errors
+		i32.const -1 global.set $first_invalid_circle_id
 		i32.const 0 global.set $lifecycle_errors
 		i32.const 0 global.set $frame_open
 		i32.const 0 global.set $path_open
@@ -200,6 +209,13 @@
 		f32.const 0 global.set $help_max_y
 		f32.const 0 global.set $help_pointer_input_x
 		f32.const 0 global.set $help_pointer_action_x
+		f32.const 0 global.set $help_keyboard_header_x
+		f32.const 0 global.set $help_keyboard_input_x
+		f32.const 0 global.set $help_keyboard_action_x
+		f32.const 0 global.set $help_keyboard_last_y
+		f32.const 0 global.set $help_second_header_x
+		f32.const 0 global.set $help_second_header_y
+		f32.const 0 global.set $help_second_first_y
 		i32.const 0 global.set $help_keyboard_alias_copy_mask
 		i32.const 0 global.set $gate_copy_kind
 		i32.const 0 global.set $gate_border_lines
@@ -273,6 +289,8 @@
 	(func (export "test_duplicate_stable_ids") (result i32) global.get $duplicate_stable_ids)
 	(func (export "test_first_duplicate_stable_id") (result i32) global.get $first_duplicate_stable_id)
 	(func (export "test_geometry_errors") (result i32) global.get $geometry_errors)
+	(func (export "test_first_invalid_circle_id") (result i32)
+		global.get $first_invalid_circle_id)
 	(func (export "test_lifecycle_errors") (result i32)
 		global.get $lifecycle_errors
 		global.get $frame_open global.get $path_open i32.or
@@ -355,6 +373,16 @@
 	(func (export "test_help_pointer_gap_valid") (result i32)
 		global.get $help_pointer_action_x global.get $help_pointer_input_x f32.sub
 		f32.const 125 f32.ge)
+	;; A narrow layout is genuinely stacked only when both sections reuse one
+	;; horizontal grid and the second header/rows follow all keyboard rows.
+	(func (export "test_help_stacked_valid") (result i32)
+		global.get $help_keyboard_header_x global.get $help_second_header_x f32.eq
+		global.get $help_keyboard_input_x global.get $help_pointer_input_x f32.eq i32.and
+		global.get $help_keyboard_action_x global.get $help_pointer_action_x f32.eq i32.and
+		global.get $help_keyboard_action_x global.get $help_keyboard_input_x f32.sub
+		f32.const 125 f32.ge i32.and
+		global.get $help_second_header_y global.get $help_keyboard_last_y f32.gt i32.and
+		global.get $help_second_first_y global.get $help_second_header_y f32.gt i32.and)
 	(func (export "test_help_keyboard_alias_copy_mask") (result i32)
 		global.get $help_keyboard_alias_copy_mask)
 	(func (export "test_power_hud_kind") (result i32) global.get $power_hud_kind)
@@ -630,14 +658,31 @@
 		local.get $valid i32.and
 		(if (then global.get $satellite_lines i32.const 1 i32.add global.set $satellite_lines))
 		i32.const 0)
-	(func (export "AE_circle") (param $key i32) (param f32) (param $y f32) (param $radius f32) (param f32 i32 i32) (result i32)
+	(func (export "AE_circle") (param $key i32) (param $x f32) (param $y f32)
+		(param $radius f32) (param $width f32) (param i32) (param $flags i32)
+		(result i32)
 		(local $valid i32)
 		global.get $frame_open i32.eqz global.get $path_open i32.or
 		(if (then call $record_lifecycle_error))
 		local.get $key call $record_stable_id
-		local.get $radius f32.const 0 f32.gt local.set $valid
+		;; Mirror Aedicule's production circle boundary. This catches argument-slot
+		;; mistakes that positive-radius-only validation cannot distinguish.
+		local.get $x local.get $x f32.eq
+		local.get $x f32.abs f32.const 1000000 f32.le i32.and
+		local.get $y local.get $y f32.eq i32.and
+		local.get $y f32.abs f32.const 1000000 f32.le i32.and
+		local.get $radius local.get $radius f32.eq i32.and
+		local.get $radius f32.abs f32.const 1000000 f32.le i32.and
+		local.get $radius f32.const 0 f32.ge i32.and
+		local.get $width local.get $width f32.eq i32.and
+		local.get $width f32.abs f32.const 1000000 f32.le i32.and
+		local.get $width f32.const 0 f32.ge i32.and
+		local.get $flags i32.const -2 i32.and i32.eqz i32.and local.set $valid
 		local.get $valid i32.eqz
-		(if (then global.get $geometry_errors i32.const 1 i32.add global.set $geometry_errors))
+		(if (then
+			global.get $geometry_errors i32.const 1 i32.add global.set $geometry_errors
+			global.get $first_invalid_circle_id i32.const -1 i32.eq
+			(if (then local.get $key global.set $first_invalid_circle_id))))
 		local.get $key local.get $y local.get $radius f32.add call $record_help_bottom
 		local.get $key i32.const 100 i32.ge_u local.get $key i32.const 164 i32.lt_u i32.and
 		local.get $key i32.const 1100 i32.ge_u local.get $key i32.const 1292 i32.lt_u i32.and i32.or local.get $valid i32.and
@@ -680,6 +725,20 @@
 		(if (then local.get $x global.set $help_pointer_input_x))
 		local.get $key i32.const 71 i32.eq
 		(if (then local.get $x global.set $help_pointer_action_x))
+		local.get $key i32.const 54 i32.eq
+		(if (then local.get $x global.set $help_keyboard_header_x))
+		local.get $key i32.const 41 i32.eq
+		(if (then local.get $x global.set $help_keyboard_input_x))
+		local.get $key i32.const 62 i32.eq
+		(if (then local.get $x global.set $help_keyboard_action_x))
+		local.get $key i32.const 49 i32.eq
+		(if (then local.get $y global.set $help_keyboard_last_y))
+		local.get $key i32.const 55 i32.eq
+		(if (then
+			local.get $x global.set $help_second_header_x
+			local.get $y global.set $help_second_header_y))
+		local.get $key i32.const 56 i32.eq
+		(if (then local.get $y global.set $help_second_first_y))
 		global.get $text_mask i64.const 1 local.get $key i64.extend_i32_u i64.shl i64.or global.set $text_mask
 		local.get $key i32.const 41 i32.ge_u local.get $key i32.const 50 i32.lt_u i32.and
 		(if (then

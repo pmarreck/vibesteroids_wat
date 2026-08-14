@@ -271,6 +271,9 @@
 	(i32.const 0))
 (assert_return (invoke $vibesteroids_tests "host_reset_frame"))
 (assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "host_first_invalid_circle_id")
+	(i32.const -1))
 (assert_return (invoke $vibesteroids_tests "host_package_paths") (i32.const 1))
 ;; The parcel silhouette remains independently recognizable, while two closed
 ;; loop paths and a knot make the new bow mechanically present. Peter remains

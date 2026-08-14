@@ -291,7 +291,10 @@ rounded platform styling, pressed feedback, accessibility, and gesture
 occlusion; game-over copy remains above its Start button without overlap.
 While a timed gift is active, a text-plus-icon badge identifies `LASER` or
 `RAPID` and displays the ceil-rounded remaining time in tenths; it disappears
-at expiry. Help uses a filled two-column keyboard/pointer panel.
+at expiry. Help uses a filled keyboard/pointer panel. Portrait viewports below
+720 logical pixels stack the active Pointer/Touch section below Keyboard;
+wider or landscape viewports retain two side-by-side sections. Both forms are
+content-sized and remain inside the live viewport.
 The WAT declares composable shot, thrust, explosion, extra-life, Death Blossom,
 notification, and hazardous-blast synth programs. While thrust is held, a quiet
 low-passed white-noise bed retriggers at a rate-independent cadence, then stops

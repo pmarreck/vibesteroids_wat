@@ -5,6 +5,50 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [x] Reproduce and fix the live guest stop `invalid or non-finite number in
+  circle`, observed while stroking a touch edge to rotate. Add a deterministic
+  event-sequence regression before changing guest geometry; ask Aedicule to
+  include the rejected primitive's stable ID and argument name/value if its
+  diagnostic does not already expose them. The gift's bow-knot circle ID 915
+  passed its stroke color in the flags slot; the real host permits only `0` or
+  `1`. The fake host now mirrors production circle validation, the forced gift
+  render went RED on ID 915, and fill flag `1` made the focused and complete
+  suites plus optimized build green. Edge input was incidental. (Peter
+  playtest, 2026-08-14; done 2026-08-14 16:12 EDT.)
+	- Peter observed that it recurs after roughly the same delay and may coincide
+	  with a UFO, Voyager, or gift spawn. Force each foreign actor independently
+	  and classify its circles, including gift-bow knot ID 915, before treating
+	  the edge stroke as causal. (Follow-up, 2026-08-14.)
+	- Curiosity poke: edge rotation may only correlate with the failure; inspect
+	  every animated circle path for unchecked division, overflow, and migrated
+	  stale state rather than assuming touch coordinates caused it.
+- [ ] Fix the touch Help panel on portrait iPhone screens. Stack Keyboard above
+  Touch when two columns would become horizontally cramped, grow the fixed
+  content-sized panel vertically for that layout, and preserve the approved
+  desktop columns. Start with deterministic portrait/landscape render geometry
+  assertions. (Peter playtest, 2026-08-14 15:57 EDT.)
+	- Curiosity poke: the stacked panel must still fit short landscape viewports
+	  and must not regress the prior bottom-edge fix.
+	- [x] Add a width-and-orientation classifier, shared stacked grid, content-sized
+	  portrait panel, and paired 430x775 portrait, 1024x768 desktop, and 667x375
+	  landscape geometry controls. Focused and complete suites plus optimized
+	  build pass; the generated portrait panel spans y=62..738. Await Peter's
+	  live-phone visual approval. (Done 2026-08-14 16:12 EDT.)
+- [ ] Diagnose why physical iPhone shaking produces no Death Blossom despite
+  green guest tests for `AE_motion_interest(1, 0, 0)` and kind-16/code-1.
+  Prove whether registration, browser permission, sensor delivery, host
+  classification, or guest eligibility is failing, then fix only the owning
+  side TDD-first. (Peter playtest, 2026-08-14 15:57 EDT.)
+	- Curiosity poke: iOS permission requires an eligible user gesture, and a
+	  silent denied/unavailable sensor must remain distinguishable from a guest
+	  that consumed its once-per-life charge.
+	- [x] Verify the guest-owned boundary and assign the missing physical path.
+	  Registration plus kind-16 eligibility/negative controls are green. Aedicule
+	  accepted ownership of user-gesture permission, sample capture, detector,
+	  delivery integration coverage, and a phone-visible diagnostic; none exists
+	  in the current host. Requested through llmsend and accepted 2026-08-14
+	  16:12 EDT. Await its tested pin and Peter's physical shake playtest.
+
 - [x] Generate the star field from the seeded PRNG. It was a pure function of
   the loop index, so every seed drew the identical sky, and both coordinates
   advanced by a fixed step, laying all one hundred stars on a diagonal lattice

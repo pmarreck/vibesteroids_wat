@@ -102,7 +102,9 @@ contacts. A left/right-edge contact fires and maps vertical motion over `4pi`
 radians per viewport height. Independent middle contacts thrust, and lifting or
 cancelling one finger leaves every other contact's action active. The top-center
 touch zone retains pause/resume; pausing after coarse-pointer or raw-touch use
-also opens the touch-specific Controls panel. WAST, an actual-binary touch/tick
+also opens the touch-specific Controls panel. Portrait viewports narrower than
+720 logical pixels stack Touch below Keyboard; wider and landscape viewports
+retain the compact side-by-side sections. WAST, an actual-binary touch/tick
 timeline, and Peter's iPhone Safari playtest cover the mapping.
 
 ## Live-edit the running game
@@ -212,7 +214,9 @@ Application behavior stays in WAST, not Rust. Scenario comments name the
 user-visible contract, the regression each group catches, and paired controls
 where needed. The instrumented `aedicule.v0` WAST module records emitted scenes,
 audio, effects, and metadata without a custom test-only export in production
-code.
+code. Its geometry boundary mirrors Aedicule's finite-coordinate, radius,
+stroke-width, and flags validation, catching argument-slot errors before the
+real host sees a frame.
 
 The headless renderer produces an inspectable frame without a desktop:
 

@@ -588,6 +588,36 @@
 (assert_return (invoke $vibesteroids_tests "host_help_columns_valid") (i32.const 1))
 (assert_return (invoke $vibesteroids_tests "host_help_max_y") (f32.const 669))
 (assert_return (invoke $vibesteroids_tests "host_help_keyboard_alias_copy_mask") (i32.const 3))
+(assert_return (invoke $vibesteroids_tests "host_help_stacked_valid") (i32.const 0))
+
+;; A portrait phone cannot sustain the approved desktop's two side-by-side
+;; sections. This fixture requires one shared grid with Touch below Keyboard;
+;; the 1024px coarse fixture below is the paired control that keeps columns.
+(assert_return (invoke $vibesteroids_tests "reset") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "device_change"
+		(i32.const 1) (f32.const 430) (f32.const 775))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "event" (i32.const 1) (i32.const 5)) (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_touch_help_copy_mask") (i32.const 511))
+(assert_return (invoke $vibesteroids_tests "host_help_stacked_valid") (i32.const 1))
+(assert_return
+	(invoke $vibesteroids_tests "host_help_fits_height" (f32.const 775))
+	(i32.const 1))
+;; Width alone must not force the tall composition onto a short landscape
+;; phone. This paired control keeps the horizontal layout when height is scarce.
+(assert_return
+	(invoke $vibesteroids_tests "device_change"
+		(i32.const 1) (f32.const 667) (f32.const 375))
+	(i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_reset_frame"))
+(assert_return (invoke $vibesteroids_tests "render") (i32.const 0))
+(assert_return (invoke $vibesteroids_tests "host_help_stacked_valid") (i32.const 0))
+(assert_return
+	(invoke $vibesteroids_tests "host_help_fits_height" (f32.const 375))
+	(i32.const 1))
 
 ;; Device mode is a set classifier: fine-only desktop Pause remains concise,
 ;; while coarse-primary and observed-touch modes open the touch-aware Help.
