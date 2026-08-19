@@ -5,7 +5,51 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
-- [ ] Reproduce and assign the new physical touch regression after exact guest
+- [x] Publish exact Vibesteroids commit `d810415` through Aedicule's current
+  port-8911 staging path and public GitHub Pages demo. Independently prove each
+  packaged `code.wat` equals Git, run the composed Start-then-multitouch browser
+  gate, verify the public manifest/download hashes and Pages deployment, and
+  keep Aedicule's pushed WebKit fix in the serving runtime. (Peter request,
+	2026-08-19 16:40 EDT.) Aedicule commit `a20a448` now publishes guest
+	`d810415`; its archive reader proves the packaged `code.wat` byte-identical
+	to Git, and a stale-inner-WAT mutation makes that assertion fail. Local WAST,
+	the complete suite, optimized build, immutable delivery, exact Mechatron CI,
+	GitHub CI, and Pages deployment pass. Our independent public-origin composed
+	gate delivered Start action 8, six touch phases with zero pointer leakage,
+	and one synthesized-audio request with no diagnostics. Public hashes are WAT
+	`854e2fc1a6c084a2f45a409946929468fdc3c642bde12940851f0e8bd8719292`,
+	`.aed` `0a67be8c46c48a5a22f954f6b2bcad5e05319c19e4b71fc70379a6de566406c0`,
+	and manifest `0616d567c659ea94e7123cf867012c80d17cc2a975697117929a606acd93a0f9`.
+	(Done 2026-08-19 17:17 EDT.)
+	- Curiosity poke: promoting the guest can accidentally replace the newly fixed
+	  host delivery tree or reuse the prior `1e04c70` package; verify both host and
+	  guest revisions after the atomic staging switch.
+- [x] Retire the legacy port-8910 `aedicule-serve` snapshot after port 8911 is
+  serving and testing exact `d810415`; then prove 8910 no longer listens and
+  8911 remains healthy. (Peter approval, 2026-08-19 16:40 EDT.)
+	The tmux session was retired; its surviving Caddy child received graceful
+	SIGTERM, and only the 8910 Tailscale Serve handler was removed. Socket and
+	HTTPS probes prove 8910 is gone while exact-hash 8911 routes remain healthy.
+	(Done 2026-08-19 17:16 EDT.)
+	- Curiosity poke: stop only the standalone tmux-owned server, preserving the
+	  separate systemd-managed 8911 staging service.
+- [x] Identify and document what serves Vibesteroids on Tailscale ports 8910
+  and 8911, including their guest/host revisions, so physical playtests cannot
+  silently target different deployments. Port 8910 is the long-lived August 5
+  `aedicule-serve` tmux/Caddy snapshot rooted at Nix store `g8chx...`, carrying
+  Vibesteroids commit `126c173`; port 8911 is the systemd-managed current
+  staging tree carrying exact guest `1e04c70` plus Aedicule's WebKit capture
+  fix. Both endpoints are now physically touch-green. (Peter clarification and
+  playtest; done 2026-08-15 14:59 EDT.)
+	- Curiosity poke: two visually identical endpoints may differ in Aedicule
+	  runtime, packaged guest, cache policy, or supervision path; inspect the
+	  bound processes and served artifacts rather than inferring from appearance.
+	- Peter physically confirmed that port 8911 now accepts gameplay touch again.
+	  Aedicule independently identifies the fail-soft `setPointerCapture` boundary
+	  as the strongest cause; the exception counter was not observed, so this is
+	  strong causal evidence rather than direct observation. (2026-08-15 14:56
+	  EDT.)
+- [x] Reproduce and assign the new physical touch regression after exact guest
   `1e04c70` was promoted to Tailscale staging. Preserve the interleaved
   multi-contact touch/tick behavior as the acceptance test, compare the staged
   host revision and input-capability path, and fix only the owning side before
@@ -18,6 +62,15 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  leakage, while the exact guest passes Aedicule's post-action-8 headless
 	  behavioral timeline. The current browser gate injects contacts before
 	  action 8 and therefore never tests active gameplay. (2026-08-14 16:34 EDT.)
+	- Aedicule's staged bridge catches WebKit `setPointerCapture()` failures and
+	  continues using its window-level listeners. Peter physically confirmed
+	  port 8911 gameplay touch after that sole semantic touch change. The exact
+	  repair is pushed as Aedicule `b56abf6d0d9f94dab2741ff99b18b6aa35e4975c`.
+	  Its complete suite, optimized build, immutable and live browser gates,
+	  physical iPhone replay, exact Mechatron CI, GitHub CI, six release targets,
+	  and Pages deployment pass. The `captureFailures` counter was not observed,
+	  so the precise thrown exception remains inferred while the behavioral
+	  repair is physically proven. (Done 2026-08-15 15:00 EDT.)
 - [x] Audit every Vibesteroids and Aedicule change made since the circle-crash
   report. Classify each hunk as required behavior, regression evidence,
   documentation, or unrelated; retain only changes backed by a continuing
