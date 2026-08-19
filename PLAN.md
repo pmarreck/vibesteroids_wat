@@ -5,6 +5,23 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
+- [ ] Repair every failing CI check for current `yolo` commit `81430f3`.
+	Inspect GitHub Actions and Mechatron Prime by exact SHA, reproduce each
+	failure locally or with its native runner contract, apply the smallest
+	TDD-backed fix, then push and require both CI systems green. (Peter request,
+	2026-08-19 17:46 EDT.)
+	- Curiosity poke: a branch-level failure may belong to a different commit or
+	  platform, while a docs-only commit can expose a pre-existing packaging or
+	  workflow defect; bind every diagnosis to its run ID, job, and exact SHA.
+- [ ] Restore physical touch control on the public GitHub Pages Vibesteroids.
+	Reproduce the public-origin failure against the exact deployed host and guest,
+	compare it with the touch-working Tailscale port 8911, and fix the owning
+	boundary without weakening multi-contact or compatibility-pointer guarantees.
+	Done requires the action-8-first public browser gate and Peter controlling the
+	public game on his actual phone. (Peter playtest, 2026-08-19 17:48 EDT.)
+	- Curiosity poke: the previous automated public gate injected protocol events
+	  and therefore could pass while real DOM touch capture, cache/service-worker
+	  selection, or the deployed host bundle remained broken.
 - [x] Publish exact Vibesteroids commit `d810415` through Aedicule's current
   port-8911 staging path and public GitHub Pages demo. Independently prove each
   packaged `code.wat` equals Git, run the composed Start-then-multitouch browser

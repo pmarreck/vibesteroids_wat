@@ -9,11 +9,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1786719482,
-        "narHash": "sha256-hX2TkefDS3jTXOF7t1S4qksZOIGlU2Ma0tsUHk5z58I=",
+        "lastModified": 1787172703,
+        "narHash": "sha256-OKHpI5oWuzMmGh1eJfNpPtN9qRzFa0qFL3p7KcM3bHg=",
         "owner": "pmarreck",
         "repo": "aedicule",
-        "rev": "5f68591f42df3ea55ba91c985246c76e0e27084d",
+        "rev": "a20a44856457ef0c759ba7af7b65f4a0ca82408f",
         "type": "github"
       },
       "original": {
