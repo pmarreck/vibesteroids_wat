@@ -5,23 +5,62 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 
 ## Active work
 
-- [ ] Repair every failing CI check for current `yolo` commit `81430f3`.
+- [x] Repair every failing CI check exposed by `yolo` commit `81430f3`.
 	Inspect GitHub Actions and Mechatron Prime by exact SHA, reproduce each
 	failure locally or with its native runner contract, apply the smallest
 	TDD-backed fix, then push and require both CI systems green. (Peter request,
-	2026-08-19 17:46 EDT.)
+	2026-08-19 17:46 EDT.) GitHub run `32303248641` failed because pinned
+	Aedicule `5f68591` declared a stale Cargo-vendor fixed-output hash. Pinning
+	the already-green release `a20a448` made the same cold `nix flake check`,
+	complete `./test`, and optimized `./build` pass. Fix commit `6c8ca3d` is
+	pushed and exact-matched; Mechatron Prime passed it in 198 seconds and GitHub
+	run `32306312446` passed both flake and repository controls in 1,299 seconds.
+	(Done 2026-08-19 18:17 EDT.)
 	- Curiosity poke: a branch-level failure may belong to a different commit or
 	  platform, while a docs-only commit can expose a pre-existing packaging or
 	  workflow defect; bind every diagnosis to its run ID, job, and exact SHA.
-- [ ] Restore physical touch control on the public GitHub Pages Vibesteroids.
+- [x] Restore physical touch control on the public GitHub Pages Vibesteroids.
 	Reproduce the public-origin failure against the exact deployed host and guest,
 	compare it with the touch-working Tailscale port 8911, and fix the owning
 	boundary without weakening multi-contact or compatibility-pointer guarantees.
 	Done requires the action-8-first public browser gate and Peter controlling the
 	public game on his actual phone. (Peter playtest, 2026-08-19 17:48 EDT.)
+	Peter physically reconfirmed on 2026-08-21 16:02 EDT that public touch is
+	inert. This supersedes Aedicule's 2026-08-20 report that ordinary public touch
+	had recovered and keeps touch ahead of the shake-to-Death-Blossom work.
 	- Curiosity poke: the previous automated public gate injected protocol events
 	  and therefore could pass while real DOM touch capture, cache/service-worker
 	  selection, or the deployed host bundle remained broken.
+	- The 2026-08-21 comparison found public Pages still at Aedicule `a20a448`
+	  while touch-working port 8911 serves unpublished `8cb9a37`; their guest WAT
+	  and touch bridge are byte-identical, but HTML, bootstrap, and web runtime
+	  differ. A separate Playwright WebKit probe cannot reach the input boundary
+	  because its headless Linux WebKit lacks WebGPU. The phone diagnostic overlay
+	  and Peter's physical Safari replay therefore remain the independent oracle.
+	- Aedicule `e17562c` content-addresses the complete browser module graph,
+	  exposes build/service-worker identity in the phone overlay, and fixes the
+	  outer and nested Nix-sandbox test invocations that exact Mechatron `2ecb4b6`
+	  and `7e993ce` caught after release artifacts passed. Its exact Nix check is
+	  green locally. Vibesteroids pins the second corrective host; the complete
+	  `./test` and optimized `./build` pass locally. Exact Mechatron completed in
+	  14 seconds, GitHub run `32528301167` passed the suite, six archives, and Pages
+	  deployment, and public build `5ed712a5a2a6` serves bootstrap and touch modules
+	  whose SHA-256 filenames match their bytes. The public-origin gate activates
+	  Start, delivers six touch contacts with zero pointer leakage, and delivers one
+	  shake. Peter physically confirmed on his iPhone that public touch and
+	  shake-to-Death-Blossom both work. (Automated acceptance 2026-08-21 17:49
+	  EDT; physical acceptance 2026-08-26; release recorded 2026-08-27 18:07
+	  EDT.)
+- [ ] Parallelize only the eleven isolated repository-policy checks using a
+	deterministic buffered runner; keep runtime, derivation, WAST, lint, and
+	ShellCheck gates serial. First add a complete set-classifier and a two-worker
+	failure aggregation test, then accept the change only after at least five
+	quiet-host serial/parallel measurements. The public touch and physical shake
+	acceptance dependency is now resolved; keep this behind shipment of the
+	accepted host pin. (`Code@thelio-nixos` request, 2026-08-19 19:07 EDT.)
+	- Curiosity poke: parallel output must replay failures in declaration order,
+	  and I/O pressure can erase or reverse the single observed 8.23s-to-4.52s
+	  improvement.
 - [x] Publish exact Vibesteroids commit `d810415` through Aedicule's current
   port-8911 staging path and public GitHub Pages demo. Independently prove each
   packaged `code.wat` equals Git, run the composed Start-then-multitouch browser
@@ -149,7 +188,7 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  landscape geometry controls. Focused and complete suites plus optimized
 	  build pass; the generated portrait panel spans y=62..738. Await Peter's
 	  live-phone visual approval. (Done 2026-08-14 16:12 EDT.)
-- [ ] Diagnose why physical iPhone shaking produces no Death Blossom despite
+- [x] Diagnose why physical iPhone shaking produces no Death Blossom despite
   green guest tests for `AE_motion_interest(1, 0, 0)` and kind-16/code-1.
   Prove whether registration, browser permission, sensor delivery, host
   classification, or guest eligibility is failing, then fix only the owning
@@ -160,9 +199,14 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	- [x] Verify the guest-owned boundary and assign the missing physical path.
 	  Registration plus kind-16 eligibility/negative controls are green. Aedicule
 	  accepted ownership of user-gesture permission, sample capture, detector,
-	  delivery integration coverage, and a phone-visible diagnostic; none exists
-	  in the current host. Requested through llmsend and accepted 2026-08-14
-	  16:12 EDT. Await its tested pin and Peter's physical shake playtest.
+	  delivery integration coverage, and a phone-visible diagnostic. It now
+	  reports RED-to-green permission retry, bounded capture, deterministic
+	  detector/delivery tests, and a real Chromium path that starts Vibesteroids,
+	  injects below/above-threshold motion, observes exactly one kind-16/code-1
+	  event, and sees the guest response. Aedicule `e17562c` is deployed publicly,
+	  and Peter physically confirmed shake-to-Death-Blossom on his iPhone.
+	  (Requested 2026-08-14; host status received 2026-08-20; physically accepted
+	  2026-08-26.)
 
 - [x] Generate the star field from the seeded PRNG. It was a pure function of
   the loop index, so every seed drew the identical sky, and both coordinates
@@ -560,9 +604,10 @@ implementation history remains recoverable in Git through commit `8df6b11`.
 	  immutable pin remain pending host RED/GREEN work. (2026-07-24 10:42 EDT)
 	- [x] RED/GREEN deterministic WAST coverage is tracked by the primary
 	  multi-contact work item above.
-	- [ ] Trigger Death Blossom from registered Aedicule motion kind 1. The host
+	- [x] Trigger Death Blossom from registered Aedicule motion kind 1. The host
 	  owns the 15 m/s² shake threshold and 1500 ms cooldown and emits event kind
 	  16/code 1; keep a tap affordance for devices that deny motion permission.
+	  Peter physically accepted the public iPhone path on 2026-08-26.
 	- [ ] Peter-playtest whether to retain the original top-center pause zone now
 	  that Aedicule owns the registered pause lifecycle; do not assume general
 	  mobile autofire, which the original explicitly disabled.
